@@ -1,0 +1,27 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# build
+.next/
+dist/
+out/
+.turbo/
+
+# env & secrets
+.env
+.env.local
+.env.*.local
+*.pem
+service-account*.json
+
+# payload generated
+apps/web/src/payload-types.ts
+
+# logs / os
+*.log
+.DS_Store
+
+# generated reports
+CONTENT_EVALUATION_REPORT.md
+/*.zip

@@ -1,0 +1,14 @@
+# ExploringToKnow reverse proxy — automatic HTTPS (Let's Encrypt) via Caddy.
+# Requires DNS A records for the domain → this VPS IP BEFORE certs can issue.
+# Until the `app` container is deployed, these return 502 (expected during prep).
+exploringtoknow.com, www.exploringtoknow.com {
+    encode zstd gzip
+    # security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+    reverse_proxy app:3000
+}

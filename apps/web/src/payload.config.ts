@@ -1,0 +1,38 @@
+import { buildConfig } from 'payload';
+import { postgresAdapter } from '@payloadcms/db-postgres';
+import { lexicalEditor } from '@payloadcms/richtext-lexical';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+import { Users } from './collections/Users';
+import { Media } from './collections/Media';
+import { Brands } from './collections/Brands';
+import { Categories } from './collections/Categories';
+import { Products } from './collections/Products';
+import { ProductIntelligence } from './collections/ProductIntelligence';
+import { ContentBriefs } from './collections/ContentBriefs';
+import { Articles } from './collections/Articles';
+import { SocialPosts } from './collections/SocialPosts';
+import { GenerationRuns } from './collections/GenerationRuns';
+import { BrandProfileGlobal } from './globals/BrandProfile';
+
+const dirname = path.dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Payload CMS — content & catalog source of truth.
+ * Phase 1: catalog (Products + 8 offer types), AI-pipeline collections
+ * (ProductIntelligence, ContentBriefs, Articles, SocialPosts), and taxonomy.
+ */
+export default buildConfig({
+  serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
+  secret: process.env.PAYLOAD_SECRET || '',
+  admin: { user: Users.slug },
+  collections: [
+    Users, Media, Brands, Categories,
+    Products, ProductIntelligence, ContentBriefs, Articles, SocialPosts, GenerationRuns,
+  ],
+  globals: [BrandProfileGlobal],
+  editor: lexicalEditor({}),
+  db: postgresAdapter({ pool: { connectionString: process.env.DATABASE_URL } }),
+  typescript: { outputFile: path.resolve(dirname, 'payload-types.ts') },
+});

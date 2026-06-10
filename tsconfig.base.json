@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "paths": {
+      "@etk/core": [
+        "./packages/core/src/index.ts"
+      ],
+      "@etk/db": [
+        "./packages/db/src/index.ts"
+      ],
+      "@etk/ai": [
+        "./packages/ai/src/index.ts"
+      ],
+      "@etk/queue": [
+        "./packages/queue/src/index.ts"
+      ],
+      "@etk/prompts": [
+        "./packages/prompts/src/index.ts"
+      ],
+      "@etk/providers": [
+        "./packages/providers/src/index.ts"
+      ],
+      "@etk/eval": [
+        "./packages/eval/src/index.ts"
+      ]
+    }
+  }
+}

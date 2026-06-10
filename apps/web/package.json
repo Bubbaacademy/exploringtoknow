@@ -1,0 +1,44 @@
+{
+  "name": "@etk/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "payload": "payload",
+    "generate:types": "payload generate:types",
+    "clean": "rm -rf .next dist .turbo",
+    "seed:golden": "tsx scripts/seed-golden.ts",
+    "run:golden": "tsx scripts/run-golden.ts",
+    "golden:batch": "tsx scripts/golden-batch.ts"
+  },
+  "dependencies": {
+    "next": "15.4.11",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "payload": "3.85.1",
+    "@payloadcms/db-postgres": "3.85.1",
+    "@payloadcms/next": "3.85.1",
+    "@payloadcms/richtext-lexical": "3.85.1",
+    "@payloadcms/storage-s3": "3.85.1",
+    "@etk/core": "workspace:*",
+    "@etk/db": "workspace:*",
+    "@etk/queue": "workspace:*",
+    "@etk/ai": "workspace:*",
+    "@etk/prompts": "workspace:*",
+    "dotenv": "^16.4.5",
+    "@etk/eval": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "15.4.11",
+    "tsx": "^4.19.1"
+  }
+}

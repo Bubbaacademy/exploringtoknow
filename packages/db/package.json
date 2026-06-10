@@ -1,0 +1,22 @@
+{
+  "name": "@etk/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo",
+    "migrate": "tsx src/migrate.ts"
+  },
+  "dependencies": {
+    "pg": "^8.13.0",
+    "@etk/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.1"
+  }
+}

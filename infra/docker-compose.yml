@@ -1,0 +1,15 @@
+# Local development dependencies only. Not for production.
+services:
+  postgres:
+    image: postgres:16
+    container_name: etk-postgres
+    environment:
+      POSTGRES_USER: etk
+      POSTGRES_PASSWORD: etk
+      POSTGRES_DB: exploringtoknow
+    ports:
+      - "5432:5432"
+    volumes:
+      - etk_pgdata:/var/lib/postgresql/data
+volumes:
+  etk_pgdata:
