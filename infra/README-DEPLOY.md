@@ -73,3 +73,31 @@ backups/   logs/
    is deployed — expected).
 4. Stop and request review before the **app-deploy phase** (Dockerfile for `apps/web`,
    build, `--profile app up`, migrations).
+
+---
+
+## App phase (after infra is up) — prepared, pending first build on the VPS
+The app is containerized and gated behind the compose `app` profile. Images are
+built ON the VPS (no registry needed).
+
+**Prerequisite (one-time, do before first app deploy):** generate & commit Payload
+DB migrations so production applies migrations instead of dev "push":
+```bash
+# locally, with a dev DB reachable:
+pnpm --filter @etk/web exec payload generate:migrations
+git add apps/web/src/migrations && git commit -m "Add Payload migrations"
+```
+
+**Deploy the app + worker:**
+```bash
+# on the VPS, after 00–30 and after putting ANTHROPIC_API_KEY into env/.env
+ROOT=/opt/exploringtoknow bash /root/etk-infra/server/40-app.sh
+```
+`40-app.sh` builds the web + worker images, runs the `migrate` one-shot
+(ops SQL migrations + `payload migrate`), starts `app` and `worker`, and waits
+for the app healthcheck. Caddy then serves `https://exploringtoknow.com`.
+
+> NOTE: the Dockerfiles (`apps/web/Dockerfile`, `apps/worker/Dockerfile`) are
+> production-shaped (Next standalone; pnpm workspace prune) but have NOT yet been
+> `docker build`-validated in this environment (no Docker available here). The
+> first `40-app.sh` build run on the VPS is the validation step; iterate from its log.

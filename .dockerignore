@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/.git
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+**/.DS_Store
+infra/postgres-data
+*.zip
+*.bundle
+CONTENT_EVALUATION_REPORT.md

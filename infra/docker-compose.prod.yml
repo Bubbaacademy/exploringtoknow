@@ -1,7 +1,8 @@
-# ExploringToKnow — PRODUCTION compose (infrastructure prep).
-# Phase B brings up ONLY `postgres` + `caddy`. The `app` service is defined for a
-# later phase and gated behind the `app` profile so it does NOT start now.
+# ExploringToKnow — PRODUCTION compose.
+# INFRA phase brings up ONLY postgres + caddy:
 #   docker compose --env-file ../env/.env up -d postgres caddy
+# APP phase (behind the `app` profile) builds + runs migrate, app, worker:
+#   docker compose --env-file ../env/.env --profile app up -d --build
 name: exploringtoknow
 
 services:
@@ -16,8 +17,7 @@ services:
     volumes:
       - ../postgres-data:/var/lib/postgresql/data
     networks: [etk]
-    # not published to the host — only the app network reaches it
-    expose: ["5432"]
+    expose: ["5432"]            # private to the compose network — NOT published to host
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -36,22 +36,63 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     networks: [etk]
-    # Until `app` is deployed, Caddy serves TLS and returns 502 for the site.
 
-  # ---- deployed in a LATER phase (do not start now) ----
+  # ---- APP PHASE (profile: app) -----------------------------------------
+  migrate:
+    profiles: ["app"]
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      target: build                     # build stage has source + pnpm CLI
+    image: etk-migrate
+    container_name: etk-migrate
+    env_file: [../env/.env]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [etk]
+    restart: "no"
+    # ops migrations (SQL) + Payload migrations (must be generated & committed)
+    command: ["sh","-lc","pnpm --filter @etk/db migrate && pnpm --filter @etk/web exec payload migrate"]
+
   app:
     profiles: ["app"]
     build:
       context: ..
-      dockerfile: apps/web/Dockerfile   # added when app deploy phase begins
+      dockerfile: apps/web/Dockerfile
+    image: etk-web
     container_name: etk-app
     restart: unless-stopped
     env_file: [../env/.env]
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks: [etk]
     expose: ["3000"]
+    healthcheck:
+      test: ["CMD","node","-e","fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  worker:
+    profiles: ["app"]
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+    image: etk-worker
+    container_name: etk-worker
+    restart: unless-stopped
+    env_file: [../env/.env]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks: [etk]
 
 volumes:
   caddy_data:
