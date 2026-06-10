@@ -2,8 +2,8 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 
 const NAV: Array<[string, string]> = [
-  ['Products', '/products'], ['Content', '/content'], ['Social', '/social'],
-  ['Tracking', '/tracking'], ['Analytics', '/analytics'], ['System Health', '/health'],
+  ['Products', '/dashboard/products'], ['Content', '/dashboard/content'], ['Social', '/dashboard/social'],
+  ['Tracking', '/dashboard/tracking'], ['Analytics', '/dashboard/analytics'], ['System Health', '/dashboard/health'],
 ];
 
 // Internal command center shell. Auth is enforced in middleware.ts.

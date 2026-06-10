@@ -31,3 +31,6 @@ for i in $(seq 1 40); do
 done
 docker compose --env-file "$ENV" --profile app ps
 echo "OK: app phase up. Caddy now serves https://$(grep ^DOMAIN "$ENV"|cut -d= -f2)"
+
+echo "== app verification report =="
+DOMAIN="$(grep ^DOMAIN "$ENV"|cut -d= -f2)" ROOT="$ROOT" OUT="$ROOT/APP_DEPLOYMENT_REPORT.md" bash "$(dirname "$0")/verify-app.sh"

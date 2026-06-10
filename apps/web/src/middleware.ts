@@ -7,12 +7,7 @@ import { hasSession, AUTH } from '@/lib/auth';
  */
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const isDashboard = pathname.startsWith('/products')
-    || pathname.startsWith('/content')
-    || pathname.startsWith('/social')
-    || pathname.startsWith('/tracking')
-    || pathname.startsWith('/analytics')
-    || pathname.startsWith('/health');
+  const isDashboard = pathname.startsWith('/dashboard');
 
   if (isDashboard && !hasSession(req)) {
     const url = req.nextUrl.clone();
@@ -23,6 +18,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/products/:path*', '/content/:path*', '/social/:path*',
-            '/tracking/:path*', '/analytics/:path*', '/health/:path*'],
+  matcher: ['/dashboard/:path*'],
 };
