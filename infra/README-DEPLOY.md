@@ -84,7 +84,7 @@ built ON the VPS (no registry needed).
 DB migrations so production applies migrations instead of dev "push":
 ```bash
 # locally, with a dev DB reachable:
-pnpm --filter @etk/web exec payload generate:migrations
+pnpm --filter @etk/web exec payload migrate:create
 git add apps/web/src/migrations && git commit -m "Add Payload migrations"
 ```
 
