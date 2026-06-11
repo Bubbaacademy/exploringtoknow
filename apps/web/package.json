@@ -14,7 +14,9 @@
     "clean": "rm -rf .next dist .turbo",
     "seed:golden": "tsx scripts/seed-golden.ts",
     "run:golden": "tsx scripts/run-golden.ts",
-    "golden:batch": "tsx scripts/golden-batch.ts"
+    "golden:batch": "tsx scripts/golden-batch.ts",
+    "validate:ryze": "tsx scripts/validate-ryze.ts",
+    "validate:local": "tsx scripts/local-validate.ts"
   },
   "dependencies": {
     "next": "15.4.11",
@@ -31,7 +33,8 @@
     "@etk/ai": "workspace:*",
     "@etk/prompts": "workspace:*",
     "dotenv": "^16.4.5",
-    "@etk/eval": "workspace:*"
+    "@etk/eval": "workspace:*",
+    "marked": "^14.1.3"
   },
   "devDependencies": {
     "typescript": "^5.6.3",
