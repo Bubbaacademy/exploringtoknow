@@ -3,7 +3,7 @@ import type { ProductInput, BrandProfile } from '@etk/core';
 import { runContentPipeline } from '@etk/ai';
 import { registry } from '@etk/prompts';
 import {
-  readability, seo, cta, brandVoice, type EvalPiece,
+  readability, seo, cta, brandVoice, scoreArticle, type EvalPiece,
 } from '@etk/eval';
 
 const slugify = (s: string) =>
@@ -80,6 +80,7 @@ export async function validateOneArticle(payload: any, opts: {
   };
   const read = readability(piece.markdown);
   const seoR = seo(piece); const ctaR = cta(piece); const bvR = brandVoice(piece, opts.brandProfile);
+  const scores = scoreArticle(piece, opts.brandProfile);
 
   const base = process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000';
   const adminUrl = `${base}/admin/collections/articles/${article.id}`;
@@ -104,7 +105,9 @@ export async function validateOneArticle(payload: any, opts: {
     `- Generation time: **${(genMs / 1000).toFixed(2)} s**`,
     `- Total tokens: **${result.cost.totalTokens}**`,
     `- Estimated cost: **$${(result.cost.totalCents / 100).toFixed(4)}**`,
-    `- QA: **${passed ? 'PASSED' : 'FLAGGED'}**`, '',
+    `- QA: **${passed ? 'PASSED' : 'FLAGGED'}**`,
+    `- Word count: **${scores.wordCount}**`,
+    `- Overall quality score: **${scores.overallQualityScore}/100**`, '',
     'See TOKEN_COST_REPORT.md and QUALITY_EVALUATION_REPORT.md for detail.', '',
   ].join('\n'));
 
@@ -141,11 +144,19 @@ export async function validateOneArticle(payload: any, opts: {
     `- Forbidden terms: ${bvR.forbiddenHits.length === 0 ? 'none' : bvR.forbiddenHits.join(', ')}`,
     `- Hype language: ${bvR.hypeHits.length === 0 ? 'none' : bvR.hypeHits.join(', ')}`,
     `- Reading level on target: ${pf(bvR.onReadingLevel)}`, '',
+    '## Composite scores (0-100)',
+    `- Reading grade level (FK): **${scores.readingGrade}**`,
+    `- Readability score: **${scores.readabilityScore}**`,
+    `- SEO score: **${scores.seoScore}**`,
+    `- Affiliate usefulness score: **${scores.affiliateUsefulnessScore}**`,
+    `- Brand compliance score: **${scores.brandComplianceScore}**`,
+    `- Word count: **${scores.wordCount}**`,
+    `- **Overall quality score: ${scores.overallQualityScore}/100**`, '',
     `## Quality-gate verdict: **${passed ? 'PASSED' : 'FLAGGED'}**`,
     passed ? '' : `Reasons: ${s.qa?.reasons.join('; ')}`, '',
   ].join('\n'));
 
   return { mock, brandId: brandDoc.id, productId: productDoc.id, articleId: article.id,
     articleStatus: article.status, passed, genMs, tokens: result.cost.totalTokens,
-    cents: result.cost.totalCents, adminUrl, publicUrl };
+    cents: result.cost.totalCents, adminUrl, publicUrl, scores };
 }
