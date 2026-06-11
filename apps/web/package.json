@@ -16,7 +16,8 @@
     "run:golden": "tsx scripts/run-golden.ts",
     "golden:batch": "tsx scripts/golden-batch.ts",
     "validate:ryze": "tsx scripts/validate-ryze.ts",
-    "validate:local": "tsx scripts/local-validate.ts"
+    "validate:local": "tsx scripts/local-validate.ts",
+    "validate:flancci": "tsx scripts/validate-flancci.ts"
   },
   "dependencies": {
     "next": "15.4.11",

@@ -7,7 +7,7 @@ import {
 } from '@etk/eval';
 
 const slugify = (s: string) =>
-  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 80);
+  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80).replace(/(^-|-$)/g, '');
 
 async function findOrCreate(payload: any, collection: string, where: any, data: any) {
   const found = await payload.find({ collection, where, limit: 1 });
