@@ -1,39 +1,42 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-> Live status below is from YOUR confirmed checks (this build environment has no
-> SSH route to 45.76.26.5). Re-generate authoritative live status anytime with
-> `infra/server/verify-app.sh` on the VPS.
+_Status as confirmed by operator on the VPS (45.76.26.5). Updated: 2026-06-11T02:21:41Z._
+_This build environment has no SSH route to the VPS; live facts below are
+operator-verified. Regenerate authoritative status anytime with
+`infra/server/verify-app.sh`._
 
-## Confirmed UP (user-verified)
+## Live now — all green
 | Component | Status |
 |---|---|
-| https://exploringtoknow.com (homepage) | UP |
+| Public site — https://exploringtoknow.com | UP |
 | /api/health | `ok` |
-| /admin (Payload) | UP, first admin user created |
-| Payload dashboard | accessible |
-| PostgreSQL | healthy, not publicly exposed |
-| Caddy / HTTPS | running, TLS issued |
-| Next.js app | running |
+| /admin (Payload) | accessible; first admin user created |
+| Next.js web container (etk-app) | healthy |
+| **Worker (etk-worker)** | **Up, not restarting; scheduler_started + worker_ready** |
+| PostgreSQL (etk-postgres) | healthy; private (not publicly exposed) |
+| Caddy / HTTPS (etk-caddy) | running; TLS issued for apex + www |
 
-## Worker
-- **Was:** crash-looping — `Dynamic require of "punycode" is not supported`.
-- **Now:** fixed in commit `c158c5f` (see WORKER_FIX_REPORT.md), verified by running
-  the rebuilt bundle. **Pending redeploy** of the `worker` container on the VPS.
+## Architecture (unchanged — Master Blueprint preserved)
+Next.js 15 + Payload CMS (source of truth) · PostgreSQL · Worker runtime ·
+LangGraph (AI orchestration) · Queue (pg-boss) · Prompt Registry · Provider
+abstraction · Docker Compose · Caddy reverse proxy. No WordPress, no Google
+Sheets, no SaaS/multi-tenant shortcuts.
 
-## Commands to capture authoritative live status (run on VPS)
-```
-docker ps
-cd /opt/exploringtoknow/compose
-docker compose --env-file ../env/.env --profile app ps
-docker logs -n 100 etk-app
-docker logs -n 100 etk-worker
-docker logs -n 100 etk-caddy
-docker exec etk-postgres pg_isready -U etk -d exploringtoknow
-curl -s https://exploringtoknow.com/api/health
-curl -s -o /dev/null -w "%{http_code}\n" https://exploringtoknow.com/admin
-ROOT=/opt/exploringtoknow bash /root/etk-infra/server/verify-app.sh   # writes APP_DEPLOYMENT_REPORT.md
-```
+## Remaining warnings (non-blocking)
+- `punycode` **DeprecationWarning** in worker logs — cosmetic Node notice from a
+  transitive dep (whatwg-url); not an error, worker runs normally. Removable later
+  by externalizing the AI SDKs (see NEXT_PHASE_PLAN §1).
+- No automated DB backups yet.
+- No uptime/health alerting yet.
+- Secrets currently live in `/opt/exploringtoknow/env/.env` (file-based).
+- AI generation runs in **mock mode** until `ANTHROPIC_API_KEY` is set (by design).
 
-## Scope guardrails (unchanged)
-No UI redesign yet · no social automation · no video generation · no real AI
-generation until explicitly approved. Master Blueprint preserved.
+## Must NOT be touched (stable — leave alone)
+- etk-postgres (data volume `/opt/exploringtoknow/postgres-data`)
+- etk-app (web/Payload)
+- etk-caddy (TLS certs in `caddy_data`)
+- Payload schema / committed migrations
+Any future change to these requires its own reviewed, scoped deployment.
+
+## Repo state
+Production matches commit `c158c5f` (worker fix); docs at `827637f`+.

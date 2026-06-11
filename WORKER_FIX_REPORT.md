@@ -1,29 +1,23 @@
 # WORKER_FIX_REPORT.md
 
+_Status: FIXED, DEPLOYED, and OPERATOR-CONFIRMED LIVE. Updated: 2026-06-11T02:21:59Z._
+
 ## Symptom
-`etk-worker` crash-looping at startup with:
+`etk-worker` crash-looped at startup:
 `Error: Dynamic require of "punycode" is not supported`
 
-## Root cause (verified, not assumed)
-The worker is bundled with **tsup (esbuild) to ESM**. Its config inlines the
-workspace packages (`noExternal: [/^@etk\//]`). Following `@etk/ai → @etk/providers`,
-esbuild pulled the **AI SDKs into the bundle** because they are transitive deps not
-declared as the worker's own dependencies:
+## Root cause (reproduced, not assumed)
+The worker is bundled with **tsup (esbuild) → ESM**, inlining workspace packages
+(`noExternal: [/^@etk\/]`). Through `@etk/ai → @etk/providers`, esbuild also
+inlined the **AI SDKs** (they were transitive, not declared worker deps):
+`openai` (257 refs), `@anthropic-ai/sdk` (36), `node-fetch`, `whatwg-url`.
+`whatwg-url@5` is CommonJS and calls `require('punycode')`; esbuild's ESM output
+routes that through a `__require` helper that **throws** when no ambient `require`
+exists → fatal at startup → container restart loop. Confirmed by running the bundle:
+`at .../whatwg-url@5.0.0/.../url-state-machine.js`.
 
-- bundle contained `openai` (257 refs), `@anthropic-ai/sdk` (36), `node-fetch`, `whatwg-url`.
-- `whatwg-url@5` (CommonJS) calls `require('punycode')`.
-- esbuild's ESM output replaces dynamic `require()` with a `__require` helper that
-  **throws** when no ambient `require` exists → fatal at startup → container restarts.
-
-Reproduced locally by running the built bundle:
-```
-Error: Dynamic require of "punycode" is not supported
-  at .../whatwg-url@5.0.0/.../url-state-machine.js
-```
-
-## Fix (source/build configuration)
-`apps/worker/tsup.config.ts` — add an ESM-interop banner so esbuild's `__require`
-delegates to a real Node `require`:
+## Fix (build configuration — `apps/worker/tsup.config.ts`, commit `c158c5f`)
+ESM-interop banner so esbuild's `__require` delegates to a real Node `require`:
 ```ts
 banner: { js:
   "import { createRequire as __etkCreateRequire } from 'module';" +
@@ -34,28 +28,20 @@ banner: { js:
   "const __dirname = __etkDirname(__filename);"
 }
 ```
-This is the standard, documented fix for esbuild ESM + CommonJS dynamic `require`.
-No architecture change; commit `c158c5f`.
+No architecture change. Worker-only.
 
-## Verification (done here, on Node 22)
-Rebuilt the worker and ran the bundle:
-```
-$ node apps/worker/dist/index.js
-(node) DeprecationWarning: The `punycode` module is deprecated   <- warning only
-{"level":"error","msg":"worker_fatal","err":"connect ECONNREFUSED 127.0.0.1:5432"}
-```
-The fatal dynamic-require crash is **gone**; the worker boots through env-load and
-queue-init and fails only at DB connect (no local Postgres in the build env). On the
-VPS, with Postgres reachable, the worker stays up.
+## Verification
+- **Pre-deploy (build env):** rebuilt bundle, ran `node dist/index.js` → fatal error
+  gone (only a `punycode` deprecation **warning**); worker booted to DB connect.
+- **Production (operator-confirmed):** `etk-worker` Up and not restarting; logs show
+  `scheduler_started` and `worker_ready`; no `Dynamic require of "punycode"`.
+  Web, Postgres, Caddy, /admin, public site, /api/health all remained healthy.
 
-## Redeploy (on the VPS — worker only)
-After syncing the repo to commit `c158c5f`:
-```
-cd /opt/exploringtoknow/compose
-docker compose --env-file ../env/.env --profile app build worker
-docker compose --env-file ../env/.env --profile app up -d worker
-docker logs -n 50 etk-worker        # expect: worker_ready / scheduler_started
-```
+## Deployment method (surgical, worker-only)
+Updated `apps/worker/tsup.config.ts` on the VPS → `docker compose build worker` →
+`docker compose up -d --no-deps worker`. No other container touched.
 
-## Prevention
-- Declare runtime SDKs as explicit worker deps later to externalize them (leaner image), or keep the banner (self-contained bundle). Banner alone fully resolves the class of error.
+## Residual
+- Harmless `punycode` DeprecationWarning remains. Optional cleanup: declare
+  `@anthropic-ai/sdk`/`openai` as explicit worker deps to externalize them (leaner
+  image, removes the warning). Tracked in NEXT_PHASE_PLAN §1.
