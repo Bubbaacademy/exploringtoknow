@@ -9,6 +9,15 @@ import {
 const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80).replace(/(^-|-$)/g, '');
 
+async function freeSlug(payload: any, base: string): Promise<string> {
+  let slug = base || 'article'; let i = 2;
+  // eslint-disable-next-line no-await-in-loop
+  while ((await payload.find({ collection: 'articles', where: { slug: { equals: slug } }, limit: 1 })).totalDocs > 0) {
+    slug = `${base}-${i++}`;
+  }
+  return slug;
+}
+
 async function findOrCreate(payload: any, collection: string, where: any, data: any) {
   const found = await payload.find({ collection, where, limit: 1 });
   return found.docs[0] ?? (await payload.create({ collection, data }));
@@ -55,7 +64,7 @@ export async function validateOneArticle(payload: any, opts: {
             generatedAt: new Date().toISOString() } });
   const brief = await payload.create({ collection: 'content-briefs',
     data: { product: productDoc.id, intelligence: intel.id, ...s.brief, status: 'ready' } });
-  const articleSlug = slugify(s.article.title);
+  const articleSlug = await freeSlug(payload, slugify(s.article.title));
   const article = await payload.create({ collection: 'articles',
     data: { title: s.article.title, slug: articleSlug, brief: brief.id, product: productDoc.id,
       type: s.article.type, markdown: s.article.markdown,
