@@ -61,10 +61,14 @@ export async function persistGeneration(
     product: outcome.productId,
     type: article.type,
     markdown: article.markdown,
+    excerpt: article.metaDescription,
     seo: { metaTitle: article.metaTitle, metaDescription: article.metaDescription },
     openGraph: { title: article.title, description: article.metaDescription },
     qaReport: { passed, reasons: outcome.qa?.reasons ?? [] },
     status: passed ? 'published' : 'flagged',
+    // Editorial gate: generation NEVER auto-publishes. A clean run lands at
+    // ready_for_review for an administrator to publish manually.
+    editorialStatus: passed ? 'ready_for_review' : 'draft',
     publishedAt: passed ? now() : undefined,
   });
 

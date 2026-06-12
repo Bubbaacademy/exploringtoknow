@@ -39,7 +39,10 @@ export const Products: CollectionConfig = {
     { name: 'brand', type: 'relationship', relationTo: 'brands' },
     { name: 'categories', type: 'relationship', relationTo: 'categories', hasMany: true },
     { name: 'price', type: 'number', admin: { description: 'Minor units (cents).' } },
+    { name: 'priceText', type: 'text', admin: { description: 'Display price, e.g. "$12.99". Optional.' } },
     { name: 'externalUrl', type: 'text' },
+    { name: 'affiliateUrl', type: 'text', admin: { description: 'MANUALLY entered affiliate link used by the public CTA. Never auto-discovered.' } },
+    { name: 'merchantName', type: 'text', admin: { description: 'e.g. "Amazon". Shown on the affiliate CTA.' } },
     { name: 'amazonAsin', type: 'text', admin: { condition: (d) => ['owned_amazon', 'amazon_affiliate'].includes(d?.offerType) } },
     {
       name: 'typeFields', type: 'group', label: 'Type-specific details',

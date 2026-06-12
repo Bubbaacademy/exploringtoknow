@@ -1,12 +1,20 @@
 import type { CollectionConfig } from 'payload';
 export const Categories: CollectionConfig = {
   slug: 'categories',
-  admin: { useAsTitle: 'name', group: 'Catalog' },
+  admin: { useAsTitle: 'name', group: 'Catalog', defaultColumns: ['name', 'slug', 'active'] },
   access: { read: () => true },
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
-    { name: 'description', type: 'textarea' },
+    { name: 'description', type: 'textarea', admin: { description: 'Short description shown on category cards/pages.' } },
+    { name: 'image', type: 'relationship', relationTo: 'media' },
+    { name: 'active', type: 'checkbox', defaultValue: true, index: true, admin: { description: 'Inactive categories are hidden from the public site.' } },
+    {
+      name: 'seo', type: 'group', fields: [
+        { name: 'seoTitle', type: 'text' },
+        { name: 'seoDescription', type: 'textarea' },
+      ],
+    },
     { name: 'parent', type: 'relationship', relationTo: 'categories' },
   ],
 };
