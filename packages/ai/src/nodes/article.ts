@@ -2,6 +2,7 @@ import type { GeneratedArticle } from '@etk/core';
 import { registry, type ArticleVars } from '@etk/prompts';
 import { resolveProvider } from '@etk/providers';
 import type { ContentState } from '../state';
+import { ARTICLE_SCHEMA } from '../schemas';
 
 /** Article Generation node. Uses feedback from regeneration on retries. */
 export async function articleNode(state: ContentState): Promise<Partial<ContentState>> {
@@ -25,7 +26,7 @@ export async function articleNode(state: ContentState): Promise<Partial<ContentS
     sections: ['Overview', 'Top Pick', 'How to Choose', 'FAQ'],
   };
 
-  const res = await provider.completeStructured<GeneratedArticle>({ system, prompt, schemaName: 'GeneratedArticle', mock });
+  const res = await provider.completeStructured<GeneratedArticle>({ system, prompt, schemaName: 'GeneratedArticle', outputSchema: ARTICLE_SCHEMA, mock });
   return {
     article: res.data,
     attempts: { ...state.attempts, article: state.attempts.article + 1 },

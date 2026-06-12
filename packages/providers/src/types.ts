@@ -13,6 +13,12 @@ export interface CompletionRequest {
 export interface StructuredRequest<T> extends CompletionRequest {
   /** Name for logging/telemetry. */
   schemaName: string;
+  /**
+   * JSON Schema for the expected object. When supplied, the Claude provider
+   * requests a guaranteed-structured response (forced tool use) instead of
+   * parsing JSON out of prose. Providers that don't support it ignore it.
+   */
+  outputSchema?: Record<string, unknown>;
   /** Returned verbatim in mock mode (no API key) so the pipeline runs offline. */
   mock?: T;
 }

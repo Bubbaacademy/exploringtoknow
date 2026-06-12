@@ -2,6 +2,7 @@ import type { GeneratedArticle, QaResult } from '@etk/core';
 import { registry, type BrandVoiceVars } from '@etk/prompts';
 import { resolveProvider } from '@etk/providers';
 import type { ContentState } from '../state';
+import { JUDGE_SCHEMA } from '../schemas';
 
 /** Deterministic, code-only checks (no model). Cheap and fast. */
 function deterministicChecks(a: GeneratedArticle, forbidden: string[]): Record<string, boolean> {
@@ -35,7 +36,7 @@ export async function qualityGateNode(state: ContentState): Promise<Partial<Cont
   const provider = resolveProvider(def.metadata.suggestedProvider, def.metadata.suggestedModel);
   const mockJudge = { passed: true, reasons: [] as string[] };
   const judge = await provider.completeStructured<{ passed: boolean; reasons: string[] }>(
-    { system, prompt, schemaName: 'BrandVoiceJudgement', mock: mockJudge },
+    { system, prompt, schemaName: 'BrandVoiceJudgement', outputSchema: JUDGE_SCHEMA, mock: mockJudge },
   );
 
   const reasons = [...failedChecks, ...(judge.data.passed ? [] : judge.data.reasons)];

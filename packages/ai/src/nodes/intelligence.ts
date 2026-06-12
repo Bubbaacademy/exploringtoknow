@@ -2,6 +2,7 @@ import type { Intelligence } from '@etk/core';
 import { registry, type IntelligenceVars } from '@etk/prompts';
 import { resolveProvider } from '@etk/providers';
 import type { ContentState } from '../state';
+import { INTELLIGENCE_SCHEMA } from '../schemas';
 
 /** Product Intelligence node. Prompt from registry; model call via provider. */
 export async function intelligenceNode(state: ContentState): Promise<Partial<ContentState>> {
@@ -20,7 +21,7 @@ export async function intelligenceNode(state: ContentState): Promise<Partial<Con
     ctaRecommendations: ['Compare top picks', 'Check current price'],
   };
 
-  const res = await provider.completeStructured<Intelligence>({ system, prompt, schemaName: 'Intelligence', mock });
+  const res = await provider.completeStructured<Intelligence>({ system, prompt, schemaName: 'Intelligence', outputSchema: INTELLIGENCE_SCHEMA, mock });
   return {
     intelligence: res.data,
     cost: [...state.cost, { label: 'intelligence', model: res.model, ...res.usage }],

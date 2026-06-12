@@ -2,6 +2,7 @@ import type { ContentBrief } from '@etk/core';
 import { registry, type BriefVars } from '@etk/prompts';
 import { resolveProvider } from '@etk/providers';
 import type { ContentState } from '../state';
+import { BRIEF_SCHEMA } from '../schemas';
 
 /** Content Brief node. */
 export async function briefNode(state: ContentState): Promise<Partial<ContentState>> {
@@ -23,7 +24,7 @@ export async function briefNode(state: ContentState): Promise<Partial<ContentSta
     articleType: 'buying_guide',
   };
 
-  const res = await provider.completeStructured<ContentBrief>({ system, prompt, schemaName: 'ContentBrief', mock });
+  const res = await provider.completeStructured<ContentBrief>({ system, prompt, schemaName: 'ContentBrief', outputSchema: BRIEF_SCHEMA, mock });
   return {
     brief: res.data,
     cost: [...state.cost, { label: 'brief', model: res.model, ...res.usage }],

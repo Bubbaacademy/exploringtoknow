@@ -8,6 +8,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test:json": "tsx test/extractJson.test.ts",
+    "test:structured": "tsx test/structured.test.ts",
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
