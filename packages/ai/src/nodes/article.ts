@@ -26,7 +26,9 @@ export async function articleNode(state: ContentState): Promise<Partial<ContentS
     sections: ['Overview', 'Top Pick', 'How to Choose', 'FAQ'],
   };
 
-  const res = await provider.completeStructured<GeneratedArticle>({ system, prompt, schemaName: 'GeneratedArticle', outputSchema: ARTICLE_SCHEMA, mock });
+  // Long-form article needs headroom so the markdown isn't truncated (QA flags
+  // mid-word cutoffs). Higher limit applies ONLY to this stage.
+  const res = await provider.completeStructured<GeneratedArticle>({ system, prompt, schemaName: 'GeneratedArticle', outputSchema: ARTICLE_SCHEMA, maxTokens: 8192, mock });
   return {
     article: res.data,
     attempts: { ...state.attempts, article: state.attempts.article + 1 },
