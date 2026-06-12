@@ -25,7 +25,8 @@ export class ClaudeProvider implements AIProvider {
     const res = await this.client.messages.create({
       model: this.model,
       max_tokens: req.maxTokens ?? 2048,
-      temperature: req.temperature ?? 0.7,
+      // `temperature` is omitted: the configured Claude model rejects it
+      // (Anthropic 400 "temperature is deprecated for this model").
       system: req.system,
       messages: [{ role: 'user', content: req.prompt }],
     });
