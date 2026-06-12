@@ -19,7 +19,8 @@
     "validate:local": "tsx scripts/local-validate.ts",
     "validate:flancci": "tsx scripts/validate-flancci.ts",
     "verify:preflight": "tsx scripts/preflight.ts",
-    "verify:worker-rest": "tsx scripts/verify-worker-rest.ts"
+    "verify:worker-rest": "tsx scripts/verify-worker-rest.ts",
+    "verify:queue": "tsx scripts/verify-queue.ts"
   },
   "dependencies": {
     "next": "15.4.11",
