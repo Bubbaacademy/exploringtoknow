@@ -16,7 +16,9 @@
     "@etk/core": "workspace:*",
     "@etk/db": "workspace:*",
     "@etk/ai": "workspace:*",
-    "@etk/queue": "workspace:*"
+    "@etk/queue": "workspace:*",
+    "@etk/prompts": "workspace:*",
+    "@etk/persistence": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

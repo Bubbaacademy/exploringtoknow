@@ -18,7 +18,8 @@
     "validate:ryze": "tsx scripts/validate-ryze.ts",
     "validate:local": "tsx scripts/local-validate.ts",
     "validate:flancci": "tsx scripts/validate-flancci.ts",
-    "verify:preflight": "tsx scripts/preflight.ts"
+    "verify:preflight": "tsx scripts/preflight.ts",
+    "verify:worker-rest": "tsx scripts/verify-worker-rest.ts"
   },
   "dependencies": {
     "next": "15.4.11",
@@ -36,6 +37,7 @@
     "@etk/prompts": "workspace:*",
     "dotenv": "^16.4.5",
     "@etk/eval": "workspace:*",
+    "@etk/persistence": "workspace:*",
     "marked": "^14.1.3"
   },
   "devDependencies": {

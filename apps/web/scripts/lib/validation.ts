@@ -5,18 +5,7 @@ import { registry } from '@etk/prompts';
 import {
   readability, seo, cta, brandVoice, scoreArticle, type EvalPiece,
 } from '@etk/eval';
-
-const slugify = (s: string) =>
-  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80).replace(/(^-|-$)/g, '');
-
-async function freeSlug(payload: any, base: string): Promise<string> {
-  let slug = base || 'article'; let i = 2;
-  // eslint-disable-next-line no-await-in-loop
-  while ((await payload.find({ collection: 'articles', where: { slug: { equals: slug } }, limit: 1 })).totalDocs > 0) {
-    slug = `${base}-${i++}`;
-  }
-  return slug;
-}
+import { LocalPersistenceClient, persistGeneration } from '@etk/persistence';
 
 async function findOrCreate(payload: any, collection: string, where: any, data: any) {
   const found = await payload.find({ collection, where, limit: 1 });
@@ -44,9 +33,7 @@ export async function validateOneArticle(payload: any, opts: {
     { title: opts.product.title, slug: opts.product.slug, offerType: opts.product.offerType,
       status: 'active', priority: 100, brand: brandDoc.id });
 
-  const run = await payload.create({ collection: 'generation-runs',
-    data: { product: productDoc.id, status: 'running', startedAt: new Date().toISOString(),
-            promptVersions: registry.list().map((p) => p.id) } });
+  const client = new LocalPersistenceClient(payload);
 
   // ---- timed generation ----
   const t0 = Date.now();
@@ -57,28 +44,20 @@ export async function validateOneArticle(payload: any, opts: {
   const passed = Boolean(s.qa?.passed);
   if (!s.article) throw new Error('no article produced');
 
-  // ---- persist ----
-  const intel = await payload.create({ collection: 'product-intelligence',
-    data: { product: productDoc.id, ...s.intelligence,
-            model: result.cost.steps.find((x) => x.label === 'intelligence')?.model,
-            generatedAt: new Date().toISOString() } });
-  const brief = await payload.create({ collection: 'content-briefs',
-    data: { product: productDoc.id, intelligence: intel.id, ...s.brief, status: 'ready' } });
-  const articleSlug = await freeSlug(payload, slugify(s.article.title));
-  const article = await payload.create({ collection: 'articles',
-    data: { title: s.article.title, slug: articleSlug, brief: brief.id, product: productDoc.id,
-      type: s.article.type, markdown: s.article.markdown,
-      seo: { metaTitle: s.article.metaTitle, metaDescription: s.article.metaDescription },
-      openGraph: { title: s.article.title, description: s.article.metaDescription },
-      qaReport: { passed, reasons: s.qa?.reasons ?? [] },
-      status: passed ? 'published' : 'flagged',
-      publishedAt: passed ? new Date().toISOString() : undefined } });
-
-  await payload.update({ collection: 'generation-runs', id: run.id,
-    data: { status: result.flagged ? 'flagged' : (passed ? 'published' : 'failed'),
-            articleAttempts: s.attempts.article, totalTokens: result.cost.totalTokens,
-            costUsdCents: result.cost.totalCents, steps: result.cost.steps,
-            finishedAt: new Date().toISOString() } });
+  // ---- persist (shared @etk/persistence path — the SAME code the worker runs) ----
+  const saved = await persistGeneration(client, {
+    productId: productDoc.id,
+    intelligence: s.intelligence,
+    brief: s.brief,
+    article: s.article,
+    qa: s.qa ? { passed: s.qa.passed, reasons: s.qa.reasons } : undefined,
+    cost: result.cost,
+    articleAttempts: s.attempts.article,
+    flagged: result.flagged,
+    promptVersions: registry.list().map((p) => p.id),
+  });
+  const articleSlug = saved.articleSlug;
+  const article = { id: saved.articleId, status: saved.articleStatus };
 
   // ---- evaluate the REAL article ----
   const piece: EvalPiece = {

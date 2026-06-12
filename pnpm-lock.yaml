@@ -41,6 +41,9 @@ importers:
       '@etk/eval':
         specifier: workspace:*
         version: link:../../packages/eval
+      '@etk/persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
       '@etk/prompts':
         specifier: workspace:*
         version: link:../../packages/prompts
@@ -108,6 +111,12 @@ importers:
       '@etk/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@etk/persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
+      '@etk/prompts':
+        specifier: workspace:*
+        version: link:../../packages/prompts
       '@etk/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -190,6 +199,22 @@ importers:
       '@etk/core':
         specifier: workspace:*
         version: link:../core
+    devDependencies:
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
+  packages/persistence:
+    dependencies:
+      '@etk/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@etk/core':
+        specifier: workspace:*
+        version: link:../core
+      '@etk/prompts':
+        specifier: workspace:*
+        version: link:../prompts
     devDependencies:
       typescript:
         specifier: ^5.6.3

@@ -8,7 +8,8 @@
     "META_APP_ID", "META_APP_SECRET", "META_PAGE_ID", "META_IG_USER_ID", "META_LONG_LIVED_TOKEN",
     "GA4_PROPERTY_ID", "GSC_SITE_URL", "GOOGLE_APPLICATION_CREDENTIALS",
     "AMAZON_ATTRIBUTION_PROFILE_ID", "HUBSPOT_ACCESS_TOKEN",
-    "AUTH_SECRET", "WORKER_CRON_DAILY"
+    "AUTH_SECRET", "WORKER_CRON_DAILY",
+    "PAYLOAD_INTERNAL_URL", "WORKER_PAYLOAD_API_KEY"
   ],
   "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": [".next/**", "dist/**", "!.next/cache/**"] },

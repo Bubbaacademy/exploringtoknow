@@ -38,6 +38,9 @@
       ],
       "@etk/eval": [
         "./packages/eval/src/index.ts"
+      ],
+      "@etk/persistence": [
+        "./packages/persistence/src/index.ts"
       ]
     }
   }
