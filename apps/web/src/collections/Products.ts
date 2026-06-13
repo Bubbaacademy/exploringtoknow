@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload';
 import { enqueue, QUEUES, type GenerateContentJob } from '@etk/queue';
+import { productImagesField } from '@/lib/images';
 
 const OFFER_TYPES = [
   { label: 'Owned Amazon', value: 'owned_amazon' },
@@ -43,6 +44,7 @@ export const Products: CollectionConfig = {
     { name: 'externalUrl', type: 'text' },
     { name: 'affiliateUrl', type: 'text', admin: { description: 'MANUALLY entered affiliate link used by the public CTA. Never auto-discovered.' } },
     { name: 'merchantName', type: 'text', admin: { description: 'e.g. "Amazon". Shown on the affiliate CTA.' } },
+    productImagesField(),
     { name: 'amazonAsin', type: 'text', admin: { condition: (d) => ['owned_amazon', 'amazon_affiliate'].includes(d?.offerType) } },
     {
       name: 'typeFields', type: 'group', label: 'Type-specific details',

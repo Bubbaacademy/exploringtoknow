@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload';
 import { enqueue, QUEUES, type GenerateContentJob } from '@etk/queue';
+import { productImagesField } from '@/lib/images';
 
 const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80).replace(/(^-|-$)/g, '') || 'product';
@@ -34,6 +35,8 @@ export const ProductRequests: CollectionConfig = {
     { name: 'requestedCategory', type: 'relationship', relationTo: 'categories' },
     { name: 'notes', type: 'textarea' },
     { name: 'image', type: 'relationship', relationTo: 'media' },
+    productImagesField(),
+    { name: 'imagePermissionConfirmed', type: 'checkbox', defaultValue: false, admin: { description: 'Requester confirmed they have permission to use the uploaded images.' } },
     {
       name: 'status', type: 'select', required: true, defaultValue: 'submitted', index: true,
       options: [
@@ -65,6 +68,18 @@ export const ProductRequests: CollectionConfig = {
         // Only act on the explicit transition to approved, and never twice.
         if (!becameApproved || doc.generationJobId) return;
 
+        // Transfer the manually-uploaded images (link the SAME Media records;
+        // never duplicate the binary files), preserving role/order/metadata.
+        const productImages = Array.isArray(doc.productImages)
+          ? doc.productImages
+              .map((pi: any) => ({
+                image: typeof pi.image === 'object' ? pi.image?.id : pi.image,
+                role: pi.role, order: pi.order, alt: pi.alt, caption: pi.caption,
+                enabled: pi.enabled !== false, preferredHero: pi.preferredHero === true,
+              }))
+              .filter((pi: any) => pi.image != null)
+          : [];
+
         // Create a Product as `draft` so the Products afterChange hook does NOT
         // also enqueue — this request is the single source of the generation job.
         const product = await req.payload.create({
@@ -79,6 +94,7 @@ export const ProductRequests: CollectionConfig = {
             affiliateUrl: doc.affiliateUrl || undefined,
             amazonAsin: doc.asin || undefined,
             categories: doc.requestedCategory ? [doc.requestedCategory] : undefined,
+            productImages: productImages.length ? productImages : undefined,
           },
           context: { skipGenerate: true },
         });

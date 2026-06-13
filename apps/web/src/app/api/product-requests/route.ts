@@ -34,12 +34,21 @@ export async function POST(req: Request) {
   const notes = get('notes');
   const requestedCategory = get('requestedCategory');
 
+  // Manually-uploaded image ids (from /api/product-request-upload). Min 3, max 30.
+  const imageIds: number[] = Array.isArray((body as any).imageIds)
+    ? ((body as any).imageIds as unknown[]).map((v) => Number(v)).filter((n) => Number.isFinite(n))
+    : [];
+  const permission = (body as any).imagePermissionConfirmed === true;
+
   const errors: string[] = [];
   if (requesterName.length < 2) errors.push('name');
   if (!isEmail(requesterEmail)) errors.push('email');
   if (productName.length < 2) errors.push('product name');
   if (!isUrl(productUrl)) errors.push('product URL');
   if (affiliateUrl && !isUrl(affiliateUrl)) errors.push('affiliate URL');
+  if (imageIds.length < 3) errors.push('at least 3 images');
+  if (imageIds.length > 30) errors.push('at most 30 images');
+  if (imageIds.length >= 3 && !permission) errors.push('image permission confirmation');
   if (errors.length) {
     return NextResponse.json({ ok: false, error: `Please check: ${errors.join(', ')}.` }, { status: 422 });
   }
@@ -58,6 +67,8 @@ export async function POST(req: Request) {
         notes: notes || undefined,
         requestedCategory: requestedCategory ? Number(requestedCategory) || requestedCategory : undefined,
         status: 'submitted',
+        imagePermissionConfirmed: permission,
+        productImages: imageIds.map((id, i) => ({ image: id, role: 'other', order: i, enabled: true, preferredHero: false })),
       },
     });
     return NextResponse.json({ ok: true, id: doc.id });

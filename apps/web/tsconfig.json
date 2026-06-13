@@ -36,7 +36,9 @@
         "../../packages/eval/src/index.ts"
       ]
     },
-    "allowJs": true
+    "allowJs": true,
+    "noEmit": true,
+    "incremental": true
   },
   "include": [
     "next-env.d.ts",
