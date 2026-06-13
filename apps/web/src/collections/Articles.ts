@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload';
-import { selectArticleImages, altFallback, inlineCountForLength } from '@/lib/images';
+import { APIError } from 'payload';
+import { buildArticleImagePopulation } from '@/lib/images';
 /**
  * Finished articles. `status` = AI pipeline/QA state (generating/qa/published/
  * flagged). `editorialStatus` = the editorial gate that controls PUBLIC
@@ -152,52 +153,44 @@ export const Articles: CollectionConfig = {
         }
         return data;
       },
-    ],
-    afterChange: [
-      async ({ doc, req, context }) => {
-        if ((context as any)?.skipPopulate) return;
-        if (doc.populateImagesFromProduct !== true) return;
-        const ctx = { skipPopulate: true };
-        const finish = (extra: Record<string, unknown> = {}) =>
-          req.payload.update({ collection: 'articles', id: doc.id, data: { populateImagesFromProduct: false, ...extra }, context: ctx, depth: 0 });
-
-        const productId = typeof doc.product === 'object' ? (doc.product as any)?.id : doc.product;
-        if (!productId) { req.payload.logger.warn('populate_images: no linked product'); await finish(); return; }
+      // One-shot "Populate Images From Product". Runs INLINE in the same atomic
+      // write (no nested payload.update → no self-deadlock, no recursion). It only
+      // references existing Product Media records — never uploads/copies media,
+      // never publishes, never changes editorialStatus, never enqueues generation.
+      // The trigger is always reset in this same write; on failure it throws a
+      // visible admin error (the save aborts, so the flag is never persisted true).
+      async ({ data, originalDoc, req }) => {
+        if (data?.populateImagesFromProduct !== true) return data;
+        const cur: any = { ...(originalDoc || {}), ...data };
+        const productId = typeof cur.product === 'object' ? cur.product?.id : cur.product;
+        if (!productId) {
+          throw new APIError('Populate Images From Product: this article has no linked product.', 400);
+        }
         let product: any;
-        try { product = await req.payload.findByID({ collection: 'products', id: productId, depth: 2 }); } catch { await finish(); return; }
-        const imgs: any[] = Array.isArray(product?.productImages) ? product.productImages : [];
-        const enabledCount = imgs.filter((i) => i?.enabled !== false && i?.image).length;
-        if (enabledCount < 3) { req.payload.logger.warn(`populate_images: product ${productId} has ${enabledCount} enabled images (<3); skipped`); await finish(); return; }
-
-        const key = String(doc.slug || doc.id);
-        const inlineN = inlineCountForLength((doc.markdown as string || '').length);
-        const { hero, inline } = selectArticleImages(imgs as any, key, inlineN);
-        if (!hero || inline.length < 2) { req.payload.logger.warn('populate_images: insufficient selection'); await finish(); return; }
-        const mid = (pi: any) => (typeof pi.image === 'object' ? pi.image?.id : pi.image);
-
-        // Insert inline images at SAFE prose-block boundaries only (never split a
-        // paragraph/list/table/CTA/FAQ/callout, which live inside discrete blocks).
-        const blocks: any[] = (Array.isArray(doc.bodyBlocks) ? doc.bodyBlocks : []).filter((b: any) => b.blockType !== 'inlineImage');
-        const proseIdx = blocks.map((b: any, i: number) => (b.blockType === 'prose' ? i : -1)).filter((x: number) => x >= 0);
-        const inserts = inline.map((pi, k) => {
-          const frac = (k + 1) / (inline.length + 1);
-          const after = (proseIdx.length ? proseIdx[Math.min(proseIdx.length - 1, Math.max(0, Math.round(frac * proseIdx.length) - 1))] : blocks.length - 1) ?? (blocks.length - 1);
-          return { after, block: { blockType: 'inlineImage', image: mid(pi), alt: pi.alt || altFallback(product.title, pi.role, k + 1), caption: pi.caption || undefined, align: 'wide', source: 'Manually uploaded product image' } };
-        }).sort((a, b) => b.after - a.after);
-        for (const ins of inserts) blocks.splice(ins.after + 1, 0, ins.block);
-
-        let ii = 0;
-        const newSlots = (Array.isArray(doc.imageSlots) ? doc.imageSlots : []).map((s: any) => {
-          if (s.position === 'hero') return { ...s, status: 'generated', media: mid(hero) };
-          const pi = inline[ii]; ii += 1; return { ...s, status: 'generated', media: pi ? mid(pi) : s.media };
+        try {
+          // Read in the SAME transaction (req) — different table, no self-lock.
+          product = await req.payload.findByID({ collection: 'products', id: productId, depth: 2, req });
+        } catch {
+          throw new APIError('Populate Images From Product: linked product could not be loaded.', 400);
+        }
+        const result = buildArticleImagePopulation({
+          productImages: Array.isArray(product?.productImages) ? product.productImages : [],
+          productTitle: product?.title || '',
+          articleKey: String(cur.slug || cur.id || (originalDoc as any)?.id || ''),
+          markdownLen: String(cur.markdown || '').length,
+          bodyBlocks: Array.isArray(cur.bodyBlocks) ? cur.bodyBlocks : [],
+          imageSlots: Array.isArray(cur.imageSlots) ? cur.imageSlots : [],
+          currentImages: cur.images,
         });
-
-        await finish({
-          images: { ...(doc.images as any || {}), hero: mid(hero), heroAlt: hero.alt || altFallback(product.title, hero.role, 0) },
-          bodyBlocks: blocks,
-          imageSlots: newSlots,
-        });
-        req.payload.logger.info(`populate_images: article ${doc.id} hero + ${inline.length} inline from product ${productId}`);
+        if (!result.ok) {
+          throw new APIError(`Populate Images From Product failed: ${result.reason}`, 400);
+        }
+        data.images = result.images;
+        data.bodyBlocks = result.bodyBlocks;
+        data.imageSlots = result.imageSlots;
+        data.populateImagesFromProduct = false; // reset one-shot atomically
+        req.payload.logger.info(`populate_images: article ${(originalDoc as any)?.id ?? 'new'} hero ${result.heroId} + ${result.inlineIds.length} inline from product ${productId}`);
+        return data;
       },
     ],
   },

@@ -102,3 +102,57 @@ export function selectArticleImages(images: PImg[], articleKey: string, inlineCo
 export function inlineCountForLength(markdownLen: number): number {
   return Math.min(ARTICLE_IMAGES_MAX - 1, Math.max(2, 2 + Math.floor((markdownLen || 0) / 3500)));
 }
+
+export type PopulateInput = {
+  productImages: PImg[];
+  productTitle: string;
+  articleKey: string; // slug or id — seeds deterministic rotation
+  markdownLen: number;
+  bodyBlocks: any[];
+  imageSlots: any[];
+  currentImages?: any;
+};
+export type PopulateResult =
+  | { ok: true; heroId: string | number; inlineIds: (string | number)[]; images: any; bodyBlocks: any[]; imageSlots: any[] }
+  | { ok: false; reason: string };
+
+/**
+ * Pure, deterministic, side-effect-free computation of an article's hero + inline
+ * images from a product's MANUALLY-uploaded images. No DB, no AI, no media creation —
+ * it only references existing Media ids. Idempotent: existing inlineImage blocks are
+ * dropped before re-inserting, so re-running never duplicates blocks or relationships.
+ * Returns {ok:false,reason} for insufficient images so callers can surface a clear error.
+ */
+export function buildArticleImagePopulation(input: PopulateInput): PopulateResult {
+  const imgs = Array.isArray(input.productImages) ? input.productImages : [];
+  const enabledCount = imgs.filter((i: any) => i?.enabled !== false && i?.image).length;
+  if (enabledCount < PRODUCT_IMAGES_MIN) {
+    return { ok: false, reason: `linked product has ${enabledCount} usable image(s); at least ${PRODUCT_IMAGES_MIN} manually-uploaded images are required.` };
+  }
+  const inlineN = inlineCountForLength(input.markdownLen || 0);
+  const { hero, inline } = selectArticleImages(imgs, input.articleKey, inlineN);
+  if (!hero || inline.length < 2) {
+    return { ok: false, reason: 'could not select one hero plus at least two distinct inline images.' };
+  }
+  const mid = (pi: any) => (typeof pi.image === 'object' ? pi.image?.id : pi.image);
+
+  // Insert inline images at SAFE prose-block boundaries only. Drop any pre-existing
+  // inlineImage blocks first → idempotent (no duplicate blocks on re-run).
+  const blocks: any[] = (Array.isArray(input.bodyBlocks) ? input.bodyBlocks : []).filter((b: any) => b?.blockType !== 'inlineImage');
+  const proseIdx = blocks.map((b: any, i: number) => (b?.blockType === 'prose' ? i : -1)).filter((x: number) => x >= 0);
+  const inserts = inline.map((pi, k) => {
+    const frac = (k + 1) / (inline.length + 1);
+    const after = (proseIdx.length ? proseIdx[Math.min(proseIdx.length - 1, Math.max(0, Math.round(frac * proseIdx.length) - 1))] : blocks.length - 1) ?? (blocks.length - 1);
+    return { after, block: { blockType: 'inlineImage', image: mid(pi), alt: pi.alt || altFallback(input.productTitle, pi.role, k + 1), caption: pi.caption || undefined, align: 'wide', source: 'Manually uploaded product image' } };
+  }).sort((a, b) => b.after - a.after);
+  for (const ins of inserts) blocks.splice(ins.after + 1, 0, ins.block);
+
+  let ii = 0;
+  const imageSlots = (Array.isArray(input.imageSlots) ? input.imageSlots : []).map((s: any) => {
+    if (s.position === 'hero') return { ...s, status: 'generated', media: mid(hero) };
+    const pi = inline[ii]; ii += 1; return { ...s, status: 'generated', media: pi ? mid(pi) : s.media };
+  });
+
+  const images = { ...(input.currentImages || {}), hero: mid(hero), heroAlt: hero.alt || altFallback(input.productTitle, hero.role, 0) };
+  return { ok: true, heroId: mid(hero), inlineIds: inline.map(mid), images, bodyBlocks: blocks, imageSlots };
+}
