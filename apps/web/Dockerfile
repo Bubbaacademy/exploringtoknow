@@ -26,6 +26,10 @@ RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs -m nextjs
 COPY --from=build /repo/apps/web/.next/standalone ./
 COPY --from=build /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build /repo/apps/web/public ./apps/web/public
+# Writable media upload dir (PAYLOAD_MEDIA_DIR=/app/media); bind-mounted to a host
+# volume in compose so uploads persist across redeploys.
+RUN mkdir -p /app/media && chown -R nextjs:nodejs /app/media
+ENV PAYLOAD_MEDIA_DIR=/app/media
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000 HOSTNAME=0.0.0.0

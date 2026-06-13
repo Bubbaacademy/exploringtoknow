@@ -64,6 +64,8 @@ services:
     container_name: etk-app
     restart: unless-stopped
     env_file: [../env/.env]
+    volumes:
+      - ../media-data:/app/media        # persistent uploaded media (Payload Media)
     depends_on:
       postgres:
         condition: service_healthy
