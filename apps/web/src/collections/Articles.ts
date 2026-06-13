@@ -31,7 +31,53 @@ export const Articles: CollectionConfig = {
       ],
     },
     { name: 'body', type: 'richText' },
-    { name: 'markdown', type: 'textarea', admin: { description: 'Generated article source (markdown).' } },
+    { name: 'markdown', type: 'textarea', admin: { description: 'Generated article source (markdown). Renders when bodyBlocks is empty.' } },
+    // ---- Rich body blocks (Slice B). If empty, the markdown above renders. ----
+    {
+      name: 'bodyBlocks', type: 'blocks', minRows: 0,
+      admin: { description: 'Optional rich body: prose + inline images + callouts. If empty, the markdown field renders unchanged.' },
+      blocks: [
+        { slug: 'prose', labels: { singular: 'Prose', plural: 'Prose' }, fields: [
+          { name: 'markdown', type: 'textarea', required: true, admin: { description: 'Markdown prose chunk.' } },
+        ] },
+        { slug: 'inlineImage', labels: { singular: 'Inline Image', plural: 'Inline Images' }, fields: [
+          { name: 'image', type: 'relationship', relationTo: 'media' },
+          { name: 'alt', type: 'text' },
+          { name: 'caption', type: 'text' },
+          { name: 'align', type: 'select', defaultValue: 'wide', options: [
+            { label: 'Wide', value: 'wide' }, { label: 'Full', value: 'full' },
+          ] },
+          { name: 'source', type: 'text' },
+        ] },
+        { slug: 'callout', labels: { singular: 'Callout', plural: 'Callouts' }, fields: [
+          { name: 'variant', type: 'select', defaultValue: 'tip', options: [
+            { label: 'Pro tip', value: 'tip' }, { label: 'Key takeaway', value: 'key-takeaway' },
+            { label: 'Warning', value: 'warning' }, { label: 'Info', value: 'info' },
+          ] },
+          { name: 'title', type: 'text' },
+          { name: 'body', type: 'textarea', required: true, admin: { description: 'Markdown.' } },
+        ] },
+        { slug: 'pullQuote', labels: { singular: 'Pull Quote', plural: 'Pull Quotes' }, fields: [
+          { name: 'text', type: 'textarea', required: true },
+          { name: 'attribution', type: 'text' },
+        ] },
+      ],
+    },
+    // ---- Image slots: planning/automation guidance only (NOT required to publish) ----
+    {
+      name: 'imageSlots', type: 'array',
+      admin: { description: 'Planning helper for hero/inline images (guidance + future automation). Not required to publish.' },
+      fields: [
+        { name: 'position', type: 'select', defaultValue: 'inline', options: [
+          { label: 'Hero', value: 'hero' }, { label: 'Inline', value: 'inline' },
+        ] },
+        { name: 'prompt', type: 'textarea' },
+        { name: 'status', type: 'select', defaultValue: 'needed', options: [
+          { label: 'Needed', value: 'needed' }, { label: 'Uploaded', value: 'uploaded' }, { label: 'Generated', value: 'generated' },
+        ] },
+        { name: 'media', type: 'relationship', relationTo: 'media' },
+      ],
+    },
     // ---- Images (manual upload/select; UI degrades to a placeholder) ----
     {
       name: 'images', type: 'group', label: 'Images', fields: [

@@ -85,6 +85,25 @@ img { max-width: 100%; height: auto; display: block; }
 .prose thead th { background: var(--card); font-weight: 700; }
 .prose tbody tr:nth-child(even) { background: #fbfbfa; }
 
+/* Slice B — body blocks (inline image, callout, pull quote) */
+.inline-img { margin: 28px 0; }
+.inline-img img { width: 100%; border-radius: var(--radius); display: block; }
+.inline-img .img-ph { aspect-ratio: 16/9; border-radius: var(--radius); background: linear-gradient(135deg, #eef2f0, #e6ece9); display: flex; align-items: center; justify-content: center; color: #9aa6a1; font-size: 13px; }
+.callout { margin: 28px 0; padding: 16px 18px; border-radius: var(--radius); border: 1px solid var(--line); border-left: 4px solid var(--muted); background: var(--card); }
+.callout-title { font-weight: 700; font-size: 15px; margin-bottom: 4px; letter-spacing: -.01em; }
+.callout .callout-body { font-size: 16px; }
+.callout .callout-body p:first-child { margin-top: 0; }
+.callout .callout-body p:last-child { margin-bottom: 0; }
+.callout-tip { border-left-color: var(--brand); background: #f1f7f4; }
+.callout-tip .callout-title::before { content: "💡 "; }
+.callout-key-takeaway { border-left-color: #2563eb; background: #eef4ff; }
+.callout-key-takeaway .callout-title::before { content: "★ "; color: #2563eb; }
+.callout-warning { border-left-color: var(--accent); background: #fdf3ec; }
+.callout-warning .callout-title::before { content: "⚠ "; }
+.callout-info { border-left-color: var(--muted); }
+.pullquote { margin: 32px 0; padding: 6px 4px 6px 22px; border-left: 4px solid var(--accent); font-size: 22px; line-height: 1.4; font-style: italic; color: #2b3038; }
+.pullquote cite { display: block; font-size: 15px; font-style: normal; color: var(--muted); margin-top: 8px; }
+
 /* Affiliate CTA / offer card */
 .cta { border: 1px solid var(--line); background: #fff; border-radius: var(--radius); padding: 20px 20px 20px 24px; margin: 28px 0; box-shadow: 0 2px 10px rgba(12,53,39,.06); position: relative; overflow: hidden; }
 .cta::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); }

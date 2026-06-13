@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { marked } from 'marked';
 import { getPublishedArticle, relatedArticles, mediaUrl, SITE_NAME, SITE_URL, type Doc } from '@/lib/public';
 import { AffiliateCTA } from '@/components/site/AffiliateCTA';
 import { ArticleCard } from '@/components/site/ArticleCard';
+import { ArticleBody } from '@/components/site/ArticleBody';
 
 export const dynamic = 'force-dynamic';
 type Args = { params: Promise<{ slug: string[] }> };
@@ -36,7 +36,6 @@ export default async function ArticlePage({ params }: Args) {
   const category = typeof a.category === 'object' ? (a.category as Doc) : null;
   const hero = mediaUrl(a.images?.hero);
   const heroAlt = a.images?.heroAlt || a.title;
-  const html = await marked.parse((a.markdown as string) ?? '');
   const related = await relatedArticles(a, 3);
   const url = `${SITE_URL}/${a.slug}`;
 
@@ -68,7 +67,7 @@ export default async function ArticlePage({ params }: Args) {
 
       <AffiliateCTA article={a} placement="after-intro" />
 
-      <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />
+      <ArticleBody article={a} />
 
       <AffiliateCTA article={a} placement="conclusion" />
 
