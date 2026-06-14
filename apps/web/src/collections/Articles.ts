@@ -16,7 +16,7 @@ export const Articles: CollectionConfig = {
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
     { name: 'brief', type: 'relationship', relationTo: 'content-briefs' },
     { name: 'product', type: 'relationship', relationTo: 'products', index: true },
-    { name: 'category', type: 'relationship', relationTo: 'categories', index: true },
+    { name: 'category', type: 'relationship', relationTo: 'categories', index: true, admin: { description: 'Required before publication. Set deterministically from the linked product at generation; an article cannot be editorially published while empty.' } },
     { name: 'excerpt', type: 'textarea', admin: { description: 'Short summary shown on cards/listings.' } },
     { name: 'featured', type: 'checkbox', defaultValue: false, admin: { description: 'Feature on the homepage (only if editorially published).' } },
     {
@@ -146,6 +146,17 @@ export const Articles: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
+      // Editorial gate: an article may not be published without a category.
+      // Uses the merged final state so it holds for partial REST/admin updates.
+      ({ data, originalDoc }) => {
+        const cur: any = { ...(originalDoc || {}), ...(data || {}) };
+        const cat = cur.category;
+        const hasCategory = cat != null && (typeof cat !== 'object' || (cat as any).id != null);
+        if (cur.editorialStatus === 'published' && !hasCategory) {
+          throw new APIError('Category required before publication.', 400);
+        }
+        return data;
+      },
       ({ data }) => {
         // Stamp the public publish date the first time it is editorially published.
         if (data?.editorialStatus === 'published' && !data?.editorialPublishedAt) {

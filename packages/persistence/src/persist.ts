@@ -4,6 +4,21 @@ export function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80).replace(/(^-|-$)/g, '');
 }
 
+/**
+ * Authoritative, deterministic article category resolution from existing
+ * structured data — NO AI / free-text guessing. The linked Product's
+ * `categories` already carry the Product Request's `requestedCategory`
+ * (propagated at request approval), so the first product category is the
+ * single source of truth for the generated article's category.
+ */
+export function firstCategoryId(product: { categories?: unknown } | null | undefined): string | number | null {
+  const cats = product?.categories;
+  if (!Array.isArray(cats) || cats.length === 0) return null;
+  const c = cats[0];
+  if (c == null) return null;
+  return typeof c === 'object' ? ((c as { id?: string | number }).id ?? null) : (c as string | number);
+}
+
 /** Return the first slug of the form `base`, `base-2`, … not already taken. */
 export async function freeSlug(client: PersistenceClient, base: string): Promise<string> {
   let slug = base || 'article';
@@ -54,11 +69,21 @@ export async function persistGeneration(
 
   const article = outcome.article;
   const slug = await freeSlug(client, slugify(article.title));
+
+  // Resolve the category deterministically from the linked Product (which
+  // already carries the Product Request's requestedCategory). Set it in the
+  // SAME create call — no create-then-self-update. If unresolved, the article
+  // is created without a category and the editorial gate (publish validation)
+  // keeps it unpublishable until an admin assigns one.
+  const product = await client.findById('products', outcome.productId);
+  const categoryId = firstCategoryId(product as { categories?: unknown } | null);
+
   const articleDoc = await client.create('articles', {
     title: article.title,
     slug,
     brief: brief.id,
     product: outcome.productId,
+    ...(categoryId != null ? { category: categoryId } : {}),
     type: article.type,
     markdown: article.markdown,
     excerpt: article.metaDescription,
