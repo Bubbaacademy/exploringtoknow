@@ -78,11 +78,13 @@ export const Products: CollectionConfig = {
           req.payload.logger.error(`force-generate enqueue failed: ${String(e)}`);
         }
 
-        // reset the one-shot flag without re-triggering hooks
+        // reset the one-shot flag without re-triggering hooks. Pass `req` so the
+        // update joins the current transaction (no second transaction can
+        // deadlock against this row's lock held by the parent operation).
         if (forced) {
           await req.payload.update({
             collection: 'products', id: doc.id, data: { forceGenerate: false },
-            context: { skipGenerate: true }, depth: 0,
+            req, context: { skipGenerate: true }, depth: 0,
           });
         }
       },

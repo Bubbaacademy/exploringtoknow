@@ -18,6 +18,9 @@ export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
 export interface GenerateContentJob {
   productId: string;
   trigger: 'force_generate' | 'daily' | 'refresh';
+  /** When the job originates from a Product Request approval, the request id so
+   * the worker can link the finished Article back to the request. */
+  requestId?: string;
 }
 
 /**

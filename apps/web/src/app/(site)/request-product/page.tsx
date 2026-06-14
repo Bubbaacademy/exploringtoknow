@@ -21,7 +21,11 @@ export default async function RequestProductPage() {
           published — nothing is automated and nothing goes live without manual approval.
         </p>
       </div>
-      <RequestProductForm categories={categories.map((c) => ({ id: c.id, name: c.name }))} />
+      <RequestProductForm
+        categories={categories
+          .map((c) => ({ id: c.id, name: c.name as string, slug: c.slug as string }))
+          .sort((a, b) => a.name.localeCompare(b.name))}
+      />
     </section>
   );
 }

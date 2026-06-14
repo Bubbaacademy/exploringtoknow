@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { APIError } from 'payload';
 import { enqueue, QUEUES, type GenerateContentJob } from '@etk/queue';
 import { productImagesField } from '@/lib/images';
 
@@ -32,11 +33,19 @@ export const ProductRequests: CollectionConfig = {
     { name: 'productUrl', type: 'text', admin: { description: 'Source/product page URL.' } },
     { name: 'affiliateUrl', type: 'text', admin: { description: 'Manually provided affiliate link (optional).' } },
     { name: 'asin', type: 'text', label: 'ASIN / external id', admin: { description: 'Optional.' } },
-    { name: 'requestedCategory', type: 'relationship', relationTo: 'categories' },
     { name: 'notes', type: 'textarea' },
     { name: 'image', type: 'relationship', relationTo: 'media' },
     productImagesField(),
     { name: 'imagePermissionConfirmed', type: 'checkbox', defaultValue: false, admin: { description: 'Requester confirmed they have permission to use the uploaded images.' } },
+    // --- Category (shown next to Status; REQUIRED before approval) ---
+    {
+      name: 'requestedCategory', type: 'relationship', relationTo: 'categories',
+      admin: { description: 'REQUIRED before approval. The article inherits this category. Approving with no category is rejected.' },
+    },
+    {
+      name: 'suggestedCategory', type: 'text',
+      admin: { description: 'Free-text suggestion submitted when the requester chose "Other / Not Sure". An admin must map it to a real category in "Requested category" before approving — it never auto-creates a category.' },
+    },
     {
       name: 'status', type: 'select', required: true, defaultValue: 'submitted', index: true,
       options: [
@@ -60,65 +69,71 @@ export const ProductRequests: CollectionConfig = {
         if (operation === 'create' && !data.submittedAt) data.submittedAt = new Date().toISOString();
         return data;
       },
-    ],
-    afterChange: [
-      async ({ doc, previousDoc, req, context }) => {
-        if (context?.skipApproval) return;
-        const becameApproved = doc.status === 'approved' && previousDoc?.status !== 'approved';
-        // Only act on the explicit transition to approved, and never twice.
-        if (!becameApproved || doc.generationJobId) return;
+      // ---- Approval workflow (bounded, atomic, idempotent, no nested self-update) ----
+      // Runs INLINE in the same write that flips status -> approved. It validates
+      // the category, creates ONE Product in the SAME transaction (req), enqueues
+      // ONE generation job, and writes linkedProduct/generationJobId/status onto
+      // `data` — so there is no second transaction to deadlock against. The admin
+      // request returns as soon as this commits; it never waits for generation.
+      async ({ data, originalDoc, req }) => {
+        if (data?.status !== 'approved') return data;
+        // Idempotent: only the first transition into approved does work.
+        if (originalDoc?.status === 'approved' || originalDoc?.generationJobId) return data;
 
-        // Transfer the manually-uploaded images (link the SAME Media records;
-        // never duplicate the binary files), preserving role/order/metadata.
-        const productImages = Array.isArray(doc.productImages)
-          ? doc.productImages
-              .map((pi: any) => ({
-                image: typeof pi.image === 'object' ? pi.image?.id : pi.image,
-                role: pi.role, order: pi.order, alt: pi.alt, caption: pi.caption,
-                enabled: pi.enabled !== false, preferredHero: pi.preferredHero === true,
-              }))
-              .filter((pi: any) => pi.image != null)
-          : [];
+        const cur: any = { ...(originalDoc || {}), ...data };
+        const categoryId = typeof cur.requestedCategory === 'object' ? cur.requestedCategory?.id : cur.requestedCategory;
+        if (categoryId == null) {
+          throw new APIError('Select a category before approving this product request.', 400);
+        }
 
-        // Create a Product as `draft` so the Products afterChange hook does NOT
-        // also enqueue — this request is the single source of the generation job.
+        // Reuse the SAME manually-uploaded Media records (never duplicate binaries).
+        const productImages = (Array.isArray(cur.productImages) ? cur.productImages : [])
+          .map((pi: any) => ({
+            image: typeof pi.image === 'object' ? pi.image?.id : pi.image,
+            role: pi.role, order: pi.order, alt: pi.alt, caption: pi.caption,
+            enabled: pi.enabled !== false, preferredHero: pi.preferredHero === true,
+          }))
+          .filter((pi: any) => pi.image != null);
+
+        const reqId = cur.id ?? originalDoc?.id;
+        // Create the Product as `draft` (Products hook will NOT enqueue) in the
+        // SAME transaction — atomic with this request update.
         const product = await req.payload.create({
           collection: 'products',
+          req,
+          context: { skipGenerate: true },
           data: {
-            title: doc.productName,
-            slug: `${slugify(doc.productName)}-${String(doc.id).slice(-6)}`,
+            title: cur.productName,
+            slug: `${slugify(cur.productName)}-${String(reqId).slice(-6)}`,
             offerType: 'amazon_affiliate',
             status: 'draft',
             priority: 50,
-            externalUrl: doc.productUrl || undefined,
-            affiliateUrl: doc.affiliateUrl || undefined,
-            amazonAsin: doc.asin || undefined,
-            categories: doc.requestedCategory ? [doc.requestedCategory] : undefined,
+            externalUrl: cur.productUrl || undefined,
+            affiliateUrl: cur.affiliateUrl || undefined,
+            amazonAsin: cur.asin || undefined,
+            categories: [categoryId],
             productImages: productImages.length ? productImages : undefined,
           },
-          context: { skipGenerate: true },
         });
 
-        let jobId: string | null = null;
+        // Enqueue exactly one job. On failure, throw -> the whole transaction
+        // (including the Product create) rolls back: no half-approved state, no
+        // orphan Product, and the admin can retry.
+        let jobId: string;
         try {
-          const job: GenerateContentJob = { productId: String(product.id), trigger: 'force_generate' };
+          const job: GenerateContentJob = { productId: String(product.id), trigger: 'force_generate', requestId: String(reqId) };
           jobId = await enqueue(QUEUES.generateContent, job);
         } catch (e) {
           req.payload.logger.error(`product-request approval enqueue failed: ${String(e)}`);
+          throw new APIError('Could not queue generation for this approval. Nothing was changed — please retry.', 503);
         }
 
-        await req.payload.update({
-          collection: 'product-requests',
-          id: doc.id,
-          data: {
-            status: jobId ? 'processing' : 'approved',
-            linkedProduct: product.id,
-            generationJobId: jobId || undefined,
-            reviewedAt: new Date().toISOString(),
-          },
-          context: { skipApproval: true },
-          depth: 0,
-        });
+        // Single atomic write of the result onto this same document.
+        data.status = 'processing';
+        data.linkedProduct = product.id;
+        data.generationJobId = jobId;
+        data.reviewedAt = new Date().toISOString();
+        return data;
       },
     ],
   },

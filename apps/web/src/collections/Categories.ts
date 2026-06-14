@@ -2,7 +2,14 @@ import type { CollectionConfig } from 'payload';
 export const Categories: CollectionConfig = {
   slug: 'categories',
   admin: { useAsTitle: 'name', group: 'Catalog', defaultColumns: ['name', 'slug', 'active'] },
-  access: { read: () => true },
+  // Public may READ categories (for the request form); only authenticated admins
+  // may create/update/delete — public users can never create arbitrary categories.
+  access: {
+    read: () => true,
+    create: ({ req }) => Boolean(req.user),
+    update: ({ req }) => Boolean(req.user),
+    delete: ({ req }) => Boolean(req.user),
+  },
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
