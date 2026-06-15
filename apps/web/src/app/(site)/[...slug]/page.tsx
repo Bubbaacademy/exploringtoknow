@@ -1,10 +1,22 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getPublishedArticle, relatedArticles, mediaUrl, SITE_NAME, SITE_URL, type Doc } from '@/lib/public';
+import {
+  getPublishedArticle,
+  relatedArticles,
+  getArticleAffiliate,
+  mediaUrl,
+  SITE_NAME,
+  SITE_URL,
+  ARTICLE_AFFILIATE_DISCLOSURE,
+  type Doc,
+} from '@/lib/public';
+import { CTA } from '@/lib/nav';
 import { AffiliateCTA } from '@/components/site/AffiliateCTA';
 import { ArticleCard } from '@/components/site/ArticleCard';
-import { ArticleBody } from '@/components/site/ArticleBody';
+import { ReadingProgress } from '@/components/site/ReadingProgress';
+import { ArticleToc } from '@/components/site/ArticleToc';
+import { renderArticle } from '@/lib/article-render';
 
 export const dynamic = 'force-dynamic';
 type Args = { params: Promise<{ slug: string[] }> };
@@ -22,10 +34,17 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
     description: seo.metaDescription || a.excerpt || undefined,
     alternates: { canonical: seo.canonical || url },
     openGraph: {
-      title: og.title || a.title, description: og.description || a.excerpt || undefined,
-      type: 'article', url, images: ogImg ? [ogImg] : undefined,
+      title: og.title || a.title,
+      description: og.description || a.excerpt || undefined,
+      type: 'article',
+      url,
+      images: ogImg ? [ogImg] : undefined,
     },
   };
+}
+
+function fmtDate(d: string | Date): string {
+  return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 export default async function ArticlePage({ params }: Args) {
@@ -35,48 +54,118 @@ export default async function ArticlePage({ params }: Args) {
 
   const category = typeof a.category === 'object' ? (a.category as Doc) : null;
   const hero = mediaUrl(a.images?.hero);
-  const heroAlt = a.images?.heroAlt || a.title;
+  const heroAlt = (a.images?.heroAlt as string) || (a.title as string);
+  const affiliate = getArticleAffiliate(a);
+  const { nodes, toc, readingMinutes } = await renderArticle(a);
   const related = await relatedArticles(a, 3);
   const url = `${SITE_URL}/${a.slug}`;
 
+  const publishedAt = a.editorialPublishedAt ? new Date(a.editorialPublishedAt as string) : null;
+  const updatedAt = a.updatedAt ? new Date(a.updatedAt as string) : null;
+  const showUpdated =
+    publishedAt && updatedAt &&
+    updatedAt.getTime() - publishedAt.getTime() > 86_400_000 &&
+    updatedAt.toDateString() !== publishedAt.toDateString();
+
   const jsonLd = {
-    '@context': 'https://schema.org', '@type': 'Article',
-    headline: a.title, description: a.excerpt || undefined,
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: a.title,
+    description: a.excerpt || undefined,
     datePublished: a.editorialPublishedAt || undefined,
+    dateModified: (showUpdated ? a.updatedAt : a.editorialPublishedAt) || undefined,
     image: hero ? [hero] : undefined,
+    articleSection: category?.name || undefined,
     mainEntityOfPage: url,
     author: { '@type': 'Organization', name: SITE_NAME },
     publisher: { '@type': 'Organization', name: SITE_NAME },
   };
 
   return (
-    <article className="article">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div className="breadcrumbs">
-        <Link href="/">Home</Link> / {category ? <><Link href={`/category/${category.slug}`}>{category.name}</Link> / </> : null}
-        <span>{a.title}</span>
-      </div>
-      <h1>{a.title}</h1>
-      {a.editorialPublishedAt ? <p className="meta" style={{ marginTop: 0 }}>{new Date(a.editorialPublishedAt as string).toLocaleDateString()}</p> : null}
-      {a.excerpt ? <p className="lead">{a.excerpt as string}</p> : null}
+    <>
+      <ReadingProgress />
+      <article className="article">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="article-hero">
-        {hero ? <img src={hero} alt={heroAlt} /> : <span>ExploringToKnow</span>}
-      </div>
-      {a.images?.caption ? <div className="figcaption">{a.images.caption as string}</div> : null}
+        <header className="article-head">
+          <nav className="breadcrumbs" aria-label="Breadcrumb">
+            <Link href="/">Home</Link> /{' '}
+            {category ? (
+              <>
+                <Link href={`/category/${category.slug}`}>{category.name as string}</Link> /{' '}
+              </>
+            ) : null}
+            <span aria-current="page">{a.title as string}</span>
+          </nav>
 
-      <AffiliateCTA article={a} placement="after-intro" />
+          {category ? (
+            <Link href={`/category/${category.slug}`} className="article-cat">{category.name as string}</Link>
+          ) : null}
 
-      <ArticleBody article={a} />
+          <h1>{a.title as string}</h1>
 
-      <AffiliateCTA article={a} placement="conclusion" />
+          {a.excerpt ? <p className="article-deck">{a.excerpt as string}</p> : null}
 
-      {related.length ? (
-        <section className="section" style={{ borderTop: '1px solid var(--line)', marginTop: 32 }}>
-          <h2 style={{ fontSize: 20 }}>Related articles</h2>
-          <div className="grid">{related.map((r) => <ArticleCard key={String(r.id)} article={r} />)}</div>
+          <div className="article-byline">
+            <span className="article-author">ExploringToKnow Editorial Team</span>
+            {publishedAt ? (
+              <span className="article-meta-item">
+                <time dateTime={publishedAt.toISOString()}>{fmtDate(publishedAt)}</time>
+              </span>
+            ) : null}
+            {showUpdated && updatedAt ? (
+              <span className="article-meta-item">Updated <time dateTime={updatedAt.toISOString()}>{fmtDate(updatedAt)}</time></span>
+            ) : null}
+            <span className="article-meta-item">{readingMinutes} min read</span>
+          </div>
+        </header>
+
+        <figure className="article-hero">
+          <div className="article-hero-media">
+            {hero ? <img src={hero} alt={heroAlt} /> : <span>ExploringToKnow</span>}
+          </div>
+          {a.images?.caption ? <figcaption className="figcaption">{a.images.caption as string}</figcaption> : null}
+        </figure>
+
+        {affiliate ? (
+          <p className="article-disclosure" role="note">{ARTICLE_AFFILIATE_DISCLOSURE}</p>
+        ) : null}
+
+        <ArticleToc items={toc} />
+
+        <AffiliateCTA article={a} placement="after-intro" />
+
+        <div className="article-body">{nodes}</div>
+
+        <AffiliateCTA article={a} placement="conclusion" />
+
+        <section className="article-end" aria-label="Keep exploring">
+          <div className="article-end-actions">
+            {category ? (
+              <Link href={`/category/${category.slug}`} className="btn btn-ghost">Browse {category.name as string}</Link>
+            ) : (
+              <Link href="/categories" className="btn btn-ghost">Browse all topics</Link>
+            )}
+            <Link href={CTA.href} className="btn btn-accent">{CTA.label}</Link>
+          </div>
         </section>
-      ) : null}
-    </article>
+
+        {related.length ? (
+          <section className="related" aria-label="Related guides">
+            <div className="section-head">
+              <div className="section-title">
+                <span className="eyebrow">Keep reading</span>
+                <h2>Continue Exploring</h2>
+              </div>
+            </div>
+            <div className="grid">
+              {related.map((r) => (
+                <ArticleCard key={String(r.id)} article={r} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </article>
+    </>
   );
 }
