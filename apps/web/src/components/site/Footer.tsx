@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { AFFILIATE_DISCLOSURE, SITE_NAME } from '@/lib/public';
+import { Brand } from './Brand';
+import { PRIMARY_NAV, CTA, TOPICS_HREF } from '@/lib/nav';
 
 export function Footer() {
   const year = 2026;
@@ -8,27 +10,19 @@ export function Footer() {
       <div className="container">
         <div className="footer-top">
           <div className="footer-brand">
-            <Link href="/" className="brand" aria-label="ExploringToKnow home">
-              <span className="brandmark" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path d="M8 1.5c2.2 2 3.2 4.2 3.2 6.4A3.2 3.2 0 0 1 8 11.1a3.2 3.2 0 0 1-3.2-3.2c0-2.2 1-4.4 3.2-6.4Z" fill="currentColor" />
-                  <path d="M8 8.4v6.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                </svg>
-              </span>
-              <span>Exploring<b>To</b>Know</span>
-            </Link>
+            <Brand />
             <p>Practical buying guides and product reviews — manually researched and human-reviewed before anything goes live.</p>
           </div>
           <div className="footer-col">
             <h4>Explore</h4>
             <Link href="/">Home</Link>
-            <Link href="/categories">Categories</Link>
-            <Link href="/request-product">Request a review</Link>
+            <Link href={TOPICS_HREF}>Topics</Link>
+            {PRIMARY_NAV.map((l) => <Link key={l.href} href={l.href}>{l.label}</Link>)}
           </div>
           <div className="footer-col">
             <h4>About</h4>
-            <Link href="/request-product">How we work</Link>
-            <Link href="/request-product">Submit a product</Link>
+            <Link href="/search">Search</Link>
+            <Link href={CTA.href}>{CTA.label}</Link>
           </div>
         </div>
 

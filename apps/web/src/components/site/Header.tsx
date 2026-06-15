@@ -1,23 +1,25 @@
-import Link from 'next/link';
+import { listActiveCategories } from '@/lib/public';
+import { groupCategories, type NavCategory } from '@/lib/nav';
+import { Brand } from './Brand';
+import { SiteNav } from './SiteNav';
 
-export function Header() {
+/**
+ * Shared site header. Server component: loads the REAL active categories and
+ * groups them for the Topics mega menu, then hands them to the interactive
+ * <SiteNav> client component. Nav markup (links + categories) is server-rendered,
+ * so navigation is never JS-only.
+ */
+export async function Header() {
+  const categories = (await listActiveCategories()) as NavCategory[];
+  const groups = groupCategories(
+    categories.map((c) => ({ id: c.id, name: c.name, slug: c.slug })),
+  );
+
   return (
     <header className="site-header">
       <div className="container bar">
-        <Link href="/" className="brand" aria-label="ExploringToKnow home">
-          <span className="brandmark" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 1.5c2.2 2 3.2 4.2 3.2 6.4A3.2 3.2 0 0 1 8 11.1a3.2 3.2 0 0 1-3.2-3.2c0-2.2 1-4.4 3.2-6.4Z" fill="currentColor" />
-              <path d="M8 8.4v6.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-            </svg>
-          </span>
-          <span>Exploring<b>To</b>Know</span>
-        </Link>
-        <nav className="nav">
-          <Link href="/categories" className="nav-link">Categories</Link>
-          <Link href="/request-product" className="nav-link">Request a review</Link>
-          <Link href="/request-product" className="btn btn-accent">Submit a request</Link>
-        </nav>
+        <Brand />
+        <SiteNav groups={groups} />
       </div>
     </header>
   );
