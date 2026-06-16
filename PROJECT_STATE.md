@@ -1,15 +1,34 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-16 after Phase 11 (author/analytics/merch) deployment & live verification.
+> Current snapshot. Updated 2026-06-16 after Phase 12 (admin pro redesign) deployment & live verification.
 > Documentation only — no application code, schema, or data changed by this docs update.
 
 ---
 
-## ⭐ Admin UI/UX Pro Redesign — HIGH-PRIORITY upcoming phase
-Admin UI/UX Pro Redesign is a high-priority upcoming phase. The current admin is functional
-but still too basic visually and operationally. The goal is to make the admin feel like a
-professional editorial and content-commerce operations system, not just raw CMS data entry.
-(See "Remaining Work / Future Roadmap → A". It is the recommended next phase.)
+## Phase 12 — Admin UI/UX Pro Redesign: COMPLETE & DEPLOYED (no migration)
+The internal `/dashboard` operations console was upgraded from raw inline-styled pages into a
+premium, structured **editorial operations console**:
+- **Admin design layer** (`dashboard/dashboard.css`, scoped `.adm-*`) + shared components
+  (cards, status badges, stat tiles, trend bars) — calm/premium SaaS feel; isolated from the
+  public site and Payload's native admin.
+- **Grouped sidebar nav** (Overview / Insights / Editorial / Intake / Pipeline) linking into the
+  proper Payload collections + public site.
+- **/dashboard** = editorial command center: system overview, **needs-attention** warnings
+  (article pipeline + product-request triage), editorial-pipeline stats, activity (top viewed /
+  recent requests / recent contacts), quick links. **/dashboard/analytics** (14-day trend +
+  most-read table + delivery presence) and **/dashboard/health** (counts + provider presence +
+  recent intake) restyled to match. Real data only; honest empty states; noindex + auth-gated.
+- **Collection admin clarity** (admin-block-only — no fields/hooks/access/logic changed):
+  Products (warns activate/force-generate triggers the pipeline + manual-image guidance),
+  Newsletter (status meanings + local/no-send), Categories (merchandising fields), Authors
+  (profile readiness + noindex-when-empty); improved `defaultColumns`.
+- Payload's native `/admin` kept fully functional (deep-theming it was intentionally avoided to
+  protect the admin bundle; the custom console is the operations layer).
+- **No migration**; app-only deploy; worker untouched.
+
+## ⭐ Admin UI/UX — note
+The admin operations console (custom `/dashboard`) is now premium. Payload's native `/admin`
+collection forms remain standard (functional) — a future pass could theme those too if desired.
 
 ---
 
@@ -136,16 +155,16 @@ keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ 3db25f5`** (Phase 11 merge) + docs commit synced on top |
+| Production HEAD | **`main @ e934169`** (Phase 12 merge) + docs commit synced on top |
 | Local `main` HEAD | matches prod (app code) + docs commit |
-| Running app image | `etk-web@sha256:fc7df617…` (verified == freshly-built) |
+| Running app image | `etk-web@sha256:ea107fb4…` (verified == freshly-built) |
 | Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 31h, Postgres/Caddy up 5d, 0 restarts) |
 | App health | Healthy, 0 restarts |
 | Pending jobs / locks / long-tx | **0 / 0 / 0** |
-| Payload migrations applied | **12** (unchanged — Phase 11 added no migration; latest `20260616_060000_phase10_editorial`) |
+| Payload migrations applied | **12** (unchanged — Phases 11–12 added no migration; latest `20260616_060000_phase10_editorial`) |
 
 ### Rollback points (prod tags)
-`prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
+`prod-pre-phase12-admin-pro-redesign → 41d9308` · `prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
 `prod-pre-phase6-growth → f89eaea` · `prod-pre-phase5-magazine → 7975891` ·
 `prod-pre-phase4-trust → 1bcd201` · `prod-pre-phase3-discovery → dcfb3bb` · `prod-pre-phase2-navsearch → 181e953`
 

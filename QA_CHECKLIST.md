@@ -287,3 +287,25 @@ Production `main` @ `3db25f5` · app image `etk-web@sha256:fc7df617…`. Migrati
 - [ ] /dashboard/analytics shows a 14-day daily-views bar trend (empty state when no views).
 - [ ] /dashboard shows product-request triage warnings (missing category/permission/<3 images/URL) only when >0.
 - [ ] No fabricated views/popularity anywhere public.
+
+---
+
+# Phase 12 additions — admin pro redesign (no migration)
+
+Production `main` @ `e934169` · app image `etk-web@sha256:ea107fb4…`. Migrations 12 (unchanged).
+
+## 39. Admin console (auth — log in first)
+- [ ] /dashboard renders the premium console: sidebar groups, system-overview stats, needs-attention warnings, pipeline stats, activity cards, quick links.
+- [ ] /dashboard/analytics: 14-day trend bars, most-read table with status badges, delivery-presence (present/missing only — no secret values).
+- [ ] /dashboard/health: counts grid, provider presence, recent intake.
+- [ ] Sidebar links open the correct Payload collections; "Payload Admin" + "View site" footer links work.
+- [ ] Status badges color-coded but also labeled (not color-only); empty states honest; no fabricated numbers.
+- [ ] Unauthenticated: /dashboard* redirect (307); /admin loads Payload login.
+
+## 40. Collection admin clarity
+- [ ] Products: description warns activate/force-generate triggers the pipeline; image guidance shown.
+- [ ] Newsletter/Categories/Authors descriptions + columns clearer; no fields/logic changed.
+
+## 41. Admin responsive/a11y (manual)
+- [ ] Sidebar collapses to a row under ~900px; no horizontal overflow at 1024/1280/1440; tablet readable.
+- [ ] Links/buttons keyboard-focusable with visible focus; contrast reasonable.
