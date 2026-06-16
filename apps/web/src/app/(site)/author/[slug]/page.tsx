@@ -25,6 +25,8 @@ export default async function AuthorPage({ params }: Args) {
   if (!author) notFound();
   const articles = await listPublishedArticlesByAuthor(author.id, 48);
   const avatar = mediaUrl(author.image);
+  const expertise = String(author.expertise || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const longBio = (author.longBio as string) || '';
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -50,6 +52,11 @@ export default async function AuthorPage({ params }: Args) {
               <span className="eyebrow">{(author.role as string) || 'Author'}</span>
               <h1>{author.name as string}</h1>
               {author.bio ? <p className="cat-masthead-desc">{author.bio as string}</p> : null}
+              {expertise.length ? (
+                <div className="author-expertise">
+                  {expertise.map((t) => <span key={t} className="chip">{t}</span>)}
+                </div>
+              ) : null}
               {author.websiteUrl ? <p className="meta"><a href={author.websiteUrl as string} rel="nofollow noopener" target="_blank">Website</a></p> : null}
             </div>
           </div>
@@ -58,6 +65,7 @@ export default async function AuthorPage({ params }: Args) {
 
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
+          {longBio ? <p className="author-longbio">{longBio}</p> : null}
           <div className="section-head">
             <div className="section-title">
               <span className="eyebrow">Published work</span>

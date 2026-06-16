@@ -755,3 +755,9 @@ img { max-width: 100%; height: auto; display: block; }
   .author-head { gap: 14px; }
   .author-avatar { width: 64px; height: 64px; }
 }
+
+/* ============================================================================
+   PHASE 8 — Author profile enrichment (expertise chips + long bio).
+   ========================================================================== */
+.author-expertise { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.author-longbio { font-size: 16.5px; line-height: 1.7; color: var(--fg-soft); max-width: var(--maxw-prose); margin: 0 0 24px; }
