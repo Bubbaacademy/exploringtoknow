@@ -3,6 +3,80 @@
 > Current snapshot. Updated 2026-06-16 after Phase 11 (author/analytics/merch) deployment & live verification.
 > Documentation only — no application code, schema, or data changed by this docs update.
 
+---
+
+## ⭐ Admin UI/UX Pro Redesign — HIGH-PRIORITY upcoming phase
+Admin UI/UX Pro Redesign is a high-priority upcoming phase. The current admin is functional
+but still too basic visually and operationally. The goal is to make the admin feel like a
+professional editorial and content-commerce operations system, not just raw CMS data entry.
+(See "Remaining Work / Future Roadmap → A". It is the recommended next phase.)
+
+---
+
+## Project Phase Tracker (where the project stands — plain English)
+
+**Live now:** ExploringToKnow is a deployed, healthy content-commerce magazine at
+https://exploringtoknow.com (Next.js 15 + Payload 3 + Postgres on a single VPS behind Caddy;
+public site + Payload admin + internal dashboard + worker).
+
+Completed, phase by phase:
+- **P1 — Design system + homepage:** premium warm editorial design system (tokens, cards, buttons, header/footer) and redesigned homepage.
+- **P2 — Navigation + search + article page:** scalable Topics mega menu + accessible mobile drawer; native published-only search + listing routes; premium article page (masthead, reading progress, TOC, disclosure, related).
+- **P3 — Discovery layer:** redesigned category pages, topics hub, explore hub; search/listing polish; elegant empty states.
+- **P4 — Trust + newsletter (foundation):** request-product form polish; newsletter capture (additive); About / Editorial Policy / Affiliate Disclosure pages; editorial footer.
+- **P5 — Newsletter lifecycle + contact + SEO + deploy hardening:** subscriber lifecycle + confirm/unsubscribe (token-hashed); /contact + intake; sitemap/JSON-LD; the hardened, observable deploy script.
+- **P6 — Growth infra:** Authors collection + author pages + bylines + Editorial-Team fallback; first-party article-view analytics; email provider layer (Resend-via-fetch, local-safe); category hero/SEO fields.
+- **P7 — Growth/editorial ops:** pg_trgm search acceleration; analytics dashboard (7/30/all-time most-read); bot filtering; editorial inbox fields (status/reviewedBy/notify).
+- **P8 — Editorial + growth completion (local-safe):** author longBio/expertise; weighted search ranking; admin System Health dashboard; category Buying-Guides/Reviews merchandising; env presence surfaces (present/missing only).
+- **P9 — Email activation readiness + QA (verification + docs):** probed prod env (all provider keys missing → confirmed local-safe); verified local-safe flows; no defects found.
+- **P10 — Editorial platform:** editorial overview dashboard (pipeline stats + warnings); pipeline/publish-gate clarity + content guardrails in admin; publishing-queue fields (editorialNotes, publishPriority); dashboard noindex.
+- **P11 — Author SEO + analytics + merchandising:** author ordering + noindex-when-empty + sitemap-with-content; featured-topic surface; author-name search signal; 14-day analytics trend + product-request triage warnings.
+
+Big-picture summary of what's built:
+- Core public magazine is live; premium public UI design system + homepage complete.
+- Article / category / explore / search / buying-guides / reviews / request-product surfaces improved.
+- Product-request **category validation** + **approval-hang** issues fixed (earlier baseline); **manual product-image population** + article image handling fixed; **category propagation** + **publish guards** fixed.
+- Newsletter / contact / trust pages added in **local-safe / provider-ready** mode.
+- Authors, author pages, author metadata, article bylines, and Editorial-Team fallback added.
+- First-party analytics, most-read logic, bot filtering, and analytics/dashboard surfaces added.
+- Search improved with **published-only safety** + ranking.
+- Editorial dashboard / admin workflow visibility added.
+- Deploy hardening, DB backups, rollback tags, route verification, and docs updates are now standard process.
+- Existing **published content, affiliate links/rel, approval logic, generation logic, and image logic have been protected throughout** (additive migrations only; published fingerprints unchanged).
+
+---
+
+## Remaining Work / Future Roadmap
+
+**A. Admin UI/UX Pro Redesign — HIGH PRIORITY (recommended next phase).**
+Make the admin a professional editorial/content-commerce operations system, not raw CMS data entry:
+premium visual theme; better spacing/hierarchy/typography/color/sizing; clearer dashboards + collection
+layouts; status badges, filters, helper text, empty states, warnings, action areas; cleaner product-request
+review, article/editorial workflow, contact inbox, and analytics presentation; friendlier admin nav; clear
+visual separation of operational sections. Must keep all safety guarantees (no accidental approval,
+generation, publishing, duplicates, or destructive actions). (Payload admin theming via custom CSS/views +
+a polished `/dashboard` cockpit.)
+
+**B. Real email-provider activation.** Code is provider-ready/local-safe. To go live, add on the VPS
+`/opt/exploringtoknow/env/.env` (secrets via env only — never printed/committed): `NEWSLETTER_PROVIDER=resend`,
+`RESEND_API_KEY`, `NEWSLETTER_FROM`, `NEWSLETTER_REPLY_TO`, `NEWSLETTER_DOUBLE_OPT_IN`, `CONTACT_NOTIFY_TO`;
+recreate the app; verify via Dashboard → System Health (keys flip to "present") + a controlled test.
+
+**C. Real-traffic analytics maturity.** Improve only where real data exists — unique/session signal,
+referrer breakdown, longer time-series + charts, richer dashboard. No fabricated numbers.
+
+**D. More content volume.** Generate → review → publish more buying guides/reviews so category/listing
+surfaces gain depth (manual approval + publish gates remain).
+
+**E. Category merchandising + SEO depth.** Category hero imagery, long descriptions, featured categories,
+category SEO, topic curation, internal linking.
+
+**F. Editorial workflow automation.** Assignment, review queues, editorial notes/priority, SLA-style
+statuses, bulk actions, inbox triage.
+
+**G. Human browser + accessibility QA.** Manual pixel testing at 320/375/640/768/1024/1440, mobile drawer,
+keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST.md).
+
 ## Phase 11 — Author SEO + richer analytics + category merchandising: COMPLETE & DEPLOYED (no migration)
 - **Authors:** ordered by `sortOrder`; author pages are **noindex when they have no published work**;
   sitemap includes **only authors with published content**; Person JSON-LD + byline links retained.
