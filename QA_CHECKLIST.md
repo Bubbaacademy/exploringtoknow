@@ -240,3 +240,26 @@ Set on the VPS `/opt/exploringtoknow/env/.env` (then recreate the app container)
 `NEWSLETTER_PROVIDER=resend`, `RESEND_API_KEY=…`, `NEWSLETTER_FROM=…`, `NEWSLETTER_REPLY_TO=…`,
 `NEWSLETTER_DOUBLE_OPT_IN=true`, `CONTACT_NOTIFY_TO=…`. Verify via Dashboard → System Health
 (keys flip to "present") then a controlled subscribe/contact test.
+
+---
+
+# Phase 10 additions — editorial platform
+
+Production `main` @ `9b6c36d` · app image `etk-web@sha256:f6dbeac5…`. Migrations 12.
+
+## 31. Editorial overview dashboard (auth)
+- [ ] /dashboard (logged in) shows pipeline stats, warnings (missing category/author/hero), top-viewed, recent requests/contacts; redirects when logged out.
+- [ ] /dashboard, /dashboard/analytics, /dashboard/health are noindex + auth-gated (307 when logged out).
+- [ ] Warnings reflect reality (currently zero — all published have category/author/hero).
+
+## 32. Content production clarity (admin)
+- [ ] Articles admin description explains publish gate + editorial standards; defaultColumns show author + publishPriority.
+- [ ] GenerationRuns admin description explains the pipeline chain; "published" run status ≠ public publish.
+- [ ] editorialNotes + publishPriority editable (admin-only; never public, never auto-publish).
+
+## 33. Pipeline legibility (read-only)
+- [ ] Request → Product → Article chain visible in admin (linkedProduct/linkedArticle, requested category, image permission, image count).
+- [ ] Manual approval still required; category required; 3–30 images + permission enforced; no generation/approval triggered during QA.
+
+## 34. Content guardrails (editorial)
+- [ ] Published copy: no hype, no fabricated testing/medical claims; "researched/reviewed/selected/tested" used accurately; affiliate disclosure present; images manual + permission-confirmed.

@@ -1,7 +1,32 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-16 after Phase 9 (verification + docs; no code change).
-> Documentation only — no application code, schema, or data changed by this update.
+> Current snapshot. Updated 2026-06-16 after Phase 10 (editorial platform) deployment & live verification.
+> Documentation only — no application code, schema, or data changed by this docs update.
+
+## Phase 10 — Editorial platform readiness: COMPLETE & DEPLOYED
+- **Editorial overview dashboard** (auth-gated `/dashboard`): pipeline stats (published/
+  ready-for-review/drafts; requests waiting/approved/processing; generation runs ok/
+  flagged/failed/running; new contacts; active subscribers; total views), **pipeline
+  warnings** (published/ready-for-review missing category/author/hero image), top-viewed
+  (real analytics or honest fallback), recent requests/contacts, quick links. Admin-only.
+- **Content-production clarity (no logic change):** Articles + GenerationRuns admin
+  descriptions document the pipeline (Request → approve → Product → Intelligence/Brief →
+  Article@ready_for_review → manual publish) and the **publish gate + editorial standards**
+  (no hype/fabricated testing/medical claims; manual permission-confirmed images; affiliate
+  disclosure auto-renders; human review before publish).
+- **Publishing-queue fields (additive):** `articles.editorialNotes` + `articles.publishPriority`
+  (admin-only triage; never auto-publish).
+- **SEO:** dashboard marked `noindex` (defense-in-depth; already auth-gated). Sitemap remains
+  published-only; `/search` + newsletter token pages noindex; canonicals/JSON-LD intact.
+- **Read-only pipeline verification:** existing chain confirmed legible (Request #2 completed →
+  Product 5 → Article 7, 10 permission-confirmed images); all published articles have
+  category+author+product+hero (zero warnings). **No test record created**; no approval/generation.
+
+### Phase 10 migration
+`20260616_060000_phase10_editorial` — additive: `articles.editorial_notes` + `articles.publish_priority`. Pre-validated in a rolled-back transaction. Payload migrations **11 → 12**.
+
+### Phase 10 DB backup
+`/opt/exploringtoknow/backups/pre-phase10_20260616_054848.sql.gz` (verified before migration).
 
 ## Phase 9 — Email activation readiness + production QA: COMPLETE (verification + docs only)
 - **Email provider env probed on production (presence only, never values): ALL MISSING**
@@ -24,16 +49,16 @@
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ 5d80ddc`** (Phase 8 merge; ff from Phase 7 `2f17557`) — docs commit synced on top |
+| Production HEAD | **`main @ 9b6c36d`** (Phase 10 merge) + docs commit synced on top |
 | Local `main` HEAD | matches prod (app code) + docs commit |
-| Running app image | `etk-web@sha256:7754ccb1…` (verified == freshly-built) |
+| Running app image | `etk-web@sha256:f6dbeac5…` (verified == freshly-built) |
 | Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 30h, Postgres/Caddy up 5d, 0 restarts) |
 | App health | Healthy, 0 restarts |
 | Pending jobs / locks / long-tx | **0 / 0 / 0** |
-| Payload migrations applied | **11** (latest: `20260616_050000_phase8_authors`) |
+| Payload migrations applied | **12** (latest: `20260616_060000_phase10_editorial`) |
 
 ### Rollback points (prod tags)
-`prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
+`prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
 `prod-pre-phase6-growth → f89eaea` · `prod-pre-phase5-magazine → 7975891` ·
 `prod-pre-phase4-trust → 1bcd201` · `prod-pre-phase3-discovery → dcfb3bb` · `prod-pre-phase2-navsearch → 181e953`
 
@@ -96,7 +121,14 @@ Published-only gate intact (drafts 404; never in search/analytics/discovery; bot
 - Manual browser pixel-level responsive + screen-reader QA still pending (`QA_CHECKLIST.md`).
 - Content remains thin (3 published).
 
-## Phase 10 candidates
+## Content quality guardrails (editorial policy — enforced by review + admin helper text)
+- No hype; no fabricated testing/medical/performance claims; cautious, honest recommendation language.
+- Distinguish "researched / reviewed / selected / tested" accurately — don't claim hands-on testing that didn't happen.
+- Affiliate disclosure renders automatically on affiliate articles; affiliate links keep `sponsored nofollow noopener`.
+- Product images are MANUAL, permission-confirmed uploads only — no AI/paid image generation.
+- Human editorial review is required before publication; nothing auto-publishes; a category is required to publish.
+
+## Phase 11 candidates
 1. Configure Resend in prod env + verify real deliverability + enable double opt-in.
 2. Real multi-author roster + assignment workflow + per-author SEO.
 3. Analytics: unique/session signal, referrer breakdown, time-series charts.
