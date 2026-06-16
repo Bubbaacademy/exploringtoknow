@@ -26,6 +26,7 @@ export const ABOUT_NAV: NavLink[] = [
   { label: 'About', href: '/about' },
   { label: 'Editorial Policy', href: '/editorial-policy' },
   { label: 'Affiliate Disclosure', href: '/affiliate-disclosure' },
+  { label: 'Contact', href: '/contact' },
 ];
 
 export const TOPICS_HREF = '/categories';

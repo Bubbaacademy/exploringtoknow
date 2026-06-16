@@ -120,10 +120,25 @@ export function RequestProductForm({ categories }: { categories: Category[] }) {
   const canSubmit = state !== 'sending' && !uploading && !!catId && (!isOther || suggested.trim().length >= 2) && images.length >= MIN && permission;
   const needMore = Math.max(0, MIN - images.length);
 
+  if (state === 'ok') {
+    return (
+      <div className="form">
+        <div className="empty-panel" role="status">
+          <span className="eyebrow">Received</span>
+          <h2>Request submitted</h2>
+          <p>{message}</p>
+          <div className="empty-panel-actions">
+            <a href="/explore" className="btn btn-ghost">Explore guides</a>
+            <button type="button" className="btn btn-accent" onClick={() => { setState('idle'); setMessage(''); }}>Submit another</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <form className="form request-form" onSubmit={onSubmit} noValidate>
-      {state === 'ok' ? <div className="notice ok" role="status">{message}</div> : null}
-      {state === 'err' ? <div className="notice err" role="alert">{message}</div> : null}
+      <div aria-live="polite">{state === 'err' ? <div className="notice err" role="alert">{message}</div> : null}</div>
 
       <div className="hp" aria-hidden="true"><label>Company<input type="text" name="company" tabIndex={-1} autoComplete="off" /></label></div>
 
