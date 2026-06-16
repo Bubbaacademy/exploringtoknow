@@ -149,3 +149,31 @@ Production `main` @ `d8384fe` · app image `etk-web@sha256:57d297d8…`. Routes 
 
 ## 18. Deploy tooling
 - [ ] `infra/server/deploy-app.sh` is the deploy path: rebuilds fresh, migrates (stdin detached), aborts if running image ≠ freshly built image; logs image ids + migration count + health.
+
+---
+
+# Phase 7 additions — manual QA
+
+Production `main` @ `23fcdba` · app image `etk-web@sha256:1ac9bf53…`. Routes verified `200`; draft `404`; `/dashboard/analytics` `307` (auth).
+
+## 19. Search (pg_trgm-backed)
+- [ ] /search?q=led returns published results only; drafts never appear.
+- [ ] Mixed case / partial / special chars / very long query all safe (no 500).
+- [ ] Results still fast; ordering sensible.
+
+## 20. Analytics & bot filtering
+- [ ] Visiting a published article (real browser) records a view; a bot user-agent does NOT.
+- [ ] Draft / bogus id record nothing.
+- [ ] Dashboard → Analytics (logged in) shows 7d/30d/all-time per article with status/category/author.
+- [ ] Dashboard shows email-delivery config as present/missing only (no secret values).
+- [ ] Public "Most Read" shows real ordering when data exists, else deterministic fallback — no fake numbers.
+
+## 21. Editorial inbox
+- [ ] Contact Messages admin: status New/Reviewed/Archived/Spam; reviewedBy/reviewedAt; notifyStatus recorded.
+- [ ] Product Requests admin: helper text clarifies manual approval; category + 3–30 images + permission still enforced; nothing auto-approves/publishes.
+
+## 22. Authors
+- [ ] Authors support sortOrder; byline links to author; unassigned articles fall back to Editorial Team.
+
+## 23. Email provider activation (when ready)
+- [ ] Set NEWSLETTER_PROVIDER=resend + RESEND_API_KEY (+ NEWSLETTER_FROM, optional NEWSLETTER_DOUBLE_OPT_IN, CONTACT_NOTIFY_TO) in env; verify dashboard shows "present" and a test subscribe/contact sends mail.
