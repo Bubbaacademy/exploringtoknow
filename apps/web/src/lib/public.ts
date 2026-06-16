@@ -178,6 +178,40 @@ export async function listActiveAuthors(): Promise<Doc[]> {
   return res.docs;
 }
 
+/**
+ * Admin analytics aggregation: per-article 7-day / 30-day / all-time view totals
+ * from first-party article_views. Internal (dashboard) use — includes article
+ * status/category/author for triage. Returns [] when there is no data.
+ */
+export async function getMostReadDashboard(limit = 50): Promise<Array<{ article: Doc; v7: number; v30: number; vAll: number }>> {
+  const payload = await client();
+  const now = Date.now();
+  const d7 = new Date(now - 7 * 86_400_000).toISOString().slice(0, 10);
+  const d30 = new Date(now - 30 * 86_400_000).toISOString().slice(0, 10);
+  const views = await payload.find({ collection: 'article-views', limit: 10_000, depth: 0 });
+  if (!views.docs.length) return [];
+  const agg = new Map<string | number, { v7: number; v30: number; vAll: number }>();
+  for (const v of views.docs) {
+    const aid = typeof v.article === 'object' ? (v.article as Doc)?.id : v.article;
+    if (aid == null) continue;
+    const c = Number(v.count || 0);
+    const date = String(v.viewDate || '');
+    const e = agg.get(aid) ?? { v7: 0, v30: 0, vAll: 0 };
+    e.vAll += c;
+    if (date >= d30) e.v30 += c;
+    if (date >= d7) e.v7 += c;
+    agg.set(aid, e);
+  }
+  const ids = [...agg.keys()];
+  const arts = await payload.find({ collection: 'articles', where: { id: { in: ids } }, depth: 1, limit: ids.length });
+  const byId = new Map(arts.docs.map((a) => [a.id, a]));
+  return [...agg.entries()]
+    .map(([id, e]) => ({ article: byId.get(id) as Doc, ...e }))
+    .filter((r) => r.article)
+    .sort((a, b) => b.vAll - a.vAll || (new Date(String(b.article.editorialPublishedAt || 0)).getTime()) - (new Date(String(a.article.editorialPublishedAt || 0)).getTime()))
+    .slice(0, limit);
+}
+
 export async function getActiveAuthor(slug: string): Promise<Doc | null> {
   const payload = await client();
   const res = await payload.find({

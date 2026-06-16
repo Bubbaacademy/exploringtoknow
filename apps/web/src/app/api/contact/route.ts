@@ -46,6 +46,24 @@ export async function POST(req: Request) {
 
   try {
     const payload = await getPayload({ config });
+    // Optional editorial-inbox notification — best effort, never blocks the user.
+    // No-op unless a provider is configured (emailEnabled) AND CONTACT_NOTIFY_TO is set.
+    let notifyStatus = 'local_no_send';
+    const notifyTo = process.env.CONTACT_NOTIFY_TO;
+    if (notifyTo && emailEnabled()) {
+      try {
+        const r = await sendEmail({
+          to: notifyTo,
+          subject: `New contact (${reason}) — ${subject || 'no subject'}`,
+          html: `<p><strong>From:</strong> ${name || '(no name)'} &lt;${email}&gt;</p><p><strong>Reason:</strong> ${reason}</p>${productUrl ? `<p><strong>Product URL:</strong> ${productUrl}</p>` : ''}<p>${message.replace(/</g, '&lt;')}</p>`,
+          text: `From: ${name || ''} <${email}>\nReason: ${reason}\n${productUrl ? `Product: ${productUrl}\n` : ''}\n${message}`,
+        });
+        notifyStatus = r.status;
+      } catch {
+        notifyStatus = 'error_network';
+      }
+    }
+
     await payload.create({
       collection: 'contact-messages',
       overrideAccess: true,
@@ -58,24 +76,9 @@ export async function POST(req: Request) {
         productUrl: productUrl || undefined,
         status: 'new',
         source: 'contact-page',
+        notifyStatus,
       },
     });
-
-    // Optional editorial-inbox notification — best effort, never blocks the user.
-    // No-op unless a provider is configured (emailEnabled) AND CONTACT_NOTIFY_TO is set.
-    const notifyTo = process.env.CONTACT_NOTIFY_TO;
-    if (notifyTo && emailEnabled()) {
-      try {
-        await sendEmail({
-          to: notifyTo,
-          subject: `New contact (${reason}) — ${subject || 'no subject'}`,
-          html: `<p><strong>From:</strong> ${name || '(no name)'} &lt;${email}&gt;</p><p><strong>Reason:</strong> ${reason}</p>${productUrl ? `<p><strong>Product URL:</strong> ${productUrl}</p>` : ''}<p>${message.replace(/</g, '&lt;')}</p>`,
-          text: `From: ${name || ''} <${email}>\nReason: ${reason}\n${productUrl ? `Product: ${productUrl}\n` : ''}\n${message}`,
-        });
-      } catch {
-        /* notification failure must not affect the public response */
-      }
-    }
 
     return NextResponse.json({ ok: true });
   } catch {

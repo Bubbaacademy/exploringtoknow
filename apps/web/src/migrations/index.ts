@@ -7,6 +7,7 @@ import * as migration_20260614_214148_product_request_category_and_seed from './
 import * as migration_20260616_010000_newsletter_subscribers from './20260616_010000_newsletter_subscribers';
 import * as migration_20260616_020000_phase5_newsletter_contact from './20260616_020000_phase5_newsletter_contact';
 import * as migration_20260616_030000_phase6_growth from './20260616_030000_phase6_growth';
+import * as migration_20260616_040000_phase7_ops from './20260616_040000_phase7_ops';
 
 export const migrations = [
   {
@@ -53,5 +54,10 @@ export const migrations = [
     up: migration_20260616_030000_phase6_growth.up,
     down: migration_20260616_030000_phase6_growth.down,
     name: '20260616_030000_phase6_growth',
+  },
+  {
+    up: migration_20260616_040000_phase7_ops.up,
+    down: migration_20260616_040000_phase7_ops.down,
+    name: '20260616_040000_phase7_ops',
   },
 ];
