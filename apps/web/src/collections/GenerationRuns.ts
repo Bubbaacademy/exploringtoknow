@@ -5,7 +5,12 @@ import type { CollectionConfig } from 'payload';
  */
 export const GenerationRuns: CollectionConfig = {
   slug: 'generation-runs',
-  admin: { useAsTitle: 'id', group: 'AI Pipeline', defaultColumns: ['product', 'status', 'costUsdCents', 'finishedAt'] },
+  admin: {
+    useAsTitle: 'id',
+    group: 'AI Pipeline',
+    description: 'Audit + cost ledger per AI run. Pipeline chain: Product Request → (approve) → Product → Intelligence/Brief → Article (lands at ready_for_review, NOT published) → Generation Run. "published" here means pipeline-ready, NOT publicly published — an editor still sets the article editorialStatus.',
+    defaultColumns: ['product', 'status', 'articleAttempts', 'costUsdCents', 'finishedAt'],
+  },
   access: { read: ({ req }) => Boolean(req.user) },
   fields: [
     { name: 'product', type: 'relationship', relationTo: 'products', index: true },
