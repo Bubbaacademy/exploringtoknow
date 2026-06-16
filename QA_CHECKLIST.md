@@ -309,3 +309,20 @@ Production `main` @ `e934169` · app image `etk-web@sha256:ea107fb4…`. Migrati
 ## 41. Admin responsive/a11y (manual)
 - [ ] Sidebar collapses to a row under ~900px; no horizontal overflow at 1024/1280/1440; tablet readable.
 - [ ] Links/buttons keyboard-focusable with visible focus; contrast reasonable.
+
+---
+
+# Phase 12B additions — native Payload /admin branding (no migration)
+
+Production `main` @ `f24bc89` · app image `etk-web@sha256:6dbe655c…`. Native admin theme proven live (brand color + titleSuffix in deployed admin assets).
+
+## 42. Native /admin visual (log in to confirm)
+- [ ] Browser tab shows "… · ExploringToKnow Ops".
+- [ ] Login + collection screens: primary buttons are brand forest; left nav is branded (dark forest, grouped); warm paper background.
+- [ ] Collection list/edit screens readable; status columns + descriptions clear.
+- [ ] ProductRequests status field shows the ⚠ "approving triggers generation" note; option reads "Approved (triggers generation)".
+- [ ] Light/dark theme both acceptable (html[data-theme]).
+- [ ] /admin + all /admin/collections/* load (200); dashboards still 307 when logged out.
+
+## 43. Known limitation
+- Deep Payload component theming (custom Nav/Logo, list-cell badges) not done (needs importMap; avoided for safety). Theme is CSS-variable + class-hook based; final pixel polish needs a human logged-in pass.

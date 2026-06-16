@@ -26,9 +26,28 @@ premium, structured **editorial operations console**:
   protect the admin bundle; the custom console is the operations layer).
 - **No migration**; app-only deploy; worker untouched.
 
+## Phase 12B — Native Payload /admin branding: COMPLETE & DEPLOYED (no migration)
+The actual `/admin` interface (used daily) is now visibly branded, not raw default Payload:
+- **Scoped admin CSS** injected via a CSS import in `app/(payload)/layout.tsx` — Payload 3.85.1
+  has **no `admin.css` config key** (verified by typecheck; that approach was rejected), so the
+  theme is imported in the admin route-group layout instead. `admin-theme.css` overrides Payload v3
+  public theme variables (`--theme-bg` → warm paper; `html[data-theme]` scoping) and stable class
+  hooks: `.btn--style-primary` → brand forest (login/save/create), branded left **nav** sidebar,
+  card/heading polish. `admin.meta.titleSuffix` brands the browser tab.
+- **Proven live (headless):** `/admin` title is now "… · ExploringToKnow Ops" and the brand color
+  `#14543f` + button override are present in the deployed admin CSS bundle.
+- **ProductRequests safety cue:** the status field gained a ⚠ description (approving creates a
+  Product + enqueues ONE generation job) and a clearer "Approved (triggers generation)" option
+  label — value unchanged; approval logic untouched.
+- **Limitation:** deep per-component Payload restyling (custom Nav/Logo React components) was
+  intentionally avoided — it needs the importMap and risks the admin bundle. The theme is delivered
+  via the safe CSS-variable + stable-class-hook layer; final pixel polish needs a logged-in browser pass.
+- No business logic, schema, or migration changed; app-only deploy; worker untouched.
+
 ## ⭐ Admin UI/UX — note
-The admin operations console (custom `/dashboard`) is now premium. Payload's native `/admin`
-collection forms remain standard (functional) — a future pass could theme those too if desired.
+Both admin surfaces are now branded: the custom `/dashboard` operations console (Phase 12) AND
+Payload's native `/admin` (Phase 12B, CSS-themed). A future pass could add custom Payload
+components (branded Nav/Logo, list-cell status badges) via the importMap if deeper polish is wanted.
 
 ---
 
@@ -155,16 +174,16 @@ keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ e934169`** (Phase 12 merge) + docs commit synced on top |
+| Production HEAD | **`main @ f24bc89`** (Phase 12B) + docs commit synced on top |
 | Local `main` HEAD | matches prod (app code) + docs commit |
-| Running app image | `etk-web@sha256:ea107fb4…` (verified == freshly-built) |
+| Running app image | `etk-web@sha256:6dbe655c…` (verified == freshly-built) |
 | Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 31h, Postgres/Caddy up 5d, 0 restarts) |
 | App health | Healthy, 0 restarts |
 | Pending jobs / locks / long-tx | **0 / 0 / 0** |
 | Payload migrations applied | **12** (unchanged — Phases 11–12 added no migration; latest `20260616_060000_phase10_editorial`) |
 
 ### Rollback points (prod tags)
-`prod-pre-phase12-admin-pro-redesign → 41d9308` · `prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
+`prod-pre-phase12b-native-admin → 19b68e3` · `prod-pre-phase12-admin-pro-redesign → 41d9308` · `prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
 `prod-pre-phase6-growth → f89eaea` · `prod-pre-phase5-magazine → 7975891` ·
 `prod-pre-phase4-trust → 1bcd201` · `prod-pre-phase3-discovery → dcfb3bb` · `prod-pre-phase2-navsearch → 181e953`
 
