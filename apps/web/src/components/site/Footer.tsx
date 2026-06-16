@@ -1,13 +1,18 @@
 import Link from 'next/link';
 import { AFFILIATE_DISCLOSURE, SITE_NAME } from '@/lib/public';
 import { Brand } from './Brand';
-import { PRIMARY_NAV, CTA, TOPICS_HREF } from '@/lib/nav';
+import { NewsletterSignup } from './NewsletterSignup';
+import { PRIMARY_NAV, CTA, ABOUT_NAV, TOPICS_HREF, SEARCH_HREF } from '@/lib/nav';
 
 export function Footer() {
   const year = 2026;
   return (
     <footer className="site-footer">
       <div className="container">
+        <div className="footer-news">
+          <NewsletterSignup source="footer" variant="footer" />
+        </div>
+
         <div className="footer-top">
           <div className="footer-brand">
             <Brand />
@@ -20,9 +25,13 @@ export function Footer() {
             {PRIMARY_NAV.map((l) => <Link key={l.href} href={l.href}>{l.label}</Link>)}
           </div>
           <div className="footer-col">
-            <h4>About</h4>
-            <Link href="/search">Search</Link>
+            <h4>Company</h4>
+            {ABOUT_NAV.map((l) => <Link key={l.href} href={l.href}>{l.label}</Link>)}
+          </div>
+          <div className="footer-col">
+            <h4>Get involved</h4>
             <Link href={CTA.href}>{CTA.label}</Link>
+            <Link href={SEARCH_HREF}>Search</Link>
           </div>
         </div>
 
@@ -30,7 +39,7 @@ export function Footer() {
 
         <div className="footer-bottom">
           <span>© {year} {SITE_NAME}. All rights reserved.</span>
-          <span className="meta">Independently reviewed · Reader-supported</span>
+          <span className="meta">Independently reviewed · Reader-supported · <Link href="/affiliate-disclosure">Affiliate disclosure</Link></span>
         </div>
       </div>
     </footer>

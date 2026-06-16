@@ -4,6 +4,7 @@ import * as migration_20260613_004800_phase2_intake_editorial from './20260613_0
 import * as migration_20260613_020339_slice_b_body_blocks from './20260613_020339_slice_b_body_blocks';
 import * as migration_20260613_183516_manual_product_request_images from './20260613_183516_manual_product_request_images';
 import * as migration_20260614_214148_product_request_category_and_seed from './20260614_214148_product_request_category_and_seed';
+import * as migration_20260616_010000_newsletter_subscribers from './20260616_010000_newsletter_subscribers';
 
 export const migrations = [
   {
@@ -35,5 +36,10 @@ export const migrations = [
     up: migration_20260614_214148_product_request_category_and_seed.up,
     down: migration_20260614_214148_product_request_category_and_seed.down,
     name: '20260614_214148_product_request_category_and_seed'
+  },
+  {
+    up: migration_20260616_010000_newsletter_subscribers.up,
+    down: migration_20260616_010000_newsletter_subscribers.down,
+    name: '20260616_010000_newsletter_subscribers',
   },
 ];

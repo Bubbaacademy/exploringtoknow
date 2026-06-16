@@ -21,6 +21,13 @@ export const PRIMARY_NAV: NavLink[] = [
 /** The ONE primary call-to-action. Label is standardized everywhere. */
 export const CTA: NavLink = { label: 'Request a Review', href: '/request-product' };
 
+/** Trust / editorial pages (footer). */
+export const ABOUT_NAV: NavLink[] = [
+  { label: 'About', href: '/about' },
+  { label: 'Editorial Policy', href: '/editorial-policy' },
+  { label: 'Affiliate Disclosure', href: '/affiliate-disclosure' },
+];
+
 export const TOPICS_HREF = '/categories';
 export const SEARCH_HREF = '/search';
 
