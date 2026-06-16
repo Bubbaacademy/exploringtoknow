@@ -1,9 +1,7 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-16 after Phase 4 deployment & live verification.
-> Documentation only — no application code, schema, worker, generation, publishing,
-> category, approval, image-population, affiliate logic, or database data changed by
-> this update.
+> Current snapshot. Updated 2026-06-16 after Phase 5 deployment & live verification.
+> Documentation only — no application code, schema, or data changed by this update.
 
 ---
 
@@ -11,106 +9,87 @@
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ 7975891`** (Phase 4 merge; fast-forwarded from Phase 3 `1bcd201`) |
-| Local `main` HEAD | `7975891` (in sync with production) |
-| Running app image | `etk-web@sha256:7209f7e0…` (Phase 4; only the app + migrate ran) |
-| Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated in Phase 4 (worker up 26h, Postgres/Caddy up 5d, 0 restarts) |
+| Production HEAD | **`main @ 6333011`** (Phase 5 merge; fast-forwarded from Phase 4 `7975891`) |
+| Local `main` HEAD | `6333011` (in sync with production) |
+| Running app image | `etk-web@sha256:22a88b89…` (Phase 5; only app + migrate ran) |
+| Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 27h, Postgres/Caddy up 5d, 0 restarts) |
 | App health | Healthy, 0 restarts |
-| Pending jobs | **0** |
-| DB ungranted locks / long-running transactions | **0 / 0** |
-| Payload migrations applied | **7** (latest: `20260616_010000_newsletter_subscribers`) |
+| Pending jobs / locks / long-tx | **0 / 0 / 0** |
+| Payload migrations applied | **8** (latest: `20260616_020000_phase5_newsletter_contact`) |
 
 ### Rollback points
 | Tag | Points to | Phase |
 |---|---|---|
+| `prod-pre-phase5-magazine` | `7975891` | before Phase 5 |
 | `prod-pre-phase4-trust` | `1bcd201` | before Phase 4 |
 | `prod-pre-phase3-discovery` | `dcfb3bb` | before Phase 3 |
 | `prod-pre-phase2-navsearch` | `181e953` | before Phase 2 |
-| `pre-ui-redesign` (local) | `af7846a` | before Phase 1 |
 
 ---
 
 ## Completed phases
 
-**Phase 1 — Premium design system + homepage redesign: COMPLETE & DEPLOYED.**
-Shared editorial design system (warm paper background, deep-forest brand, restrained
-terracotta accent, serif display + sans body, tokens, cards, buttons, header/footer
-foundation, responsive behavior) and the redesigned homepage.
+**Phase 1** — Premium design system + homepage redesign. COMPLETE & DEPLOYED.
 
-**Phase 2 — Global navigation, native search, premium article experience: COMPLETE & DEPLOYED.**
-Scalable Topics mega menu (real categories) + accessible mobile drawer; native
-published-only server-side search (`/search`, noindex) + listing routes; premium
-article page (masthead, reading progress, TOC, in-article disclosure, related);
-standardized "Request a Review" CTA.
+**Phase 2** — Global navigation (Topics mega menu + mobile drawer), native published-only search + listing routes, premium article page. COMPLETE & DEPLOYED.
 
-**Phase 3 — Premium discovery layer: COMPLETE & DEPLOYED.**
-- Category page redesign (editorial masthead: name, description, published count, trust line; magazine grid; elegant empty state).
-- Categories hub / topic discovery (`/categories`) — grouped editorial sections, count badges, mobile-friendly topic cards.
-- Explore hub (`/explore`) — featured/newest cover, latest guides, browse-by-topic, buying-guides/reviews entry points, graceful fallbacks.
-- Search + listing route polish (centered search hero, popular-topic suggestions, premium empty states on `/buying-guides` and `/reviews`).
-- Premium article page improvements carried forward: reading progress, table of contents, article masthead, affiliate disclosure, related-content discovery.
-- Published-only gates preserved; no paid image API; no auto-publish; article integrity verified (fingerprints unchanged).
+**Phase 3** — Discovery layer: category page redesign, topics hub, explore hub, search/listing polish. COMPLETE & DEPLOYED.
 
-**Phase 4 — Magazine trust + request-flow polish + newsletter: COMPLETE & DEPLOYED.**
-- Request-product form polish (UI/UX + a11y only): editorial masthead, grouped fieldsets, clearer validation messages and guidance.
-  - Required category selection preserved.
-  - "Other / Not Sure" requires a short suggested category.
-  - Image upload guidance: minimum 3 / maximum 30, accepted types shown (JPEG/PNG/WebP), permission checkbox explained.
-  - Anti-double-submit + loading state; entered values preserved on validation failure.
-  - Combobox keyboard navigation (`aria-activedescendant`).
-  - Approval/generation logic unchanged; request submission still creates `submitted` requests only.
-- Newsletter capture:
-  - Additive `NewsletterSubscribers` collection/table with an additive migration.
-  - Signup component on the homepage, near the end of articles, and in the footer.
-  - Server-side email validation, dedupe by email, honeypot; no external email provider, no automation.
-- Trust pages added: `/about`, `/editorial-policy`, `/affiliate-disclosure` (original content).
-- Footer / navigation links updated (editorial footer with trust-page links + newsletter).
-- No existing published article content changed; no generation triggered; no paid image API used.
+**Phase 4** — Magazine trust: request-form polish, newsletter capture (additive), About / Editorial Policy / Affiliate Disclosure pages, editorial footer. COMPLETE & DEPLOYED.
 
-### Phase 4 DB backup
-`/opt/exploringtoknow/backups/pre-phase4_20260616_010853.sql.gz` (verified before migration: gzip OK, 48 tables, article data present).
+**Phase 5 — Magazine completion (newsletter system, contact, trust/discovery/SEO, deploy hardening): COMPLETE & DEPLOYED.**
+- **Newsletter system:** expanded subscriber lifecycle (statuses active / pending / unsubscribed / bounced / complained + legacy subscribed) with `provider`, `confirmedAt`, `unsubscribedAt`, `tokenHash` columns. Provider abstraction (`lib/newsletter.ts`) defaults to safe **local mode** (immediate active, no external calls); double opt-in is provider-gated and ready. Upgraded `/api/newsletter` (dedupe, token, re-subscribe). Token-based `/newsletter/confirm` and `/newsletter/unsubscribe` pages (noindex; flip status only, never delete). Signups on homepage, article end, footer. Subscribers visible in admin.
+- **Contact:** `/contact` page (reasons + validated form, honeypot, anti-double-submit, aria-live), additive `ContactMessages` collection, `/api/contact`; footer + sitemap links.
+- **Trust layer:** article byline links to `/about`; in-article disclosure links to `/affiliate-disclosure`; footer links About / Editorial Policy / Affiliate Disclosure / Contact / Request a Review.
+- **Discovery:** deterministic **Trending guides** on homepage (featured + recency; **no fabricated view counts**); Latest hides gracefully when thin.
+- **SEO / structured data:** Organization + WebSite (SearchAction) JSON-LD on homepage; BreadcrumbList JSON-LD on article + category pages; canonicals/meta preserved; sitemap updated; search + token pages noindex.
+- **Deploy hardening:** `infra/server/deploy-app.sh` — rebuilds app + migrate fresh, runs migrations with stdin detached (`run --build -T </dev/null`), and **fails loudly if the running app image ≠ the freshly built image**. Fixes the Phase-4 stale-image / swallowed-stdin failure mode.
 
-### Phase 4 migration
-- `20260616_010000_newsletter_subscribers` — **additive only**.
-- Creates `newsletter_subscribers` (unique `email`, `source`, `status`, `created_at`/`updated_at` timestamps) plus the admin lock relation column on `payload_locked_documents_rels`.
-- Payload migrations count moved from **6 → 7**. No existing table/column/data altered.
+### Phase 5 migration
+- `20260616_020000_phase5_newsletter_contact` — **additive only**. Adds newsletter status enum values (via `ADD VALUE IF NOT EXISTS`, not used in the same transaction) + newsletter columns; creates `contact_messages` table + admin lock relation. Pre-validated against the live prod schema in a rolled-back transaction. Payload migrations **7 → 8**.
+
+### Phase 5 DB backup
+`/opt/exploringtoknow/backups/pre-phase5_20260616_021548.sql.gz` (verified before migration: gzip OK, 49 tables, article data present).
 
 ---
 
-## Verified live routes (Phase 4)
+## Verified live routes (Phase 5)
 
-`200`: `/`, `/request-product`, `/about`, `/editorial-policy`, `/affiliate-disclosure`,
-`/categories`, `/category/sleep-wellness`, `/explore`, `/search`, `/buying-guides`,
-`/reviews`, `/sitemap.xml`, published article route.
-**`404`:** draft article route remains inaccessible (published-only gate intact).
+`200`: `/`, `/categories`, `/category/sleep-wellness`, `/explore`, `/search`, `/buying-guides`,
+`/reviews`, `/request-product`, `/about`, `/editorial-policy`, `/affiliate-disclosure`, `/contact`,
+`/newsletter/confirm`, `/newsletter/unsubscribe`, `/sitemap.xml`, published article route.
+**`404`:** draft article route (published-only gate intact).
 
 ---
 
-## Safety & integrity (carried through Phases 2–4)
+## Safety & integrity (held through Phase 5)
 
-- Public visibility gated solely by `editorialStatus = 'published'`; drafts/ready_for_review/rejected never exposed.
+- Public visibility gated solely by `editorialStatus = 'published'`; drafts never exposed; draft URLs 404.
 - No paid image-generation API; manual product-image system unchanged.
-- No Anthropic/OpenAI generation triggered during any UI deploy; `generation_runs` unchanged.
-- No auto-publish; category-required publish guard intact.
-- Article content fingerprints (title/markdown/prose) unchanged across deploys.
-- Affiliate URLs and `rel="sponsored nofollow noopener"` preserved.
+- No generation/approval triggered; `generation_runs` unchanged (5). No auto-publish.
+- Article content fingerprints (title/markdown/prose) **identical to baseline** for all published articles.
+- Affiliate URLs and `rel` attributes unchanged (UI/trust presentation only).
+- No duplicate articles/media; counts unchanged (articles 5, published 3, media 45).
+- Additive migrations only; verified DB backup + rollback tag before deploy.
 
 ---
 
 ## Known limitations
 
 - **Manual browser pixel-level responsive review still needed** (verified structurally + via SSR only).
-- **Screen-reader / accessibility manual review still needed** (ARIA, focus management, and keyboard paths verified by construction + SSR, not by assistive-tech automation).
-- **Newsletter is local capture only** — no external email provider, no double opt-in/unsubscribe, no automation yet.
+- **Screen-reader / a11y manual review still needed.**
+- **Newsletter runs in local-capture mode** — no external email provider wired yet, so confirmation/unsubscribe emails are not delivered (the schema, tokens, and routes are ready; double opt-in activates when a provider + `NEWSLETTER_DOUBLE_OPT_IN=true` are configured).
+- **No real analytics** — "Trending" is a deterministic editorial ranking, not view-based.
+- Content remains thin (3 published articles); some listings legitimately show empty states.
 
 ---
 
-## Phase 5 candidates (NOT started)
+## Phase 6 candidates (NOT started)
 
-1. Connect the newsletter to a real email provider with double opt-in and unsubscribe.
-2. Trending / Most-Read module (after analytics exists).
-3. Author profile / "About the author" pages.
-4. Contact page.
-5. Multi-step request form (if needed).
-6. Deploy-script hardening so migrate/build/app-swap cannot silently reuse stale images
-   (force `run --build`, detach stdin, separate the app swap from the piped script).
+1. Wire newsletter to a real email provider (confirmation + unsubscribe delivery, double opt-in).
+2. Lightweight first-party pageview analytics (additive table) to power real "Most Read".
+3. Author profile pages / per-author bylines (schema-backed).
+4. Contact → email notification/routing for the editorial inbox.
+5. Multi-step request form (if conversion data warrants).
+6. Per-category hero imagery + richer category SEO.
+7. Optional Postgres `pg_trgm` search index once content volume grows.

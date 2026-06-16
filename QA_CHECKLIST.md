@@ -78,3 +78,42 @@
 - [ ] No generation triggered during QA; `generation_runs` count unchanged.
 - [ ] No paid image API used (manual-image system only).
 - [ ] Published article content unchanged (title/markdown fingerprints stable).
+
+---
+
+# Phase 5 additions — manual QA
+
+Production `main` @ `6333011` · app image `etk-web@sha256:22a88b89…`. Routes verified `200` live; draft `404`.
+
+## 8. Newsletter system
+- [ ] Homepage / article-end / footer signup: valid email → success ("subscribed").
+- [ ] Duplicate email → friendly "already on the list" (no error, no duplicate row).
+- [ ] Invalid email → inline 422 error.
+- [ ] Honeypot ("Company") filled → silent success, no row stored.
+- [ ] `/newsletter/unsubscribe?token=bad` → friendly "link isn't valid" (no crash).
+- [ ] `/newsletter/confirm?token=bad` → friendly "link isn't valid".
+- [ ] Admin → Newsletter Subscribers shows email/status/source/provider/confirmedAt/createdAt.
+- [ ] Local mode: new subscribers are `active` with provider `local` (no external email sent — expected until a provider is configured).
+
+## 9. Contact page (`/contact`)
+- [ ] Reasons grid renders; form has name (optional), email, reason, subject, product URL, message.
+- [ ] Valid submit → success panel.
+- [ ] Message < 10 chars or bad email → clear 422 error; values preserved.
+- [ ] Honeypot → silent success, no row.
+- [ ] Anti-double-submit (button disables/"Sending…").
+- [ ] Admin → Contact Messages shows the submission.
+- [ ] Footer "Contact" link present; mobile layout clean.
+
+## 10. Discovery / Trending
+- [ ] Homepage "Trending guides" section shows published articles (featured + recent); no fake view numbers.
+- [ ] "Latest guides" only appears when there are extras beyond cover + trending (no misleading empty block).
+- [ ] All discovery surfaces published-only; drafts never appear.
+
+## 11. SEO / structured data
+- [ ] Homepage has Organization + WebSite (SearchAction) JSON-LD.
+- [ ] Article pages have Article + BreadcrumbList JSON-LD; byline links to /about; disclosure links to /affiliate-disclosure.
+- [ ] Category pages have BreadcrumbList JSON-LD.
+- [ ] `/newsletter/*` and `/search` are noindex; `/contact` + trust pages indexable and in sitemap.
+
+## 12. Deploy tooling
+- [ ] `infra/server/deploy-app.sh` is the documented deploy path: rebuilds fresh, migrates with detached stdin, and aborts if the running image ≠ freshly built image.
