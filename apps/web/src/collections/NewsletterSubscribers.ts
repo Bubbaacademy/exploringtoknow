@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 
 /**
  * Newsletter subscribers — additive, intake-only. Public sign-ups go through the
@@ -17,14 +18,15 @@ export const NewsletterSubscribers: CollectionConfig = {
     defaultColumns: ['email', 'status', 'source', 'provider', 'lastEmailStatus', 'createdAt'],
   },
   access: {
-    read: ({ req }) => Boolean(req.user),
-    create: ({ req }) => Boolean(req.user), // public sign-ups use the server route (Local API)
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    read: scopedRead('deny'),
+    create: scopedCreate(), // public sign-ups use the server route (Local API, overrideAccess)
+    update: scopedMutate(),
+    delete: scopedMutate(),
   },
   fields: [
     { name: 'email', type: 'email', required: true, unique: true, index: true },
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing records; set by backfill).' } },
     {
       name: 'status', type: 'select', defaultValue: 'active', index: true,
       options: [
@@ -42,4 +44,5 @@ export const NewsletterSubscribers: CollectionConfig = {
     { name: 'unsubscribedAt', type: 'date', admin: { readOnly: true } },
     { name: 'tokenHash', type: 'text', admin: { readOnly: true, hidden: true, description: 'SHA-256 of the confirm/unsubscribe token (never stores the raw token).' } },
   ],
+  hooks: { beforeChange: [stampTenantWorkspace] },
 };

@@ -100,6 +100,17 @@ const ROLE_RANK: Record<Role, number> = {
   viewer: 4,
 };
 
+/** The actor's most-privileged membership (preferring ones that carry a tenant). */
+export function getPrimaryMembership(ctx: TenantContext): Membership | null {
+  if (!ctx.memberships.length) return null;
+  const sorted = [...ctx.memberships].sort((a, b) => {
+    const at = a.tenant ? 0 : 1, bt = b.tenant ? 0 : 1;
+    if (at !== bt) return at - bt;
+    return (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9);
+  });
+  return sorted[0] ?? null;
+}
+
 /** The actor's primary tenant (most privileged membership that carries a tenant). */
 export function getPrimaryTenant(ctx: TenantContext): Doc | null {
   const withTenant = ctx.memberships.filter((m) => m.tenant);
@@ -108,14 +119,32 @@ export function getPrimaryTenant(ctx: TenantContext): Doc | null {
   return withTenant[0]?.tenant ?? null;
 }
 
+/** The actor's primary workspace (from the most privileged membership that has one). */
+export function getPrimaryWorkspace(ctx: TenantContext): Doc | null {
+  const withWs = ctx.memberships.filter((m) => m.workspace);
+  if (!withWs.length) return null;
+  withWs.sort((a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9));
+  return withWs[0]?.workspace ?? null;
+}
+
+export const ROLE_LABEL: Record<Role, string> = {
+  platform_super_admin: 'Platform super admin',
+  workspace_owner: 'Workspace owner',
+  workspace_admin: 'Workspace admin',
+  editor: 'Editor',
+  viewer: 'Viewer / Analyst',
+};
+
 /**
  * Tenant-scoped workspace overview. EVERY count is filtered by the supplied
  * tenantId (derived from the session, not the client), demonstrating true
  * server-side scoping rather than UI-only filtering.
  */
-export async function getWorkspaceOverview(tenantId: string | number) {
+export async function getWorkspaceOverview(tenantId: string | number, workspaceId?: string | number | null) {
   const payload = await getPayload({ config });
-  const scoped = (where: Doc) => ({ and: [{ tenant: { equals: tenantId } }, where] });
+  const base: Doc[] = [{ tenant: { equals: tenantId } }];
+  if (workspaceId != null) base.push({ workspace: { equals: workspaceId } });
+  const scoped = (where: Doc) => ({ and: [...base, where] });
   const count = async (collection: string, where: Doc): Promise<number> => {
     const r = await payload.count({ collection: collection as any, where: scoped(where) });
     return r.totalDocs;
@@ -169,4 +198,27 @@ export async function getPlatformOverview() {
     }),
   );
   return { totals: { tenants, workspaces, memberships, users, articles, products }, tenants: rows };
+}
+
+/**
+ * Scoping-health probe for /platform: counts operational rows missing a tenant or
+ * workspace. Any non-zero number means new records are slipping through unscoped and
+ * must be investigated. Returns only the collections with a problem (empty = healthy).
+ */
+export async function getScopingHealth() {
+  const payload = await getPayload({ config });
+  const collections = [
+    'products', 'articles', 'product-requests', 'categories', 'authors',
+    'newsletter-subscribers', 'contact-messages', 'generation-runs', 'article-views', 'media',
+    'brands', 'content-briefs', 'product-intelligence', 'social-posts',
+  ];
+  const rows = await Promise.all(collections.map(async (c) => {
+    const [nt, nw] = await Promise.all([
+      payload.count({ collection: c as any, where: { tenant: { exists: false } } }),
+      payload.count({ collection: c as any, where: { workspace: { exists: false } } }),
+    ]);
+    return { collection: c, nullTenant: nt.totalDocs, nullWorkspace: nw.totalDocs };
+  }));
+  const problems = rows.filter((r) => r.nullTenant > 0 || r.nullWorkspace > 0);
+  return { ok: problems.length === 0, problems };
 }

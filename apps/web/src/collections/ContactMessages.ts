@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 
 /**
  * Contact messages — additive, intake-only. Public submissions go through the
@@ -15,15 +16,16 @@ export const ContactMessages: CollectionConfig = {
     defaultColumns: ['email', 'reason', 'subject', 'status', 'reviewedBy', 'createdAt'],
   },
   access: {
-    read: ({ req }) => Boolean(req.user),
-    create: ({ req }) => Boolean(req.user), // public submissions use the server route
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    read: scopedRead('deny'),
+    create: scopedCreate(), // public submissions use the server route (Local API, overrideAccess)
+    update: scopedMutate(),
+    delete: scopedMutate(),
   },
   fields: [
     { name: 'name', type: 'text' },
     { name: 'email', type: 'email', required: true },
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing records; set by backfill).' } },
     {
       name: 'reason', type: 'select', defaultValue: 'general',
       options: [
@@ -51,4 +53,5 @@ export const ContactMessages: CollectionConfig = {
     { name: 'reviewedBy', type: 'relationship', relationTo: 'users', admin: { description: 'Editor who triaged this message.' } },
     { name: 'reviewedAt', type: 'date', admin: { description: 'When this message was triaged.' } },
   ],
+  hooks: { beforeChange: [stampTenantWorkspace] },
 };

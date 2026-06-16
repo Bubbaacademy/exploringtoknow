@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload';
 import { enqueue, QUEUES, type GenerateContentJob } from '@etk/queue';
 import { productImagesField } from '@/lib/images';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 
 const OFFER_TYPES = [
   { label: 'Owned Amazon', value: 'owned_amazon' },
@@ -27,12 +28,18 @@ export const Products: CollectionConfig = {
     description: '⚠ Setting status = Active OR checking "force generate" ENQUEUES the AI content pipeline. Manually upload 3–30 product images (Product Images) before generating; affiliate URL + rel behavior is preserved as entered. Do not change affiliate URLs casually.',
     defaultColumns: ['title', 'offerType', 'status', 'priority', 'merchantName'],
   },
-  access: { read: ({ req }) => Boolean(req.user) },
+  access: {
+    read: scopedRead('deny'),
+    create: scopedCreate(),
+    update: scopedMutate(),
+    delete: scopedMutate(),
+  },
   fields: [
     { name: 'title', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
     { name: 'offerType', type: 'select', required: true, options: [...OFFER_TYPES], index: true },
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing records; set by backfill).' } },
     {
       name: 'status', type: 'select', required: true, defaultValue: 'draft', index: true,
       options: [
@@ -68,6 +75,7 @@ export const Products: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeChange: [stampTenantWorkspace],
     afterChange: [
       async ({ doc, previousDoc, operation, req }) => {
         const becameActive = doc.status === 'active' && previousDoc?.status !== 'active';

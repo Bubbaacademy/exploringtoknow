@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { membershipsRead, superOnly } from '@/lib/access';
 
 /**
  * Membership — connects a user to a tenant/workspace with a role. This is the
@@ -12,10 +13,12 @@ export const Memberships: CollectionConfig = {
   labels: { singular: 'Membership', plural: 'Memberships' },
   admin: { useAsTitle: 'role', group: 'Platform', defaultColumns: ['user', 'role', 'tenant', 'workspace', 'createdAt'] },
   access: {
-    read: ({ req }) => Boolean(req.user),
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    // Super admin → all; a user may read only their own memberships. Memberships are
+    // granted/revoked by platform super admins only (the authority for access).
+    read: membershipsRead,
+    create: superOnly,
+    update: superOnly,
+    delete: superOnly,
   },
   fields: [
     { name: 'user', type: 'relationship', relationTo: 'users', required: true, index: true },

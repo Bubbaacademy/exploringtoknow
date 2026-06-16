@@ -11,6 +11,7 @@ import * as migration_20260616_040000_phase7_ops from './20260616_040000_phase7_
 import * as migration_20260616_050000_phase8_authors from './20260616_050000_phase8_authors';
 import * as migration_20260616_060000_phase10_editorial from './20260616_060000_phase10_editorial';
 import * as migration_20260616_070000_phase13_multitenant from './20260616_070000_phase13_multitenant';
+import * as migration_20260616_080000_phase14_workspace_scoping from './20260616_080000_phase14_workspace_scoping';
 
 export const migrations = [
   {
@@ -77,5 +78,10 @@ export const migrations = [
     up: migration_20260616_070000_phase13_multitenant.up,
     down: migration_20260616_070000_phase13_multitenant.down,
     name: '20260616_070000_phase13_multitenant',
+  },
+  {
+    up: migration_20260616_080000_phase14_workspace_scoping.up,
+    down: migration_20260616_080000_phase14_workspace_scoping.down,
+    name: '20260616_080000_phase14_workspace_scoping',
   },
 ];

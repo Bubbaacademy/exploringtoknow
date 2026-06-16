@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload';
 import { APIError } from 'payload';
 import { enqueue, QUEUES, type GenerateContentJob } from '@etk/queue';
 import { productImagesField } from '@/lib/images';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 
 const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80).replace(/(^-|-$)/g, '') || 'product';
@@ -25,15 +26,16 @@ export const ProductRequests: CollectionConfig = {
     defaultColumns: ['productName', 'status', 'requestedCategory', 'requesterEmail', 'submittedAt'],
   },
   access: {
-    read: ({ req }) => Boolean(req.user),
-    create: ({ req }) => Boolean(req.user), // public submissions go through the server route (Local API)
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    read: scopedRead('deny'),
+    create: scopedCreate(), // public submissions go through the server route (Local API, overrideAccess)
+    update: scopedMutate(),
+    delete: scopedMutate(),
   },
   fields: [
     { name: 'requesterName', type: 'text' },
     { name: 'requesterEmail', type: 'email', required: true },
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing records; set by backfill).' } },
     { name: 'productName', type: 'text', required: true },
     { name: 'brand', type: 'text' },
     { name: 'productUrl', type: 'text', admin: { description: 'Source/product page URL.' } },
@@ -72,6 +74,7 @@ export const ProductRequests: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
+      stampTenantWorkspace,
       ({ data, operation }) => {
         if (operation === 'create' && !data.submittedAt) data.submittedAt = new Date().toISOString();
         return data;

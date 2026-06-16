@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { usersRead, usersSelfOrSuper, superOnly, adminPanelAccess } from '@/lib/access';
 
 /**
  * Internal operators only. No public sign-up, no customer accounts (single-tenant).
@@ -11,8 +12,14 @@ export const Users: CollectionConfig = {
   auth: { useAPIKey: true },
   admin: { useAsTitle: 'email' },
   access: {
-    // Internal-only: any authenticated operator can read; tighten with roles later.
-    read: ({ req }) => Boolean(req.user),
+    // Phase 14: the Payload admin panel is platform-super-admin-only (workspace
+    // customers use /app). Users read = super sees all, others see only themselves;
+    // mutate = super or self (account management); creation/deletion = super only.
+    admin: adminPanelAccess,
+    read: usersRead,
+    create: superOnly,
+    update: usersSelfOrSuper,
+    delete: superOnly,
   },
   fields: [
     { name: 'name', type: 'text' },

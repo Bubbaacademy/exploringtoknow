@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { workspacesRead, superOnly } from '@/lib/access';
 
 /**
  * Workspace / Publication / Site under a Tenant. ExploringToKnow Magazine is
@@ -10,10 +11,12 @@ export const Workspaces: CollectionConfig = {
   labels: { singular: 'Workspace', plural: 'Workspaces' },
   admin: { useAsTitle: 'name', group: 'Platform', defaultColumns: ['name', 'slug', 'tenant', 'mode', 'status'] },
   access: {
-    read: ({ req }) => Boolean(req.user),
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    // Super admin → all; workspace member → workspaces under their tenant only.
+    // Workspaces are created/edited by platform super admins only.
+    read: workspacesRead,
+    create: superOnly,
+    update: superOnly,
+    delete: superOnly,
   },
   fields: [
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', required: true, index: true },

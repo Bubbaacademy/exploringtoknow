@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 
 /**
  * Editorial authors. Public may READ (for author pages); only authenticated
@@ -14,15 +15,16 @@ export const Authors: CollectionConfig = {
     defaultColumns: ['name', 'role', 'sortOrder', 'active'],
   },
   access: {
-    read: () => true,
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    read: scopedRead('public'),
+    create: scopedCreate(),
+    update: scopedMutate(),
+    delete: scopedMutate(),
   },
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing records; set by backfill).' } },
     { name: 'role', type: 'text', admin: { description: 'e.g. "Senior Editor", "Editorial Team".' } },
     { name: 'bio', type: 'textarea', admin: { description: 'Short bio shown on the byline/author header.' } },
     { name: 'longBio', type: 'textarea', admin: { description: 'Optional longer bio shown on the author page.' } },
@@ -38,4 +40,5 @@ export const Authors: CollectionConfig = {
       ],
     },
   ],
+  hooks: { beforeChange: [stampTenantWorkspace] },
 };

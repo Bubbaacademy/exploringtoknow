@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 /**
  * Audit + cost ledger for each AI pipeline execution (AI Core milestone).
  * Written by the worker after a run; read by the dashboard for cost/visibility.
@@ -11,10 +12,16 @@ export const GenerationRuns: CollectionConfig = {
     description: 'Audit + cost ledger per AI run. Pipeline chain: Product Request → (approve) → Product → Intelligence/Brief → Article (lands at ready_for_review, NOT published) → Generation Run. "published" here means pipeline-ready, NOT publicly published — an editor still sets the article editorialStatus.',
     defaultColumns: ['product', 'status', 'articleAttempts', 'costUsdCents', 'finishedAt'],
   },
-  access: { read: ({ req }) => Boolean(req.user) },
+  access: {
+    read: scopedRead('deny'),
+    create: scopedCreate(), // worker writes via the Local API (overrideAccess)
+    update: scopedMutate(),
+    delete: scopedMutate(),
+  },
   fields: [
     { name: 'product', type: 'relationship', relationTo: 'products', index: true },
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing records; set by backfill).' } },
     {
       name: 'status', type: 'select', defaultValue: 'running', index: true,
       options: [
@@ -33,4 +40,5 @@ export const GenerationRuns: CollectionConfig = {
     { name: 'startedAt', type: 'date' },
     { name: 'finishedAt', type: 'date' },
   ],
+  hooks: { beforeChange: [stampTenantWorkspace] },
 };

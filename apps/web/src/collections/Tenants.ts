@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { tenantsRead, superOnly } from '@/lib/access';
 
 /**
  * Tenant / Organization — a customer/business account on the platform.
@@ -11,12 +12,13 @@ export const Tenants: CollectionConfig = {
   labels: { singular: 'Tenant', plural: 'Tenants' },
   admin: { useAsTitle: 'name', group: 'Platform', defaultColumns: ['name', 'slug', 'status', 'plan', 'createdAt'] },
   access: {
-    // Admin/REST surface is internal-operator only today (single super-admin user).
-    // Per-tenant tightening + a real second tenant to verify isolation is the next phase.
-    read: ({ req }) => Boolean(req.user),
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    // Phase 14: super admin sees/manages all tenants; a workspace member may read
+    // only their own tenant; nobody else. Tenants are created/edited by platform
+    // super admins only.
+    read: tenantsRead,
+    create: superOnly,
+    update: superOnly,
+    delete: superOnly,
   },
   fields: [
     { name: 'name', type: 'text', required: true },
