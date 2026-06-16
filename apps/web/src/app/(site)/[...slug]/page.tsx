@@ -16,6 +16,7 @@ import { AffiliateCTA } from '@/components/site/AffiliateCTA';
 import { ArticleCard } from '@/components/site/ArticleCard';
 import { ReadingProgress } from '@/components/site/ReadingProgress';
 import { ArticleToc } from '@/components/site/ArticleToc';
+import { NewsletterSignup } from '@/components/site/NewsletterSignup';
 import { renderArticle } from '@/lib/article-render';
 
 export const dynamic = 'force-dynamic';
@@ -165,6 +166,8 @@ export default async function ArticlePage({ params }: Args) {
             </div>
           </section>
         ) : null}
+
+        <NewsletterSignup source="article" variant="inline" />
       </article>
     </>
   );

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { listPublishedArticles, listActiveCategories, mediaUrl, SITE_NAME, SITE_URL, type Doc } from '@/lib/public';
 import { ArticleCard } from '@/components/site/ArticleCard';
+import { NewsletterSignup } from '@/components/site/NewsletterSignup';
 
 export const dynamic = 'force-dynamic';
 
@@ -153,6 +154,13 @@ export default async function HomePage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Newsletter */}
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="container">
+          <NewsletterSignup source="homepage" variant="section" />
         </div>
       </section>
     </>

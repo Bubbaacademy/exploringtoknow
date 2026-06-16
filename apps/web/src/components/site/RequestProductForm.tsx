@@ -19,6 +19,7 @@ export function RequestProductForm({ categories }: { categories: Category[] }) {
   const [catId, setCatId] = useState<string>('');
   const [catQuery, setCatQuery] = useState('');
   const [catOpen, setCatOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
   const [suggested, setSuggested] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -34,7 +35,18 @@ export function RequestProductForm({ categories }: { categories: Category[] }) {
     setCatId(String(c.id));
     setCatQuery(c.name);
     setCatOpen(false);
+    setActiveIdx(-1);
     if (c.slug !== OTHER_SLUG) setSuggested('');
+  }
+
+  // Keyboard navigation for the combobox (accessibility).
+  function onCatKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!catOpen && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { setCatOpen(true); return; }
+    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx((i) => Math.min(i + 1, filtered.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx((i) => Math.max(i - 1, 0)); }
+    else if (e.key === 'Enter') {
+      if (catOpen && activeIdx >= 0 && filtered[activeIdx]) { e.preventDefault(); pickCategory(filtered[activeIdx]); }
+    } else if (e.key === 'Escape') { setCatOpen(false); setActiveIdx(-1); }
   }
 
   async function onFiles(files: FileList | null) {
@@ -65,9 +77,9 @@ export function RequestProductForm({ categories }: { categories: Category[] }) {
     e.preventDefault();
     if (state === 'sending') return; // prevent double submission
     // Client-side validation (server re-validates everything).
-    if (!catId) return fail('Please select a product category.');
+    if (!catId) return fail('Please select a product category from the list.');
     if (isOther && suggested.trim().length < 2) return fail('Please describe your suggested category.');
-    if (images.length < MIN) return fail(`Please upload at least ${MIN} images (${images.length} so far).`);
+    if (images.length < MIN) return fail(`Please upload at least ${MIN} images (you have ${images.length}).`);
     if (!permission) return fail('Please confirm you have permission to use these images.');
 
     setState('sending'); setMessage('');
@@ -106,81 +118,105 @@ export function RequestProductForm({ categories }: { categories: Category[] }) {
   }
 
   const canSubmit = state !== 'sending' && !uploading && !!catId && (!isOther || suggested.trim().length >= 2) && images.length >= MIN && permission;
+  const needMore = Math.max(0, MIN - images.length);
 
   return (
-    <form className="form" onSubmit={onSubmit} noValidate>
-      {state === 'ok' ? <div className="notice ok">{message}</div> : null}
-      {state === 'err' ? <div className="notice err">{message}</div> : null}
+    <form className="form request-form" onSubmit={onSubmit} noValidate>
+      {state === 'ok' ? <div className="notice ok" role="status">{message}</div> : null}
+      {state === 'err' ? <div className="notice err" role="alert">{message}</div> : null}
 
       <div className="hp" aria-hidden="true"><label>Company<input type="text" name="company" tabIndex={-1} autoComplete="off" /></label></div>
 
-      <div className="field"><label htmlFor="requesterName">Your name <span className="req">*</span></label><input id="requesterName" name="requesterName" required maxLength={120} /></div>
-      <div className="field"><label htmlFor="requesterEmail">Email <span className="req">*</span></label><input id="requesterEmail" name="requesterEmail" type="email" required maxLength={160} /></div>
-      <div className="field"><label htmlFor="productName">Product name <span className="req">*</span></label><input id="productName" name="productName" required maxLength={200} /></div>
-      <div className="field"><label htmlFor="brand">Brand</label><input id="brand" name="brand" maxLength={120} /></div>
-      <div className="field"><label htmlFor="productUrl">Product URL <span className="req">*</span></label><input id="productUrl" name="productUrl" type="url" required placeholder="https://…" /></div>
-      <div className="field"><label htmlFor="affiliateUrl">Affiliate URL (optional)</label><input id="affiliateUrl" name="affiliateUrl" type="url" placeholder="https://…" /></div>
+      <fieldset className="form-section">
+        <legend>Your details</legend>
+        <div className="field"><label htmlFor="requesterName">Your name <span className="req">*</span></label><input id="requesterName" name="requesterName" required maxLength={120} autoComplete="name" /></div>
+        <div className="field"><label htmlFor="requesterEmail">Email <span className="req">*</span></label><input id="requesterEmail" name="requesterEmail" type="email" required maxLength={160} autoComplete="email" /><span className="hint">We’ll only use this to follow up about your request.</span></div>
+      </fieldset>
 
-      {/* Searchable, required category */}
-      <div className="field" style={{ position: 'relative' }}>
-        <label htmlFor="categorySearch">Product category <span className="req">*</span></label>
-        <input
-          id="categorySearch" type="text" autoComplete="off" placeholder="Select a product category"
-          value={catQuery}
-          onChange={(e) => { setCatQuery(e.target.value); setCatId(''); setCatOpen(true); }}
-          onFocus={() => setCatOpen(true)}
-          onBlur={() => setTimeout(() => setCatOpen(false), 150)}
-          aria-expanded={catOpen} aria-required="true" role="combobox" aria-controls="categoryList"
-        />
-        {catOpen ? (
-          <ul id="categoryList" className="combo-list" role="listbox">
-            {filtered.length ? filtered.map((c) => (
-              <li key={String(c.id)} role="option" aria-selected={String(c.id) === catId}>
-                <button type="button" className="combo-opt" onMouseDown={(ev) => { ev.preventDefault(); pickCategory(c); }}>{c.name}</button>
-              </li>
-            )) : <li className="combo-empty">No matching category</li>}
-          </ul>
-        ) : null}
-        {!catId && catQuery ? <span className="meta">Pick a category from the list.</span> : null}
-      </div>
+      <fieldset className="form-section">
+        <legend>About the product</legend>
+        <div className="field"><label htmlFor="productName">Product name <span className="req">*</span></label><input id="productName" name="productName" required maxLength={200} /></div>
+        <div className="field"><label htmlFor="brand">Brand</label><input id="brand" name="brand" maxLength={120} /></div>
+        <div className="field"><label htmlFor="productUrl">Product URL <span className="req">*</span></label><input id="productUrl" name="productUrl" type="url" required placeholder="https://…" /><span className="hint">A link to the product page so our editors can research it.</span></div>
+        <div className="field"><label htmlFor="affiliateUrl">Affiliate URL <span className="opt">(optional)</span></label><input id="affiliateUrl" name="affiliateUrl" type="url" placeholder="https://…" /></div>
+      </fieldset>
 
-      {isOther ? (
-        <div className="field">
-          <label htmlFor="suggestedCategory">Suggested category <span className="req">*</span></label>
-          <input id="suggestedCategory" type="text" maxLength={120} value={suggested} onChange={(e) => setSuggested(e.target.value)} placeholder="Tell us what category fits best" />
-          <span className="meta">An editor will map this to a category before approval.</span>
+      <fieldset className="form-section">
+        <legend>Category</legend>
+        {/* Searchable, required category */}
+        <div className="field" style={{ position: 'relative' }}>
+          <label htmlFor="categorySearch">Product category <span className="req">*</span></label>
+          <input
+            id="categorySearch" type="text" autoComplete="off" placeholder="Type to search categories…"
+            value={catQuery}
+            onChange={(e) => { setCatQuery(e.target.value); setCatId(''); setCatOpen(true); setActiveIdx(-1); }}
+            onFocus={() => setCatOpen(true)}
+            onBlur={() => setTimeout(() => setCatOpen(false), 150)}
+            onKeyDown={onCatKeyDown}
+            aria-expanded={catOpen} aria-required="true" role="combobox" aria-controls="categoryList" aria-autocomplete="list"
+            aria-activedescendant={catOpen && activeIdx >= 0 ? `cat-opt-${activeIdx}` : undefined}
+          />
+          {catOpen ? (
+            <ul id="categoryList" className="combo-list" role="listbox">
+              {filtered.length ? filtered.map((c, i) => (
+                <li key={String(c.id)} id={`cat-opt-${i}`} role="option" aria-selected={String(c.id) === catId}>
+                  <button type="button" className={`combo-opt ${i === activeIdx ? 'active' : ''}`} onMouseEnter={() => setActiveIdx(i)} onMouseDown={(ev) => { ev.preventDefault(); pickCategory(c); }}>{c.name}</button>
+                </li>
+              )) : <li className="combo-empty">No matching category</li>}
+            </ul>
+          ) : null}
+          {catId ? <span className="hint ok-hint">Selected: {selected?.name}</span> : <span className="hint">Choose the closest fit — an editor confirms it before publishing.</span>}
         </div>
-      ) : null}
 
-      <div className="field"><label htmlFor="notes">Notes</label><textarea id="notes" name="notes" maxLength={2000} /></div>
-
-      {/* Images */}
-      <div className="field">
-        <label>Product images <span className="req">*</span> <span className="meta">({images.length} of {MAX} uploaded · min {MIN})</span></label>
-        <input ref={fileRef} type="file" accept={ACCEPT.join(',')} multiple onChange={(e) => onFiles(e.target.files)} disabled={uploading || images.length >= MAX} />
-        {uploading ? <span className="meta">Uploading…</span> : null}
-        {images.length ? (
-          <div className="img-grid">
-            {images.map((im) => (
-              <div key={im.id} className="img-tile">
-                <img src={im.url} alt={im.name} loading="lazy" />
-                <button type="button" className="img-x" onClick={() => removeImage(im.id)} aria-label="Remove">×</button>
-              </div>
-            ))}
+        {isOther ? (
+          <div className="field">
+            <label htmlFor="suggestedCategory">Suggested category <span className="req">*</span></label>
+            <input id="suggestedCategory" type="text" maxLength={120} value={suggested} onChange={(e) => setSuggested(e.target.value)} placeholder="Tell us what category fits best" />
+            <span className="hint">You picked “Other / Not Sure”, so a short suggestion is required. An editor maps it to a category before approval.</span>
           </div>
         ) : null}
-        <span className="meta">JPEG, PNG, or WebP, up to 8 MB each. Upload at least {MIN} (up to {MAX}).</span>
-      </div>
 
-      <div className="field" style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-        <input id="perm" type="checkbox" checked={permission} onChange={(e) => setPermission(e.target.checked)} style={{ marginTop: 4 }} />
-        <label htmlFor="perm" style={{ fontWeight: 400 }}>I confirm I have permission to use the uploaded images. <span className="req">*</span></label>
-      </div>
+        <div className="field"><label htmlFor="notes">Notes <span className="opt">(optional)</span></label><textarea id="notes" name="notes" maxLength={2000} placeholder="Anything we should know — why it matters, what to compare, who it’s for." /></div>
+      </fieldset>
 
-      <button className="btn btn-accent" type="submit" disabled={!canSubmit}>
+      <fieldset className="form-section">
+        <legend>Product images</legend>
+        <div className="field">
+          <label>Upload images <span className="req">*</span></label>
+          <div className={`uploader ${images.length >= MAX ? 'is-full' : ''}`}>
+            <input ref={fileRef} id="productImages" type="file" accept={ACCEPT.join(',')} multiple onChange={(e) => onFiles(e.target.files)} disabled={uploading || images.length >= MAX} />
+            <div className="uploader-meta">
+              <strong>{images.length} of {MAX} uploaded</strong>
+              {uploading ? <span className="meta"> · Uploading…</span>
+                : needMore > 0 ? <span className="meta"> · {needMore} more needed (min {MIN})</span>
+                : <span className="meta ok-hint"> · minimum reached ✓</span>}
+            </div>
+          </div>
+          {images.length ? (
+            <div className="img-grid">
+              {images.map((im) => (
+                <div key={im.id} className="img-tile">
+                  <img src={im.url} alt={im.name} loading="lazy" />
+                  <button type="button" className="img-x" onClick={() => removeImage(im.id)} aria-label={`Remove ${im.name}`}>×</button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <span className="hint">Accepted: JPEG, PNG, or WebP, up to 8&nbsp;MB each. Upload at least {MIN} (up to {MAX}). Clear photos from multiple angles help our editors most.</span>
+        </div>
+
+        <div className="field perm-field">
+          <input id="perm" type="checkbox" checked={permission} onChange={(e) => setPermission(e.target.checked)} />
+          <label htmlFor="perm">
+            I confirm I have the right to share these images and permission for ExploringToKnow to use them in editorial content. <span className="req">*</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <button className="btn btn-accent btn-lg btn-block" type="submit" disabled={!canSubmit} aria-busy={state === 'sending'}>
         {state === 'sending' ? 'Submitting…' : 'Submit request'}
       </button>
-      <p className="meta" style={{ marginTop: 12 }}>Submissions are reviewed by an editor before any article is created or published. We never auto-publish.</p>
+      <p className="hint" style={{ marginTop: 12, textAlign: 'center' }}>Submissions are reviewed by an editor before any article is created or published. We never auto-publish.</p>
     </form>
   );
 }
