@@ -177,3 +177,35 @@ Production `main` @ `23fcdba` · app image `etk-web@sha256:1ac9bf53…`. Routes 
 
 ## 23. Email provider activation (when ready)
 - [ ] Set NEWSLETTER_PROVIDER=resend + RESEND_API_KEY (+ NEWSLETTER_FROM, optional NEWSLETTER_DOUBLE_OPT_IN, CONTACT_NOTIFY_TO) in env; verify dashboard shows "present" and a test subscribe/contact sends mail.
+
+---
+
+# Phase 8 additions — manual QA
+
+Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes `200`; draft/bogus-author `404`; dashboards `307` (auth).
+
+## 24. Email provider (local-safe)
+- [ ] With no provider env: newsletter subscribe → active/local, contact → stored, no email sent.
+- [ ] Dashboard → System Health & Analytics show provider keys as present/missing only (NO values).
+- [ ] After setting provider env later: presence flips to "present" and confirmation/contact paths send.
+
+## 25. Multi-author
+- [ ] /author/[slug] shows expertise chips + long bio when set; published-only list; bogus/inactive → 404.
+- [ ] Article byline links to author; unassigned → Editorial Team.
+
+## 26. Search ranking
+- [ ] /search?q=led ranks title matches first, then excerpt/category/author, then body; published-only; no drafts.
+- [ ] empty/special/long/mixed-case queries safe.
+
+## 27. Admin dashboards (auth)
+- [ ] /dashboard/health: counts (published/drafts/categories/subscribers/contacts/requests/media/views) + recent intake; redirects when not logged in.
+- [ ] /dashboard/analytics: 7/30/all-time most-read; redirects when not logged in.
+
+## 28. Category merchandising
+- [ ] Category with both guides + reviews shows split sections (no duplicate cards); otherwise single grid; hero/SEO/breadcrumb intact; published-only.
+
+## 29. Desktop/mobile + a11y (manual)
+- [ ] 320/375/640/768/1024/1440 no horizontal overflow; keyboard nav for menu/search/drawer; visible focus; form status messages announced; reduced motion respected.
+
+## 30. Safety re-checks
+- [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
