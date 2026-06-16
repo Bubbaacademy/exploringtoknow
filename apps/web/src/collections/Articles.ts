@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload';
 import { APIError } from 'payload';
 import { buildArticleImagePopulation } from '@/lib/images';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 /**
  * Finished articles. `status` = AI pipeline/QA state (generating/qa/published/
  * flagged). `editorialStatus` = the editorial gate that controls PUBLIC
@@ -15,7 +16,15 @@ export const Articles: CollectionConfig = {
     description: 'Editorial standards: no hype, no fabricated testing/medical/performance claims; product images must be manually uploaded with permission; affiliate disclosure renders automatically. PUBLISH GATE: only editorialStatus="published" is public, requires a category, and never happens automatically — a human sets it. "status" is the AI-pipeline state, not public visibility.',
     defaultColumns: ['title', 'editorialStatus', 'status', 'category', 'author', 'publishPriority', 'editorialPublishedAt'],
   },
-  access: { read: () => true },
+  // Public published reads come through the Local API (overrideAccess) — unaffected.
+  // The native REST/admin surface is scoped: anon sees only published; members see
+  // only their tenant; super admins see all.
+  access: {
+    read: scopedRead('published'),
+    create: scopedCreate(),
+    update: scopedMutate(),
+    delete: scopedMutate(),
+  },
   fields: [
     { name: 'title', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
@@ -24,6 +33,7 @@ export const Articles: CollectionConfig = {
     { name: 'category', type: 'relationship', relationTo: 'categories', index: true, admin: { description: 'Required before publication. Set deterministically from the linked product at generation; an article cannot be editorially published while empty.' } },
     { name: 'author', type: 'relationship', relationTo: 'authors', index: true, admin: { description: 'Editorial author/byline. Defaults to the ExploringToKnow Editorial Team when unset.' } },
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing records; set by backfill).' } },
     { name: 'excerpt', type: 'textarea', admin: { description: 'Short summary shown on cards/listings.' } },
     { name: 'featured', type: 'checkbox', defaultValue: false, admin: { description: 'Feature on the homepage (only if editorially published).' } },
     { name: 'editorialNotes', type: 'textarea', admin: { description: 'Internal editor notes for the publishing queue (never shown publicly).' } },
@@ -155,6 +165,7 @@ export const Articles: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [
+      stampTenantWorkspace,
       // Editorial gate: an article may not be published without a category.
       // Uses the merged final state so it holds for partial REST/admin updates.
       ({ data, originalDoc }) => {

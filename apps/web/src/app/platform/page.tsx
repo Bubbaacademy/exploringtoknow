@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { requireSuperAdmin, getPlatformOverview } from '@/lib/tenant';
+import { requireSuperAdmin, getPlatformOverview, getScopingHealth } from '@/lib/tenant';
 import { Section, Stat, Card, Empty, Badge } from '../dashboard/_components';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 export default async function PlatformHome() {
   await requireSuperAdmin();
   const { totals, tenants } = await getPlatformOverview();
+  const health = await getScopingHealth();
 
   return (
     <>
@@ -17,6 +18,23 @@ export default async function PlatformHome() {
         <span className="adm-sub">Owned Media AI OS · all tenants. ExploringToKnow is tenant #1 (the live magazine).</span>
       </div>
       <div className="adm-content">
+        <div className="adm-panel" style={{ marginBottom: 16 }}>
+          This is the platform super-admin control center. Deep CMS editing lives in Payload <strong>/admin</strong> (super-admin-only); customer/workspace operators use <strong>/app</strong>; ExploringToKnow editorial uses <strong>/dashboard</strong>.
+        </div>
+
+        <Section title="Tenant isolation health">
+          {health.ok ? (
+            <div className="adm-panel ok">All operational records carry a tenant and a workspace — no unscoped rows detected.</div>
+          ) : (
+            <div className="adm-panel warn">
+              <strong>⚠ Unscoped records detected — investigate.</strong>
+              {health.problems.map((p) => (
+                <div key={p.collection} className="adm-row"><span className="t">{p.collection}</span><strong>{p.nullTenant} no-tenant · {p.nullWorkspace} no-workspace</strong></div>
+              ))}
+            </div>
+          )}
+        </Section>
+
         <Section title="Platform totals">
           <div className="adm-cols">
             <Stat label="Tenants" value={totals.tenants} />

@@ -1,5 +1,6 @@
 import type { CollectionConfig } from 'payload';
 import path from 'path';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 
 /**
  * Uploaded images (article heroes, etc.). Stored on local disk in an explicit,
@@ -13,10 +14,20 @@ export const Media: CollectionConfig = {
   upload: {
     staticDir: process.env.PAYLOAD_MEDIA_DIR || path.resolve(process.cwd(), 'media'),
   },
-  access: { read: () => true },
+  // Read stays PUBLIC so published-article images render everywhere (files are served
+  // statically anyway). Listing/management is still scoped: an authed member sees only
+  // their tenant's media; super admins see all. Create/update/delete are scoped too.
+  access: {
+    read: scopedRead('public'),
+    create: scopedCreate(),
+    update: scopedMutate(),
+    delete: scopedMutate(),
+  },
   fields: [
     { name: 'alt', type: 'text', required: true },
     { name: 'source', type: 'text' },
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing media; set by backfill). Read stays public so published-article images render.' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing media; set by backfill).' } },
   ],
+  hooks: { beforeChange: [stampTenantWorkspace] },
 };

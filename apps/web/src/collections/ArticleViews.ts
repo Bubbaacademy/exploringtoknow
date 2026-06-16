@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 
 /**
  * First-party, privacy-light pageview analytics. One row per (article, day) with
@@ -12,15 +13,17 @@ export const ArticleViews: CollectionConfig = {
   labels: { singular: 'Article View', plural: 'Article Views' },
   admin: { useAsTitle: 'viewDate', group: 'Analytics', defaultColumns: ['article', 'viewDate', 'count'] },
   access: {
-    read: ({ req }) => Boolean(req.user),
-    create: ({ req }) => Boolean(req.user), // public pings use the server route (Local API)
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    read: scopedRead('deny'),
+    create: scopedCreate(), // public pings use the server route (Local API, overrideAccess)
+    update: scopedMutate(),
+    delete: scopedMutate(),
   },
   fields: [
     { name: 'article', type: 'relationship', relationTo: 'articles', required: true, index: true },
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing records; set by backfill).' } },
     { name: 'viewDate', type: 'text', required: true, index: true, admin: { description: 'UTC day bucket (YYYY-MM-DD).' } },
     { name: 'count', type: 'number', defaultValue: 0 },
   ],
+  hooks: { beforeChange: [stampTenantWorkspace] },
 };

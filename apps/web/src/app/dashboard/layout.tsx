@@ -33,7 +33,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="adm-side-foot">
-            <Link href="/admin">Payload Admin →</Link>
+            <Link href="/app">Workspace console →</Link>
+            <Link href="/platform">Platform admin →</Link>
+            <Link href="/admin">Payload Admin (CMS) →</Link>
             <Link href="/">View public site →</Link>
           </div>
         </aside>

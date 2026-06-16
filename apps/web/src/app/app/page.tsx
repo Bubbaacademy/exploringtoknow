@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { requireWorkspaceMember, getPrimaryTenant, getWorkspaceOverview } from '@/lib/tenant';
+import { requireWorkspaceMember, getPrimaryTenant, getPrimaryWorkspace, getPrimaryMembership, getWorkspaceOverview, ROLE_LABEL, type Role } from '@/lib/tenant';
 import { Section, Stat, Card, Empty } from '../dashboard/_components';
 
 export const dynamic = 'force-dynamic';
@@ -26,15 +26,23 @@ export default async function AppHome() {
     );
   }
 
-  const o = await getWorkspaceOverview(tenant.id);
+  const workspace = getPrimaryWorkspace(ctx);
+  const primary = getPrimaryMembership(ctx);
+  const role = primary?.role as Role | undefined;
+  const o = await getWorkspaceOverview(tenant.id, workspace?.id ?? null);
 
   return (
     <>
       <div className="adm-topbar">
-        <h1>{(tenant.name as string) || 'Workspace'}</h1>
-        <span className="adm-sub">Workspace overview · plan: {String(tenant.plan ?? 'free')} · status: {String(tenant.status ?? 'active')}. All figures below are scoped to this tenant.</span>
+        <h1>{(workspace?.name as string) || (tenant.name as string) || 'Workspace'}</h1>
+        <span className="adm-sub">
+          {(tenant.name as string) || 'Tenant'} · {role ? ROLE_LABEL[role] : 'member'} · plan: {String(tenant.plan ?? 'free')} · status: {String(tenant.status ?? 'active')}. Every figure below is scoped to this workspace on the server.
+        </span>
       </div>
       <div className="adm-content">
+        <div className="adm-panel" style={{ marginBottom: 16 }}>
+          Customer workspace operations live here in <strong>/app</strong>. Payload <strong>/admin</strong> is the internal CMS (platform staff only). Nothing on this page triggers content generation, approval, or publishing.
+        </div>
         <Section title="Content">
           <div className="adm-cols">
             <Stat label="Published" value={o.published} tone="good" />

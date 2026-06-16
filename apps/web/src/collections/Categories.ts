@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 export const Categories: CollectionConfig = {
   slug: 'categories',
   admin: {
@@ -10,15 +11,16 @@ export const Categories: CollectionConfig = {
   // Public may READ categories (for the request form); only authenticated admins
   // may create/update/delete — public users can never create arbitrary categories.
   access: {
-    read: () => true,
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    read: scopedRead('public'),
+    create: scopedCreate(),
+    update: scopedMutate(),
+    delete: scopedMutate(),
   },
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
     { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing records; set by backfill).' } },
     { name: 'description', type: 'textarea', admin: { description: 'Short description shown on category cards/pages.' } },
     { name: 'longDescription', type: 'textarea', admin: { description: 'Optional longer intro shown on the category masthead.' } },
     { name: 'image', type: 'relationship', relationTo: 'media' },
@@ -34,4 +36,5 @@ export const Categories: CollectionConfig = {
     },
     { name: 'parent', type: 'relationship', relationTo: 'categories' },
   ],
+  hooks: { beforeChange: [stampTenantWorkspace] },
 };

@@ -1,11 +1,19 @@
 import type { CollectionConfig } from 'payload';
+import { scopedRead, scopedCreate, scopedMutate, stampTenantWorkspace } from '@/lib/access';
 /** Composed FB/IG posts + publish state (impl pkg §4). Phase 1 platforms only. */
 export const SocialPosts: CollectionConfig = {
   slug: 'social-posts',
   admin: { useAsTitle: 'id', group: 'Content', defaultColumns: ['platform', 'status', 'scheduledFor'] },
-  access: { read: ({ req }) => Boolean(req.user) },
+  access: {
+    read: scopedRead('deny'),
+    create: scopedCreate(),
+    update: scopedMutate(),
+    delete: scopedMutate(),
+  },
   fields: [
     { name: 'article', type: 'relationship', relationTo: 'articles', index: true },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
+    { name: 'workspace', type: 'relationship', relationTo: 'workspaces', index: true, admin: { description: 'Owning workspace/publication (ETK Magazine for existing records; set by backfill).' } },
     {
       name: 'platform', type: 'select', required: true,
       options: [
@@ -30,4 +38,5 @@ export const SocialPosts: CollectionConfig = {
     { name: 'externalId', type: 'text', admin: { description: 'Meta post/media id after publish.' } },
     { name: 'publishedAt', type: 'date' },
   ],
+  hooks: { beforeChange: [stampTenantWorkspace] },
 };
