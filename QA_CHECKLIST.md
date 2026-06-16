@@ -117,3 +117,35 @@ Production `main` @ `6333011` · app image `etk-web@sha256:22a88b89…`. Routes 
 
 ## 12. Deploy tooling
 - [ ] `infra/server/deploy-app.sh` is the documented deploy path: rebuilds fresh, migrates with detached stdin, and aborts if the running image ≠ freshly built image.
+
+---
+
+# Phase 6 additions — manual QA
+
+Production `main` @ `d8384fe` · app image `etk-web@sha256:57d297d8…`. Routes verified `200`; draft + bogus-author `404`.
+
+## 13. Authors & bylines
+- [ ] Article byline links to /author/exploringtoknow-editorial-team (or assigned author).
+- [ ] /author/[slug] shows role, bio, and published-only articles; bogus slug → 404.
+- [ ] Article + author pages carry Person JSON-LD; unassigned articles fall back to "ExploringToKnow Editorial Team".
+- [ ] Admin → Authors editable; assigning an author updates the byline.
+
+## 14. Analytics & Most Read
+- [ ] Visiting a published article records a view (admin → Article Views); draft views are NOT recorded.
+- [ ] Homepage "Trending" uses real views when present; otherwise deterministic ranking — never fake numbers.
+- [ ] /api/track always returns 204 and never blocks page paint.
+
+## 15. Newsletter provider
+- [ ] Local mode (default): subscribe → active, provider `local`, lastEmailStatus `local_no_send`, no email sent.
+- [ ] After setting NEWSLETTER_PROVIDER=resend + RESEND_API_KEY (+ NEWSLETTER_DOUBLE_OPT_IN), a test subscribe sends a confirmation and confirm link activates the pending subscriber.
+- [ ] Unsubscribe link flips status to unsubscribed (record retained).
+
+## 16. Category hero / SEO
+- [ ] Category with a hero image shows the framed hero; without one, the masthead fallback looks intentional.
+- [ ] Category SEO title/description applied; BreadcrumbList JSON-LD present.
+
+## 17. Contact routing
+- [ ] Contact submit stores a message (source=contact-page); with CONTACT_NOTIFY_TO + provider, an editorial notification is sent (best-effort, never blocks the user).
+
+## 18. Deploy tooling
+- [ ] `infra/server/deploy-app.sh` is the deploy path: rebuilds fresh, migrates (stdin detached), aborts if running image ≠ freshly built image; logs image ids + migration count + health.
