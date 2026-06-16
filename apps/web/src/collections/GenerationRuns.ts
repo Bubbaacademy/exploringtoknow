@@ -14,6 +14,7 @@ export const GenerationRuns: CollectionConfig = {
   access: { read: ({ req }) => Boolean(req.user) },
   fields: [
     { name: 'product', type: 'relationship', relationTo: 'products', index: true },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
     {
       name: 'status', type: 'select', defaultValue: 'running', index: true,
       options: [

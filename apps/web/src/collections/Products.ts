@@ -32,6 +32,7 @@ export const Products: CollectionConfig = {
     { name: 'title', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
     { name: 'offerType', type: 'select', required: true, options: [...OFFER_TYPES], index: true },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
     {
       name: 'status', type: 'select', required: true, defaultValue: 'draft', index: true,
       options: [

@@ -23,6 +23,7 @@ export const Articles: CollectionConfig = {
     { name: 'product', type: 'relationship', relationTo: 'products', index: true },
     { name: 'category', type: 'relationship', relationTo: 'categories', index: true, admin: { description: 'Required before publication. Set deterministically from the linked product at generation; an article cannot be editorially published while empty.' } },
     { name: 'author', type: 'relationship', relationTo: 'authors', index: true, admin: { description: 'Editorial author/byline. Defaults to the ExploringToKnow Editorial Team when unset.' } },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
     { name: 'excerpt', type: 'textarea', admin: { description: 'Short summary shown on cards/listings.' } },
     { name: 'featured', type: 'checkbox', defaultValue: false, admin: { description: 'Feature on the homepage (only if editorially published).' } },
     { name: 'editorialNotes', type: 'textarea', admin: { description: 'Internal editor notes for the publishing queue (never shown publicly).' } },

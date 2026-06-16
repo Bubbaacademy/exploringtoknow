@@ -23,6 +23,7 @@ export const ContactMessages: CollectionConfig = {
   fields: [
     { name: 'name', type: 'text' },
     { name: 'email', type: 'email', required: true },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
     {
       name: 'reason', type: 'select', defaultValue: 'general',
       options: [

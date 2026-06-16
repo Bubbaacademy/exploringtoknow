@@ -24,6 +24,7 @@ export const NewsletterSubscribers: CollectionConfig = {
   },
   fields: [
     { name: 'email', type: 'email', required: true, unique: true, index: true },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
     {
       name: 'status', type: 'select', defaultValue: 'active', index: true,
       options: [
