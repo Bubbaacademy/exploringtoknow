@@ -22,6 +22,7 @@ export const Authors: CollectionConfig = {
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
     { name: 'role', type: 'text', admin: { description: 'e.g. "Senior Editor", "Editorial Team".' } },
     { name: 'bio', type: 'textarea', admin: { description: 'Short bio shown on the byline/author header.' } },
     { name: 'longBio', type: 'textarea', admin: { description: 'Optional longer bio shown on the author page.' } },

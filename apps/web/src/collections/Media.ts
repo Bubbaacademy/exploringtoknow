@@ -17,5 +17,6 @@ export const Media: CollectionConfig = {
   fields: [
     { name: 'alt', type: 'text', required: true },
     { name: 'source', type: 'text' },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing media; set by backfill). Read stays public so published-article images render.' } },
   ],
 };

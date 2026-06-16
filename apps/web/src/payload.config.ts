@@ -19,6 +19,9 @@ import { NewsletterSubscribers } from './collections/NewsletterSubscribers';
 import { ContactMessages } from './collections/ContactMessages';
 import { Authors } from './collections/Authors';
 import { ArticleViews } from './collections/ArticleViews';
+import { Tenants } from './collections/Tenants';
+import { Workspaces } from './collections/Workspaces';
+import { Memberships } from './collections/Memberships';
 import { BrandProfileGlobal } from './globals/BrandProfile';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -38,6 +41,7 @@ export default buildConfig({
     meta: { titleSuffix: ' · ExploringToKnow Ops' },
   },
   collections: [
+    Tenants, Workspaces, Memberships,
     Users, Media, Brands, Categories, Authors,
     Products, ProductIntelligence, ContentBriefs, Articles, SocialPosts, GenerationRuns,
     ProductRequests, NewsletterSubscribers, ContactMessages, ArticleViews,

@@ -33,6 +33,7 @@ export const ProductRequests: CollectionConfig = {
   fields: [
     { name: 'requesterName', type: 'text' },
     { name: 'requesterEmail', type: 'email', required: true },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
     { name: 'productName', type: 'text', required: true },
     { name: 'brand', type: 'text' },
     { name: 'productUrl', type: 'text', admin: { description: 'Source/product page URL.' } },

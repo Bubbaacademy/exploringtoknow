@@ -19,6 +19,7 @@ export const ArticleViews: CollectionConfig = {
   },
   fields: [
     { name: 'article', type: 'relationship', relationTo: 'articles', required: true, index: true },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
     { name: 'viewDate', type: 'text', required: true, index: true, admin: { description: 'UTC day bucket (YYYY-MM-DD).' } },
     { name: 'count', type: 'number', defaultValue: 0 },
   ],

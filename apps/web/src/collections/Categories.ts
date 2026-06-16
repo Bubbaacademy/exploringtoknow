@@ -18,6 +18,7 @@ export const Categories: CollectionConfig = {
   fields: [
     { name: 'name', type: 'text', required: true },
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
+    { name: 'tenant', type: 'relationship', relationTo: 'tenants', index: true, admin: { description: 'Owning tenant (ExploringToKnow for existing records; set by backfill).' } },
     { name: 'description', type: 'textarea', admin: { description: 'Short description shown on category cards/pages.' } },
     { name: 'longDescription', type: 'textarea', admin: { description: 'Optional longer intro shown on the category masthead.' } },
     { name: 'image', type: 'relationship', relationTo: 'media' },
