@@ -1,0 +1,32 @@
+import type { CollectionConfig } from 'payload';
+
+/**
+ * Editorial authors. Public may READ (for author pages); only authenticated
+ * admins may write. Articles relate to an author; unassigned articles fall back
+ * to the seeded "ExploringToKnow Editorial Team" author.
+ */
+export const Authors: CollectionConfig = {
+  slug: 'authors',
+  admin: { useAsTitle: 'name', group: 'Content', defaultColumns: ['name', 'role', 'slug', 'active'] },
+  access: {
+    read: () => true,
+    create: ({ req }) => Boolean(req.user),
+    update: ({ req }) => Boolean(req.user),
+    delete: ({ req }) => Boolean(req.user),
+  },
+  fields: [
+    { name: 'name', type: 'text', required: true },
+    { name: 'slug', type: 'text', required: true, unique: true, index: true },
+    { name: 'role', type: 'text', admin: { description: 'e.g. "Senior Editor", "Editorial Team".' } },
+    { name: 'bio', type: 'textarea' },
+    { name: 'image', type: 'relationship', relationTo: 'media', admin: { description: 'Optional author photo (manual upload only).' } },
+    { name: 'websiteUrl', type: 'text' },
+    { name: 'active', type: 'checkbox', defaultValue: true, index: true, admin: { description: 'Inactive authors are hidden from public author pages.' } },
+    {
+      name: 'seo', type: 'group', fields: [
+        { name: 'seoTitle', type: 'text' },
+        { name: 'seoDescription', type: 'textarea' },
+      ],
+    },
+  ],
+};

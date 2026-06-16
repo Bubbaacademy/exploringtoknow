@@ -17,6 +17,7 @@ import { ArticleCard } from '@/components/site/ArticleCard';
 import { ReadingProgress } from '@/components/site/ReadingProgress';
 import { ArticleToc } from '@/components/site/ArticleToc';
 import { NewsletterSignup } from '@/components/site/NewsletterSignup';
+import { ViewTracker } from '@/components/site/ViewTracker';
 import { renderArticle } from '@/lib/article-render';
 
 export const dynamic = 'force-dynamic';
@@ -54,6 +55,7 @@ export default async function ArticlePage({ params }: Args) {
   if (!a) notFound();
 
   const category = typeof a.category === 'object' ? (a.category as Doc) : null;
+  const author = typeof a.author === 'object' ? (a.author as Doc) : null;
   const hero = mediaUrl(a.images?.hero);
   const heroAlt = (a.images?.heroAlt as string) || (a.title as string);
   const affiliate = getArticleAffiliate(a);
@@ -78,7 +80,9 @@ export default async function ArticlePage({ params }: Args) {
     image: hero ? [hero] : undefined,
     articleSection: category?.name || undefined,
     mainEntityOfPage: url,
-    author: { '@type': 'Organization', name: SITE_NAME },
+    author: author?.name
+      ? { '@type': 'Person', name: author.name, url: author.slug ? `${SITE_URL}/author/${author.slug}` : undefined }
+      : { '@type': 'Organization', name: SITE_NAME },
     publisher: { '@type': 'Organization', name: SITE_NAME },
   };
 
@@ -95,6 +99,7 @@ export default async function ArticlePage({ params }: Args) {
   return (
     <>
       <ReadingProgress />
+      <ViewTracker id={a.id} />
       <article className="article">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
@@ -119,7 +124,9 @@ export default async function ArticlePage({ params }: Args) {
           {a.excerpt ? <p className="article-deck">{a.excerpt as string}</p> : null}
 
           <div className="article-byline">
-            <Link href="/about" className="article-author">ExploringToKnow Editorial Team</Link>
+            {author?.slug
+              ? <Link href={`/author/${author.slug}`} className="article-author">{author.name as string}</Link>
+              : <Link href="/about" className="article-author">ExploringToKnow Editorial Team</Link>}
             {publishedAt ? (
               <span className="article-meta-item">
                 <time dateTime={publishedAt.toISOString()}>{fmtDate(publishedAt)}</time>

@@ -1,13 +1,14 @@
 import type { MetadataRoute } from 'next';
-import { listPublishedArticles, listActiveCategories, SITE_URL } from '@/lib/public';
+import { listPublishedArticles, listActiveCategories, listActiveAuthors, SITE_URL } from '@/lib/public';
 
 export const dynamic = 'force-dynamic';
 
-/** Sitemap contains ONLY editorially published articles + active categories. */
+/** Sitemap contains ONLY editorially published articles + active categories/authors. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [articles, categories] = await Promise.all([
+  const [articles, categories, authors] = await Promise.all([
     listPublishedArticles({ limit: 1000 }),
     listActiveCategories(),
+    listActiveAuthors(),
   ]);
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE_URL, changeFrequency: 'daily', priority: 1 },
@@ -29,5 +30,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: a.editorialPublishedAt ? new Date(a.editorialPublishedAt) : undefined,
     changeFrequency: 'weekly', priority: 0.8,
   }));
-  return [...staticPages, ...cats, ...arts];
+  const auths: MetadataRoute.Sitemap = authors.map((a) => ({
+    url: `${SITE_URL}/author/${a.slug}`, changeFrequency: 'monthly', priority: 0.3,
+  }));
+  return [...staticPages, ...cats, ...arts, ...auths];
 }

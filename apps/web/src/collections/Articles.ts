@@ -17,6 +17,7 @@ export const Articles: CollectionConfig = {
     { name: 'brief', type: 'relationship', relationTo: 'content-briefs' },
     { name: 'product', type: 'relationship', relationTo: 'products', index: true },
     { name: 'category', type: 'relationship', relationTo: 'categories', index: true, admin: { description: 'Required before publication. Set deterministically from the linked product at generation; an article cannot be editorially published while empty.' } },
+    { name: 'author', type: 'relationship', relationTo: 'authors', index: true, admin: { description: 'Editorial author/byline. Defaults to the ExploringToKnow Editorial Team when unset.' } },
     { name: 'excerpt', type: 'textarea', admin: { description: 'Short summary shown on cards/listings.' } },
     { name: 'featured', type: 'checkbox', defaultValue: false, admin: { description: 'Feature on the homepage (only if editorially published).' } },
     {

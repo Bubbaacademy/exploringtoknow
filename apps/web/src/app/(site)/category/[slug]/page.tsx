@@ -6,6 +6,7 @@ import {
   listPublishedArticles,
   countPublishedInCategory,
   listActiveCategoriesWithCounts,
+  mediaUrl,
   SITE_NAME,
   SITE_URL,
 } from '@/lib/public';
@@ -38,6 +39,9 @@ export default async function CategoryPage({ params }: Args) {
     countPublishedInCategory(category.id),
   ]);
 
+  const hero = mediaUrl(category.heroImage) || mediaUrl(category.image);
+  const intro = (category.longDescription as string) || (category.description as string) || '';
+
   const breadcrumbLd = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -51,20 +55,27 @@ export default async function CategoryPage({ params }: Args) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
-      {/* Masthead */}
-      <section className="cat-masthead">
+      {/* Masthead (richer hero when a category image exists; elegant fallback otherwise) */}
+      <section className={`cat-masthead ${hero ? 'has-hero' : ''}`}>
         <div className="container">
           <nav className="breadcrumbs" aria-label="Breadcrumb">
             <Link href="/">Home</Link> / <Link href="/categories">Topics</Link> /{' '}
             <span aria-current="page">{category.name as string}</span>
           </nav>
-          <span className="eyebrow">Topic</span>
-          <h1>{category.name as string}</h1>
-          {category.description ? <p className="cat-masthead-desc">{category.description as string}</p> : null}
-          <div className="cat-masthead-meta">
-            <span>{count} {count === 1 ? 'guide' : 'guides'}</span>
-            <span>Independently researched</span>
-            <span>Human-reviewed before publishing</span>
+          <div className="cat-masthead-inner">
+            <div className="cat-masthead-text">
+              <span className="eyebrow">Topic</span>
+              <h1>{category.name as string}</h1>
+              {intro ? <p className="cat-masthead-desc">{intro}</p> : null}
+              <div className="cat-masthead-meta">
+                <span>{count} {count === 1 ? 'guide' : 'guides'}</span>
+                <span>Independently researched</span>
+                <span>Human-reviewed before publishing</span>
+              </div>
+            </div>
+            {hero ? (
+              <div className="cat-hero-media"><img src={hero} alt={category.name as string} /></div>
+            ) : null}
           </div>
         </div>
       </section>

@@ -1,23 +1,24 @@
 import crypto from 'node:crypto';
+import { emailEnabled, emailProvider, sendEmail } from '@/lib/email';
+import { SITE_NAME } from '@/lib/public';
 
 /**
- * Newsletter provider abstraction. With no provider configured (the default),
- * the system runs in safe LOCAL mode: subscribers are captured and marked active
- * immediately, no external calls are made, and no email is sent. When a provider
- * is wired in a later phase (env NEWSLETTER_PROVIDER + NEWSLETTER_DOUBLE_OPT_IN),
- * double opt-in + confirmation email can be enabled without changing callers.
+ * Newsletter behavior. Default = safe LOCAL mode: subscribers are captured and
+ * marked active immediately, no email is sent. Double opt-in + confirmation email
+ * activate only when a provider is configured (see lib/email) AND
+ * NEWSLETTER_DOUBLE_OPT_IN=true. Callers never change.
  */
 export function newsletterProvider(): string {
-  return (process.env.NEWSLETTER_PROVIDER || 'local').toLowerCase();
+  return emailProvider();
 }
 
 export function isLocalMode(): boolean {
-  return newsletterProvider() === 'local';
+  return !emailEnabled();
 }
 
-/** Double opt-in only when a real provider is configured AND explicitly enabled. */
+/** Double opt-in only when delivery is actually possible AND explicitly enabled. */
 export function isDoubleOptIn(): boolean {
-  return !isLocalMode() && process.env.NEWSLETTER_DOUBLE_OPT_IN === 'true';
+  return emailEnabled() && process.env.NEWSLETTER_DOUBLE_OPT_IN === 'true';
 }
 
 export function hashToken(token: string): string {
@@ -30,11 +31,16 @@ export function makeToken(): { token: string; hash: string } {
 }
 
 /**
- * Send a confirmation email via the configured provider. In local mode this is a
- * no-op (returns false = not sent). Provider integration plugs in here later.
+ * Send a confirmation email via the configured provider. Local mode is a no-op
+ * (returns local_no_send). Returns the provider status string for lastEmailStatus.
  */
-export async function sendConfirmationEmail(_email: string, _confirmUrl: string): Promise<boolean> {
-  if (isLocalMode()) return false;
-  // Provider adapter would send here once credentials are configured.
-  return false;
+export async function sendConfirmationEmail(email: string, confirmUrl: string): Promise<string> {
+  if (!emailEnabled()) return 'local_no_send';
+  const r = await sendEmail({
+    to: email,
+    subject: `Confirm your ${SITE_NAME} subscription`,
+    html: `<p>Thanks for subscribing to ${SITE_NAME}.</p><p>Please confirm your subscription:</p><p><a href="${confirmUrl}">Confirm subscription</a></p><p>If you didn’t request this, you can ignore this email.</p>`,
+    text: `Confirm your ${SITE_NAME} subscription: ${confirmUrl}`,
+  });
+  return r.status;
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { listPublishedArticles, listActiveCategories, listTrendingArticles, mediaUrl, SITE_NAME, SITE_URL, type Doc } from '@/lib/public';
+import { listPublishedArticles, listActiveCategories, listTrendingArticles, listMostReadArticles, mediaUrl, SITE_NAME, SITE_URL, type Doc } from '@/lib/public';
 import { ArticleCard } from '@/components/site/ArticleCard';
 import { NewsletterSignup } from '@/components/site/NewsletterSignup';
 
@@ -20,11 +20,14 @@ const STEPS = [
 ];
 
 export default async function HomePage() {
-  const [latest, categories, trendingAll] = await Promise.all([
+  const [latest, categories] = await Promise.all([
     listPublishedArticles({ limit: 12 }),
     listActiveCategories(),
-    listTrendingArticles(6),
   ]);
+  // Real "most read" from first-party analytics when data exists; otherwise an
+  // honest deterministic ranking (featured + recency) — never fabricated counts.
+  const mostRead = await listMostReadArticles(30, 6);
+  const trendingAll = mostRead.length ? mostRead : await listTrendingArticles(6);
   const featured = (await listPublishedArticles({ limit: 1, featured: true }))[0] as Doc | undefined;
   // Prefer a dedicated featured story; otherwise lead with the newest article.
   const cover = featured || (latest[0] as Doc | undefined);

@@ -17,6 +17,8 @@ import { GenerationRuns } from './collections/GenerationRuns';
 import { ProductRequests } from './collections/ProductRequests';
 import { NewsletterSubscribers } from './collections/NewsletterSubscribers';
 import { ContactMessages } from './collections/ContactMessages';
+import { Authors } from './collections/Authors';
+import { ArticleViews } from './collections/ArticleViews';
 import { BrandProfileGlobal } from './globals/BrandProfile';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -31,9 +33,9 @@ export default buildConfig({
   secret: process.env.PAYLOAD_SECRET || '',
   admin: { user: Users.slug },
   collections: [
-    Users, Media, Brands, Categories,
+    Users, Media, Brands, Categories, Authors,
     Products, ProductIntelligence, ContentBriefs, Articles, SocialPosts, GenerationRuns,
-    ProductRequests, NewsletterSubscribers, ContactMessages,
+    ProductRequests, NewsletterSubscribers, ContactMessages, ArticleViews,
   ],
   globals: [BrandProfileGlobal],
   editor: lexicalEditor({}),

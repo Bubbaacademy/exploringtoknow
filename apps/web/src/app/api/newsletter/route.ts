@@ -52,6 +52,7 @@ export async function POST(req: Request) {
       const status = String(doc.status || '');
       if (status === 'unsubscribed' || status === 'bounced' || status === 'complained') {
         // Re-subscribe: flip status, refresh token; never create a duplicate row.
+        const emailStatus = doubleOptIn ? await sendConfirmationEmail(email, `${SITE_URL}/newsletter/confirm?token=${token}`) : 'local_no_send';
         await payload.update({
           collection: 'newsletter-subscribers', id: doc.id as number, overrideAccess: true,
           data: {
@@ -59,14 +60,15 @@ export async function POST(req: Request) {
             source, provider, tokenHash: hash,
             unsubscribedAt: null,
             confirmedAt: doubleOptIn ? null : new Date().toISOString(),
+            lastEmailStatus: emailStatus,
           },
         });
-        if (doubleOptIn) await sendConfirmationEmail(email, `${SITE_URL}/newsletter/confirm?token=${token}`);
         return NextResponse.json({ ok: true, resubscribed: true });
       }
       return NextResponse.json({ ok: true, already: true });
     }
 
+    const emailStatus = doubleOptIn ? await sendConfirmationEmail(email, `${SITE_URL}/newsletter/confirm?token=${token}`) : 'local_no_send';
     await payload.create({
       collection: 'newsletter-subscribers',
       overrideAccess: true,
@@ -74,9 +76,9 @@ export async function POST(req: Request) {
         email, source, provider, tokenHash: hash,
         status: doubleOptIn ? 'pending' : 'active',
         confirmedAt: doubleOptIn ? undefined : new Date().toISOString(),
+        lastEmailStatus: emailStatus,
       },
     });
-    if (doubleOptIn) await sendConfirmationEmail(email, `${SITE_URL}/newsletter/confirm?token=${token}`);
     return NextResponse.json({ ok: true, pending: doubleOptIn });
   } catch {
     // A unique-index race can only mean the email already exists → treat as success.
