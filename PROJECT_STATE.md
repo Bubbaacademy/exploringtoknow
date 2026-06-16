@@ -1,7 +1,20 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-16 after Phase 10 (editorial platform) deployment & live verification.
+> Current snapshot. Updated 2026-06-16 after Phase 11 (author/analytics/merch) deployment & live verification.
 > Documentation only — no application code, schema, or data changed by this docs update.
+
+## Phase 11 — Author SEO + richer analytics + category merchandising: COMPLETE & DEPLOYED (no migration)
+- **Authors:** ordered by `sortOrder`; author pages are **noindex when they have no published work**;
+  sitemap includes **only authors with published content**; Person JSON-LD + byline links retained.
+- **Category merchandising:** categories ordered **featured-first → sortOrder → count → name**; `/explore`
+  gains a **Featured topics** surface (renders only when categories are flagged `featured`).
+- **Search:** added an **author-name signal** to published-only search (parameterized + safe fallback);
+  field-weighted ranking (title > excerpt > category/author > body) retained. tsvector still deferred
+  (trgm + app-layer ranking adequate at current scale).
+- **Analytics/dashboard:** Analytics dashboard gains a **14-day daily-views trend** (privacy-light bars);
+  the editorial overview gains **product-request triage warnings** (submitted requests missing
+  category/permission/<3 images/URL). Admin-only; no fabricated data.
+- **Migration-free** (read-layer + UI only). App-only deploy (`SKIP_MIGRATE=1`); worker untouched.
 
 ## Phase 10 — Editorial platform readiness: COMPLETE & DEPLOYED
 - **Editorial overview dashboard** (auth-gated `/dashboard`): pipeline stats (published/
@@ -49,16 +62,16 @@
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ 9b6c36d`** (Phase 10 merge) + docs commit synced on top |
+| Production HEAD | **`main @ 3db25f5`** (Phase 11 merge) + docs commit synced on top |
 | Local `main` HEAD | matches prod (app code) + docs commit |
-| Running app image | `etk-web@sha256:f6dbeac5…` (verified == freshly-built) |
-| Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 30h, Postgres/Caddy up 5d, 0 restarts) |
+| Running app image | `etk-web@sha256:fc7df617…` (verified == freshly-built) |
+| Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 31h, Postgres/Caddy up 5d, 0 restarts) |
 | App health | Healthy, 0 restarts |
 | Pending jobs / locks / long-tx | **0 / 0 / 0** |
-| Payload migrations applied | **12** (latest: `20260616_060000_phase10_editorial`) |
+| Payload migrations applied | **12** (unchanged — Phase 11 added no migration; latest `20260616_060000_phase10_editorial`) |
 
 ### Rollback points (prod tags)
-`prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
+`prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
 `prod-pre-phase6-growth → f89eaea` · `prod-pre-phase5-magazine → 7975891` ·
 `prod-pre-phase4-trust → 1bcd201` · `prod-pre-phase3-discovery → dcfb3bb` · `prod-pre-phase2-navsearch → 181e953`
 
@@ -128,7 +141,7 @@ Published-only gate intact (drafts 404; never in search/analytics/discovery; bot
 - Product images are MANUAL, permission-confirmed uploads only — no AI/paid image generation.
 - Human editorial review is required before publication; nothing auto-publishes; a category is required to publish.
 
-## Phase 11 candidates
+## Phase 12 candidates
 1. Configure Resend in prod env + verify real deliverability + enable double opt-in.
 2. Real multi-author roster + assignment workflow + per-author SEO.
 3. Analytics: unique/session signal, referrer breakdown, time-series charts.

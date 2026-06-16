@@ -263,3 +263,27 @@ Production `main` @ `9b6c36d` · app image `etk-web@sha256:f6dbeac5…`. Migrati
 
 ## 34. Content guardrails (editorial)
 - [ ] Published copy: no hype, no fabricated testing/medical claims; "researched/reviewed/selected/tested" used accurately; affiliate disclosure present; images manual + permission-confirmed.
+
+---
+
+# Phase 11 additions — author/analytics/merch (no migration)
+
+Production `main` @ `3db25f5` · app image `etk-web@sha256:fc7df617…`. Migrations 12 (unchanged).
+
+## 35. Author SEO
+- [ ] Author with published work (Editorial Team) is indexable + in sitemap; author byline links work.
+- [ ] An author with NO published articles renders noindex and is excluded from the sitemap.
+- [ ] Authors list ordered by sortOrder then name.
+
+## 36. Category merchandising
+- [ ] Categories order featured-first → sortOrder → count → name.
+- [ ] /explore shows a "Featured topics" row only when categories are flagged featured (graceful otherwise).
+
+## 37. Search
+- [ ] Author-name query returns that author's published articles; published-only; special/long/empty safe.
+- [ ] Title matches still rank above excerpt/category/author/body.
+
+## 38. Analytics + triage (admin)
+- [ ] /dashboard/analytics shows a 14-day daily-views bar trend (empty state when no views).
+- [ ] /dashboard shows product-request triage warnings (missing category/permission/<3 images/URL) only when >0.
+- [ ] No fabricated views/popularity anywhere public.
