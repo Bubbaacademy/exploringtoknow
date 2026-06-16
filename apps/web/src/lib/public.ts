@@ -79,7 +79,14 @@ export async function listActiveCategoriesWithCounts(): Promise<Array<Doc & { ar
   const categories = await listActiveCategories();
   const counts = await Promise.all(categories.map((c) => countPublishedInCategory(c.id)));
   const enriched: Array<Doc & { articleCount: number }> = categories.map((c, i) => ({ ...c, articleCount: counts[i] ?? 0 }));
-  enriched.sort((a, b) => b.articleCount - a.articleCount || String(a.name).localeCompare(String(b.name)));
+  // Featured first, then editorial sortOrder, then content volume, then name.
+  const ord = (c: Doc) => (typeof c.sortOrder === 'number' ? c.sortOrder : 9999);
+  enriched.sort((a, b) =>
+    (b.featured ? 1 : 0) - (a.featured ? 1 : 0)
+    || ord(a) - ord(b)
+    || b.articleCount - a.articleCount
+    || String(a.name).localeCompare(String(b.name)),
+  );
   return enriched;
 }
 
@@ -174,8 +181,27 @@ export async function listMostReadArticles(days = 30, limit = 6): Promise<Doc[]>
 
 export async function listActiveAuthors(): Promise<Doc[]> {
   const payload = await client();
-  const res = await payload.find({ collection: 'authors', where: { active: { equals: true } }, sort: 'name', limit: 100, depth: 0 });
-  return res.docs;
+  const res = await payload.find({ collection: 'authors', where: { active: { equals: true } }, limit: 100, depth: 0 });
+  const ord = (a: Doc) => (typeof a.sortOrder === 'number' ? a.sortOrder : 9999);
+  return [...res.docs].sort((a, b) => ord(a) - ord(b) || String(a.name).localeCompare(String(b.name)));
+}
+
+/** Count published articles for an author (for noindex/sitemap "has content" gating). */
+export async function countPublishedByAuthor(authorId: string | number): Promise<number> {
+  const payload = await client();
+  const res = await payload.find({
+    collection: 'articles',
+    where: { and: [PUBLISHED_WHERE, { author: { equals: authorId } }] },
+    limit: 0, depth: 0,
+  });
+  return res.totalDocs;
+}
+
+/** Active authors that have at least one published article (for the sitemap). */
+export async function listActiveAuthorsWithContent(): Promise<Doc[]> {
+  const authors = await listActiveAuthors();
+  const counts = await Promise.all(authors.map((a) => countPublishedByAuthor(a.id)));
+  return authors.filter((_, i) => (counts[i] ?? 0) > 0);
 }
 
 /**
@@ -220,6 +246,8 @@ export async function getAdminOverview(): Promise<{
   counts: Record<string, number>;
   recentContacts: Doc[];
   recentRequests: Doc[];
+  requestWarnings: Record<string, number>;
+  dailyTrend: Array<{ date: string; count: number }>;
 }> {
   const payload = await client();
   const count = async (collection: string, where: Doc): Promise<number> =>
@@ -263,6 +291,32 @@ export async function getAdminOverview(): Promise<{
     payload.find({ collection: 'contact-messages', sort: '-createdAt', limit: 5, depth: 0 }),
     payload.find({ collection: 'product-requests', sort: '-submittedAt', limit: 5, depth: 0 }),
   ]);
+
+  // Request-quality warnings on SUBMITTED requests (triage helper; never changes them).
+  const reqWarn = { noCategory: 0, noPermission: 0, fewImages: 0, noUrl: 0 };
+  try {
+    const submitted = await payload.find({ collection: 'product-requests', where: { status: { equals: 'submitted' } }, limit: 200, depth: 0 });
+    for (const r of submitted.docs as Doc[]) {
+      const catId = typeof r.requestedCategory === 'object' ? (r.requestedCategory as Doc)?.id : r.requestedCategory;
+      if (catId == null) reqWarn.noCategory += 1;
+      if (r.imagePermissionConfirmed !== true) reqWarn.noPermission += 1;
+      if (!Array.isArray(r.productImages) || r.productImages.length < 3) reqWarn.fewImages += 1;
+      if (!r.productUrl) reqWarn.noUrl += 1;
+    }
+  } catch { /* leave warnings at 0 */ }
+
+  // 14-day daily view trend (privacy-light; from article_views buckets).
+  const dayMap = new Map<string, number>();
+  for (const v of viewsAgg.docs) {
+    const d = String(v.viewDate || '');
+    if (d) dayMap.set(d, (dayMap.get(d) ?? 0) + Number(v.count || 0));
+  }
+  const dailyTrend: Array<{ date: string; count: number }> = [];
+  for (let i = 13; i >= 0; i -= 1) {
+    const d = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
+    dailyTrend.push({ date: d, count: dayMap.get(d) ?? 0 });
+  }
+
   return {
     counts: {
       published, drafts, review, categories, authors, subscribers, subsActive, contactsNew, requestsOpen, media: mediaCount, totalViews,
@@ -271,7 +325,27 @@ export async function getAdminOverview(): Promise<{
     },
     recentContacts: recentContacts.docs,
     recentRequests: recentRequests.docs,
+    requestWarnings: reqWarn,
+    dailyTrend,
   };
+}
+
+/** Daily total views for the last `days` days (privacy-light; for the admin trend chart). */
+export async function getDailyViewTrend(days = 14): Promise<Array<{ date: string; count: number }>> {
+  const payload = await client();
+  const since = new Date(Date.now() - (days - 1) * 86_400_000).toISOString().slice(0, 10);
+  const views = await payload.find({ collection: 'article-views', where: { viewDate: { greater_than_equal: since } }, limit: 10_000, depth: 0 });
+  const m = new Map<string, number>();
+  for (const v of views.docs) {
+    const d = String(v.viewDate || '');
+    if (d) m.set(d, (m.get(d) ?? 0) + Number(v.count || 0));
+  }
+  const out: Array<{ date: string; count: number }> = [];
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const d = new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10);
+    out.push({ date: d, count: m.get(d) ?? 0 });
+  }
+  return out;
 }
 
 export async function getActiveAuthor(slug: string): Promise<Doc | null> {
@@ -371,6 +445,7 @@ export async function searchPublishedArticles(
   const relationOr: Doc[] = [
     { 'category.name': { like: query } },
     { 'product.title': { like: query } },
+    { 'author.name': { like: query } },
   ];
 
   try {

@@ -5,7 +5,13 @@ export const dynamic = 'force-dynamic';
 
 // Internal editorial overview (auth enforced in middleware). Admin-only; no public data.
 export default async function DashboardHome() {
-  const { counts, recentContacts, recentRequests } = await getAdminOverview();
+  const { counts, recentContacts, recentRequests, requestWarnings } = await getAdminOverview();
+  const reqWarnRows = ([
+    ['Submitted requests missing category', requestWarnings.noCategory ?? 0],
+    ['Submitted requests missing image permission', requestWarnings.noPermission ?? 0],
+    ['Submitted requests with fewer than 3 images', requestWarnings.fewImages ?? 0],
+    ['Submitted requests missing product URL', requestWarnings.noUrl ?? 0],
+  ] as Array<[string, number]>).filter(([, n]) => n > 0);
   const real = await listMostReadArticles(30, 5);
   const topViewed = real.length ? real : await listTrendingArticles(5);
   const topReal = real.length > 0;
@@ -55,6 +61,15 @@ export default async function DashboardHome() {
       ) : (
         <p style={{ color: '#066d3a', fontSize: 13, marginBottom: 24 }}>No pipeline warnings — published articles have category, author, and hero image.</p>
       )}
+
+      {reqWarnRows.length ? (
+        <div style={{ ...card, borderColor: '#f5c6c2', background: '#fef2f2', marginBottom: 24 }}>
+          <strong style={{ color: '#b42318' }}>Product-request triage (submitted, not approvable yet)</strong>
+          {reqWarnRows.map(([label, n]) => (
+            <div key={label} style={{ ...row, borderColor: '#f7d7d4' }}><span>{label}</span><strong>{n}</strong></div>
+          ))}
+        </div>
+      ) : null}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: 16 }}>
         <div style={card}>

@@ -1,4 +1,4 @@
-import { getMostReadDashboard, type Doc } from '@/lib/public';
+import { getMostReadDashboard, getDailyViewTrend, type Doc } from '@/lib/public';
 import { emailProvider, emailEnabled } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
@@ -6,6 +6,8 @@ export const dynamic = 'force-dynamic';
 // Internal analytics surface (auth enforced in middleware). First-party views only.
 export default async function AnalyticsPage() {
   const rows = await getMostReadDashboard(50);
+  const trend = await getDailyViewTrend(14);
+  const trendMax = Math.max(1, ...trend.map((t) => t.count));
 
   // Env PRESENCE only — never prints any secret/value.
   const presence = (k: string) => (process.env[k] ? 'present' : 'missing');
@@ -42,6 +44,17 @@ export default async function AnalyticsPage() {
           </tbody>
         </table>
       </section>
+
+      <h2 style={{ fontSize: 16 }}>Daily views (last 14 days)</h2>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 90, margin: '8px 0 24px', maxWidth: 640 }}>
+        {trend.map((t) => (
+          <div key={t.date} title={`${t.date}: ${t.count}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+            <div style={{ width: '100%', background: '#14543f', borderRadius: '3px 3px 0 0', height: `${Math.round((t.count / trendMax) * 70)}px`, minHeight: t.count > 0 ? 3 : 0 }} />
+            <span style={{ fontSize: 9, color: '#9ca3af', marginTop: 2 }}>{t.date.slice(5)}</span>
+          </div>
+        ))}
+      </div>
+      {trend.every((t) => t.count === 0) ? <p style={{ color: '#6b7280', fontSize: 13, marginTop: -16 }}>No views in the last 14 days yet.</p> : null}
 
       <h2 style={{ fontSize: 18 }}>Most read</h2>
       {rows.length ? (

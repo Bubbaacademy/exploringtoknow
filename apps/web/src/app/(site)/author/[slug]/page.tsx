@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getActiveAuthor, listPublishedArticlesByAuthor, mediaUrl, SITE_NAME, SITE_URL, type Doc } from '@/lib/public';
+import { getActiveAuthor, listPublishedArticlesByAuthor, countPublishedByAuthor, mediaUrl, SITE_NAME, SITE_URL, type Doc } from '@/lib/public';
 import { ArticleGrid } from '@/components/site/ArticleGrid';
 
 export const dynamic = 'force-dynamic';
@@ -12,10 +12,13 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const a = await getActiveAuthor(slug);
   if (!a) return { title: 'Not found', robots: { index: false } };
   const seo = (a.seo ?? {}) as { seoTitle?: string; seoDescription?: string };
+  // Only index author pages that actually have published work.
+  const hasContent = (await countPublishedByAuthor(a.id)) > 0;
   return {
     title: seo.seoTitle || `${a.name} — ${SITE_NAME}`,
     description: seo.seoDescription || a.bio || `Guides and reviews by ${a.name} at ${SITE_NAME}.`,
     alternates: { canonical: `${SITE_URL}/author/${a.slug}` },
+    robots: hasContent ? undefined : { index: false, follow: true },
   };
 }
 
