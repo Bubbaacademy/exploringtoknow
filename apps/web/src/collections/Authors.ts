@@ -7,7 +7,12 @@ import type { CollectionConfig } from 'payload';
  */
 export const Authors: CollectionConfig = {
   slug: 'authors',
-  admin: { useAsTitle: 'name', group: 'Content', defaultColumns: ['name', 'role', 'slug', 'active'] },
+  admin: {
+    useAsTitle: 'name',
+    group: 'Content',
+    description: 'Editorial authors/contributors. Fields: role, bio + longBio, expertise (comma-separated), image, sortOrder, active. Public author pages show PUBLISHED work only and are noindex until an author has published content. Unassigned articles fall back to "ExploringToKnow Editorial Team".',
+    defaultColumns: ['name', 'role', 'sortOrder', 'active'],
+  },
   access: {
     read: () => true,
     create: ({ req }) => Boolean(req.user),

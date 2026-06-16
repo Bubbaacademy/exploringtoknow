@@ -13,7 +13,8 @@ export const NewsletterSubscribers: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
     group: 'Intake',
-    defaultColumns: ['email', 'status', 'source', 'provider', 'confirmedAt', 'createdAt'],
+    description: 'Subscribers. Status: active (subscribed) · pending (awaiting double-opt-in confirm) · unsubscribed · bounced · complained · subscribed (legacy). Provider "local" + lastEmailStatus "local_no_send" = no external email is being sent (provider not configured). Records are never deleted by public routes.',
+    defaultColumns: ['email', 'status', 'source', 'provider', 'lastEmailStatus', 'createdAt'],
   },
   access: {
     read: ({ req }) => Boolean(req.user),

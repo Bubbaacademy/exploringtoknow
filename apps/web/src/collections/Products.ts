@@ -21,7 +21,12 @@ const OFFER_TYPES = [
  */
 export const Products: CollectionConfig = {
   slug: 'products',
-  admin: { useAsTitle: 'title', group: 'Catalog', defaultColumns: ['title', 'offerType', 'status', 'priority'] },
+  admin: {
+    useAsTitle: 'title',
+    group: 'Catalog',
+    description: '⚠ Setting status = Active OR checking "force generate" ENQUEUES the AI content pipeline. Manually upload 3–30 product images (Product Images) before generating; affiliate URL + rel behavior is preserved as entered. Do not change affiliate URLs casually.',
+    defaultColumns: ['title', 'offerType', 'status', 'priority', 'merchantName'],
+  },
   access: { read: ({ req }) => Boolean(req.user) },
   fields: [
     { name: 'title', type: 'text', required: true },
