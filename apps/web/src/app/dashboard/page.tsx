@@ -1,100 +1,118 @@
 import Link from 'next/link';
 import { getAdminOverview, listMostReadArticles, listTrendingArticles, type Doc } from '@/lib/public';
+import { Section, Stat, Card, Empty, StatusBadge } from './_components';
 
 export const dynamic = 'force-dynamic';
 
-// Internal editorial overview (auth enforced in middleware). Admin-only; no public data.
+// Editorial command center (auth enforced in middleware). Real data only.
 export default async function DashboardHome() {
   const { counts, recentContacts, recentRequests, requestWarnings } = await getAdminOverview();
-  const reqWarnRows = ([
-    ['Submitted requests missing category', requestWarnings.noCategory ?? 0],
-    ['Submitted requests missing image permission', requestWarnings.noPermission ?? 0],
-    ['Submitted requests with fewer than 3 images', requestWarnings.fewImages ?? 0],
-    ['Submitted requests missing product URL', requestWarnings.noUrl ?? 0],
-  ] as Array<[string, number]>).filter(([, n]) => n > 0);
+  const c = (k: string): number => counts[k] ?? 0;
   const real = await listMostReadArticles(30, 5);
   const topViewed = real.length ? real : await listTrendingArticles(5);
   const topReal = real.length > 0;
-  const c = (k: string): number => counts[k] ?? 0;
 
-  const card: React.CSSProperties = { border: '1px solid #e5e7eb', borderRadius: 10, padding: 16, background: '#fff' };
-  const stat: React.CSSProperties = { ...card, background: '#f9fafb' };
-  const big: React.CSSProperties = { fontSize: 26, fontWeight: 700, fontVariantNumeric: 'tabular-nums' };
-  const lbl: React.CSSProperties = { fontSize: 12, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.04em' };
-  const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px,1fr))', gap: 12, margin: '12px 0 24px' };
-  const row: React.CSSProperties = { padding: '4px 0', display: 'flex', justifyContent: 'space-between', fontSize: 13, borderBottom: '1px solid #f3f4f6' };
-
-  const STATS: Array<[string, number]> = [
-    ['Published', c('published')], ['Ready for review', c('review')], ['Drafts', c('drafts')],
-    ['Requests waiting', c('requestsOpen')], ['Requests approved', c('requestsApproved')], ['Requests processing', c('requestsProcessing')],
-    ['Runs ok', c('runsPublished')], ['Runs flagged', c('runsFlagged')], ['Runs failed', c('runsFailed')], ['Runs running', c('runsRunning')],
-    ['New contacts', c('contactsNew')], ['Active subs', c('subsActive')], ['Total views', c('totalViews')],
-  ];
-  const WARN_ALL: Array<[string, number]> = [
+  const pipelineWarn = ([
     ['Published without category', c('warnPubNoCategory')],
     ['Published without author', c('warnPubNoAuthor')],
     ['Published without hero image', c('warnPubNoHero')],
     ['Ready-for-review without category (blocks publish)', c('warnReviewNoCategory')],
-  ];
-  const WARN = WARN_ALL.filter(([, n]) => n > 0);
+  ] as Array<[string, number]>).filter(([, n]) => n > 0);
+
+  const reqWarn = ([
+    ['Submitted: missing category', requestWarnings.noCategory ?? 0],
+    ['Submitted: missing image permission', requestWarnings.noPermission ?? 0],
+    ['Submitted: fewer than 3 images', requestWarnings.fewImages ?? 0],
+    ['Submitted: missing product URL', requestWarnings.noUrl ?? 0],
+  ] as Array<[string, number]>).filter(([, n]) => n > 0);
 
   return (
-    <div>
-      <h1 style={{ marginTop: 0 }}>Editorial overview</h1>
-      <p style={{ color: '#6b7280', marginTop: 4 }}>
-        Pipeline: Product Request → (manual approve) → Product → Intelligence/Brief → Article (lands at <strong>ready_for_review</strong>) → an editor sets <strong>editorialStatus=published</strong>. Nothing publishes automatically.
-      </p>
-
-      <div style={grid}>
-        {STATS.map(([label, n]) => (
-          <div key={label} style={stat}><div style={big}>{n}</div><div style={lbl}>{label}</div></div>
-        ))}
+    <>
+      <div className="adm-topbar">
+        <h1>Editorial command center</h1>
+        <span className="adm-sub">Pipeline: Request → manual approve → Product → Brief/Intelligence → Article (ready_for_review) → editor publishes. Nothing publishes automatically.</span>
       </div>
+      <div className="adm-content">
+        <Section title="System overview">
+          <div className="adm-cols">
+            <Stat label="Published" value={c('published')} tone="good" />
+            <Stat label="Ready for review" value={c('review')} tone={c('review') > 0 ? 'attn' : undefined} />
+            <Stat label="Drafts" value={c('drafts')} />
+            <Stat label="Requests waiting" value={c('requestsOpen')} tone={c('requestsOpen') > 0 ? 'attn' : undefined} />
+            <Stat label="New contacts" value={c('contactsNew')} tone={c('contactsNew') > 0 ? 'attn' : undefined} />
+            <Stat label="Active subscribers" value={c('subsActive')} />
+            <Stat label="Total views" value={c('totalViews')} />
+            <Stat label="Categories" value={c('categories')} />
+            <Stat label="Authors" value={c('authors')} />
+            <Stat label="Media" value={c('media')} />
+          </div>
+        </Section>
 
-      {WARN.length ? (
-        <div style={{ ...card, borderColor: '#f5c6c2', background: '#fef2f2', marginBottom: 24 }}>
-          <strong style={{ color: '#b42318' }}>Pipeline warnings</strong>
-          {WARN.map(([label, n]) => (
-            <div key={label} style={{ ...row, borderColor: '#f7d7d4' }}><span>{label}</span><strong>{n}</strong></div>
-          ))}
-        </div>
-      ) : (
-        <p style={{ color: '#066d3a', fontSize: 13, marginBottom: 24 }}>No pipeline warnings — published articles have category, author, and hero image.</p>
-      )}
+        {pipelineWarn.length || reqWarn.length ? (
+          <Section title="Needs attention">
+            <div className="adm-cols-2">
+              {pipelineWarn.length ? (
+                <div className="adm-panel warn">
+                  <strong>Article pipeline</strong>
+                  {pipelineWarn.map(([label, n]) => <div key={label} className="adm-row"><span className="t">{label}</span><strong>{n}</strong></div>)}
+                </div>
+              ) : null}
+              {reqWarn.length ? (
+                <div className="adm-panel warn">
+                  <strong>Product-request triage (submitted, not approvable yet)</strong>
+                  {reqWarn.map(([label, n]) => <div key={label} className="adm-row"><span className="t">{label}</span><strong>{n}</strong></div>)}
+                </div>
+              ) : null}
+            </div>
+          </Section>
+        ) : (
+          <Section title="Needs attention">
+            <div className="adm-panel ok">All clear — published articles have category, author and hero image; no blocked requests.</div>
+          </Section>
+        )}
 
-      {reqWarnRows.length ? (
-        <div style={{ ...card, borderColor: '#f5c6c2', background: '#fef2f2', marginBottom: 24 }}>
-          <strong style={{ color: '#b42318' }}>Product-request triage (submitted, not approvable yet)</strong>
-          {reqWarnRows.map(([label, n]) => (
-            <div key={label} style={{ ...row, borderColor: '#f7d7d4' }}><span>{label}</span><strong>{n}</strong></div>
-          ))}
-        </div>
-      ) : null}
+        <Section title="Editorial pipeline">
+          <div className="adm-cols">
+            <Stat label="Requests approved" value={c('requestsApproved')} />
+            <Stat label="Requests processing" value={c('requestsProcessing')} />
+            <Stat label="Runs OK" value={c('runsPublished')} tone="good" />
+            <Stat label="Runs flagged" value={c('runsFlagged')} tone={c('runsFlagged') > 0 ? 'attn' : undefined} />
+            <Stat label="Runs failed" value={c('runsFailed')} tone={c('runsFailed') > 0 ? 'attn' : undefined} />
+            <Stat label="Runs running" value={c('runsRunning')} />
+          </div>
+        </Section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px,1fr))', gap: 16 }}>
-        <div style={card}>
-          <h2 style={{ fontSize: 15, marginTop: 0 }}>{topReal ? 'Top viewed (last 30 days)' : 'Editor’s picks (no view data yet)'}</h2>
-          {topViewed.length ? topViewed.map((a: Doc) => (
-            <div key={String(a.id)} style={row}><span>{a.title as string}</span><span style={{ color: '#6b7280' }}>{a.editorialStatus as string}</span></div>
-          )) : <p style={{ color: '#6b7280', fontSize: 13 }}>No published articles yet.</p>}
-        </div>
-        <div style={card}>
-          <h2 style={{ fontSize: 15, marginTop: 0 }}>Recent product requests</h2>
-          {recentRequests.length ? recentRequests.map((r: Doc) => (
-            <div key={String(r.id)} style={row}><span>{(r.productName as string) || '(untitled)'}</span><strong>{r.status as string}</strong></div>
-          )) : <p style={{ color: '#6b7280', fontSize: 13 }}>None yet.</p>}
-        </div>
-        <div style={card}>
-          <h2 style={{ fontSize: 15, marginTop: 0 }}>Recent contact messages</h2>
-          {recentContacts.length ? recentContacts.map((m: Doc) => (
-            <div key={String(m.id)} style={row}><span>{(m.reason as string) || 'general'} · {m.email as string}</span><strong>{m.status as string}</strong></div>
-          )) : <p style={{ color: '#6b7280', fontSize: 13 }}>None yet.</p>}
-        </div>
+        <Section title="Activity">
+          <div className="adm-cols-2">
+            <Card title={topReal ? 'Top viewed (last 30 days)' : 'Editor’s picks (no view data yet)'}>
+              {topViewed.length ? topViewed.map((a: Doc) => (
+                <div key={String(a.id)} className="adm-row"><span className="t">{a.title as string}</span><StatusBadge status={String(a.editorialStatus)} /></div>
+              )) : <Empty>No published articles yet.</Empty>}
+            </Card>
+            <Card title="Recent product requests">
+              {recentRequests.length ? recentRequests.map((r: Doc) => (
+                <div key={String(r.id)} className="adm-row"><span className="t">{(r.productName as string) || '(untitled)'}</span><StatusBadge status={String(r.status)} /></div>
+              )) : <Empty>None yet.</Empty>}
+            </Card>
+            <Card title="Recent contact messages">
+              {recentContacts.length ? recentContacts.map((m: Doc) => (
+                <div key={String(m.id)} className="adm-row"><span className="t">{(m.reason as string) || 'general'} · {m.email as string}</span><StatusBadge status={String(m.status)} /></div>
+              )) : <Empty>None yet.</Empty>}
+            </Card>
+          </div>
+        </Section>
+
+        <Section title="Quick links">
+          <div className="adm-quicklinks">
+            <Link className="adm-btn" href="/dashboard/analytics">Analytics</Link>
+            <Link className="adm-btn ghost" href="/dashboard/health">System Health</Link>
+            <Link className="adm-btn ghost" href="/admin/collections/product-requests">Review requests</Link>
+            <Link className="adm-btn ghost" href="/admin/collections/articles">Manage articles</Link>
+            <Link className="adm-btn ghost" href="/admin/collections/contact-messages">Contact inbox</Link>
+            <Link className="adm-btn ghost" href="/admin">Payload admin</Link>
+          </div>
+        </Section>
       </div>
-
-      <p style={{ marginTop: 24, fontSize: 13 }}>
-        <Link href="/dashboard/analytics">Analytics →</Link> &nbsp;·&nbsp; <Link href="/dashboard/health">System Health →</Link> &nbsp;·&nbsp; <Link href="/admin">Payload admin →</Link>
-      </p>
-    </div>
+    </>
   );
 }
