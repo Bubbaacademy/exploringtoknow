@@ -41,6 +41,10 @@ export default async function CategoryPage({ params }: Args) {
 
   const hero = mediaUrl(category.heroImage) || mediaUrl(category.image);
   const intro = (category.longDescription as string) || (category.description as string) || '';
+  const GUIDE_TYPES = ['buying_guide', 'best_list', 'comparison', 'how_to'];
+  const guides = articles.filter((a) => GUIDE_TYPES.includes(String(a.type)));
+  const reviews = articles.filter((a) => String(a.type) === 'review');
+  const split = guides.length > 0 && reviews.length > 0;
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -80,11 +84,21 @@ export default async function CategoryPage({ params }: Args) {
         </div>
       </section>
 
-      {/* Articles */}
+      {/* Articles — split into Guides/Reviews only when the category has both
+          (merchandising); otherwise a single grid. No article appears twice. */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
           {articles.length ? (
-            <div className="grid">{articles.map((a) => <ArticleCard key={String(a.id)} article={a} />)}</div>
+            split ? (
+              <>
+                <div className="section-head"><div className="section-title"><span className="eyebrow">Choose with confidence</span><h2>Buying guides</h2></div></div>
+                <div className="grid">{guides.map((a) => <ArticleCard key={String(a.id)} article={a} />)}</div>
+                <div className="section-head" style={{ marginTop: 40 }}><div className="section-title"><span className="eyebrow">Tested &amp; considered</span><h2>Reviews</h2></div></div>
+                <div className="grid">{reviews.map((a) => <ArticleCard key={String(a.id)} article={a} />)}</div>
+              </>
+            ) : (
+              <div className="grid">{articles.map((a) => <ArticleCard key={String(a.id)} article={a} />)}</div>
+            )
           ) : (
             <CategoryEmptyState currentSlug={category.slug as string} categoryName={category.name as string} />
           )}
