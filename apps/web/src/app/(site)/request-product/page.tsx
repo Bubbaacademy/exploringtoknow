@@ -15,11 +15,19 @@ export default async function RequestProductPage() {
   return (
     <section className="section">
       <div className="container" style={{ maxWidth: 720 }}>
-        <h1>Request a product review</h1>
-        <p className="meta">
-          Tell us about a product you&apos;d like reviewed. An editor reviews every submission before anything is created or
-          published — nothing is automated and nothing goes live without manual approval.
-        </p>
+        <div className="request-head">
+          <span className="eyebrow">Reader requests</span>
+          <h1>Request a Review</h1>
+          <p className="request-lede">
+            Tell us about a product you&apos;d like reviewed. An editor reads every submission before anything is created or
+            published — nothing is automated, and nothing goes live without manual approval.
+          </p>
+          <ul className="request-trust">
+            <li>Human editorial review</li>
+            <li>No auto-publishing</li>
+            <li>Your images, used with permission</li>
+          </ul>
+        </div>
       </div>
       <RequestProductForm
         categories={categories
