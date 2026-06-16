@@ -209,3 +209,34 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
+
+---
+
+# Phase 9 — verification status (2026-06-16)
+
+Production `main` @ `570c3e5` (unchanged this phase — docs only). Email provider env: **all missing → local-safe mode**.
+
+## Verified by code / route / DB checks (automated)
+- [x] All public routes return 200; draft + bogus author/category → 404.
+- [x] `/dashboard/health` + `/dashboard/analytics` → 307 (auth-gated).
+- [x] `/api/health` ok; app/worker/postgres/caddy healthy; 0 restarts.
+- [x] generation_runs=5, articles=5, published=3, media=45 (all unchanged); pending jobs/locks/long-tx = 0.
+- [x] Published fingerprints (3/4/7) identical to baseline.
+- [x] Search published-only + ranking; no-results empty state renders.
+- [x] Newsletter confirm/unsubscribe invalid-token pages friendly + noindex,nofollow; `/search` noindex,follow.
+- [x] Newsletter trust copy present; author field graceful omission.
+- [x] Email provider env presence = all missing → local-safe (no external send).
+
+## Still needs HUMAN visual confirmation (cannot be done from SSR/headless here)
+- [ ] Pixel-level layout at 320 / 375 / 640 / 768 / 1024 / 1440 (no overflow, comfortable spacing).
+- [ ] Mobile drawer open/close animation, focus trap, Escape, focus restore — live.
+- [ ] Search combobox keyboard usability + screen-reader announcements — live.
+- [ ] Newsletter/contact form focus order + aria-live status — live with assistive tech.
+- [ ] Card/button hierarchy + CTA tone judged visually as "premium, not spammy".
+- [ ] Category hero rendering once a hero image is uploaded.
+
+## Email provider activation (when ready) — local-safe until set
+Set on the VPS `/opt/exploringtoknow/env/.env` (then recreate the app container):
+`NEWSLETTER_PROVIDER=resend`, `RESEND_API_KEY=…`, `NEWSLETTER_FROM=…`, `NEWSLETTER_REPLY_TO=…`,
+`NEWSLETTER_DOUBLE_OPT_IN=true`, `CONTACT_NOTIFY_TO=…`. Verify via Dashboard → System Health
+(keys flip to "present") then a controlled subscribe/contact test.

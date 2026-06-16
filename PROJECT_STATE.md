@@ -1,7 +1,22 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-16 after Phase 8 deployment & live verification.
+> Current snapshot. Updated 2026-06-16 after Phase 9 (verification + docs; no code change).
 > Documentation only — no application code, schema, or data changed by this update.
+
+## Phase 9 — Email activation readiness + production QA: COMPLETE (verification + docs only)
+- **Email provider env probed on production (presence only, never values): ALL MISSING**
+  (`NEWSLETTER_PROVIDER`, `RESEND_API_KEY`, `NEWSLETTER_FROM`, `NEWSLETTER_REPLY_TO`,
+  `NEWSLETTER_DOUBLE_OPT_IN`, `CONTACT_NOTIFY_TO`). Production therefore remains in
+  **local-safe mode** — newsletter/contact captured, no external email sent. The
+  provider-ready code path (Resend via fetch, token-hashed confirm/unsubscribe, contact
+  notification, failure fallback) is built and unit/route-verified; **real deliverability
+  is blocked only on adding the env values** (see activation block below) — no code change needed.
+- **Local-safe flows verified live:** search no-results empty state, confirm/unsubscribe
+  invalid-token friendly pages (`noindex,nofollow`), `/search` `noindex,follow`, newsletter
+  trust copy ("No spam. Unsubscribe anytime"), author-field graceful omission.
+- **UI/UX SSR review across all public pages found no clear defects** — no code change made
+  (avoiding regression risk). Remaining items need human visual confirmation (see QA_CHECKLIST.md).
+- **No deploy this phase** (docs only). App image/migrations unchanged from Phase 8.
 
 ---
 
@@ -81,7 +96,7 @@ Published-only gate intact (drafts 404; never in search/analytics/discovery; bot
 - Manual browser pixel-level responsive + screen-reader QA still pending (`QA_CHECKLIST.md`).
 - Content remains thin (3 published).
 
-## Phase 9 candidates
+## Phase 10 candidates
 1. Configure Resend in prod env + verify real deliverability + enable double opt-in.
 2. Real multi-author roster + assignment workflow + per-author SEO.
 3. Analytics: unique/session signal, referrer breakdown, time-series charts.
