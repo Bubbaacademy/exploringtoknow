@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 
+// Internal command center — never indexable (also auth-gated in middleware).
+export const metadata = { robots: { index: false, follow: false } };
+
 const NAV: Array<[string, string]> = [
   ['Products', '/dashboard/products'], ['Content', '/dashboard/content'], ['Social', '/dashboard/social'],
   ['Tracking', '/dashboard/tracking'], ['Analytics', '/dashboard/analytics'], ['System Health', '/dashboard/health'],
