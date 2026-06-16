@@ -238,12 +238,37 @@ export async function getAdminOverview(): Promise<{
   ]);
   const viewsAgg = await payload.find({ collection: 'article-views', limit: 10_000, depth: 0 });
   const totalViews = viewsAgg.docs.reduce((s, v) => s + Number(v.count || 0), 0);
+  // Pipeline counts (editorial overview).
+  const [requestsApproved, requestsProcessing, runsRunning, runsPublished, runsFlagged, runsFailed] = await Promise.all([
+    count('product-requests', { status: { equals: 'approved' } }),
+    count('product-requests', { status: { equals: 'processing' } }),
+    count('generation-runs', { status: { equals: 'running' } }),
+    count('generation-runs', { status: { equals: 'published' } }),
+    count('generation-runs', { status: { equals: 'flagged' } }),
+    count('generation-runs', { status: { equals: 'failed' } }),
+  ]);
+  // Warnings — resilient: any unsupported `exists` path falls back to 0, never 500s.
+  let warnPubNoCategory = 0, warnPubNoAuthor = 0, warnPubNoHero = 0, warnReviewNoCategory = 0;
+  try {
+    [warnPubNoCategory, warnPubNoAuthor, warnPubNoHero, warnReviewNoCategory] = await Promise.all([
+      count('articles', { and: [{ editorialStatus: { equals: 'published' } }, { category: { exists: false } }] }),
+      count('articles', { and: [{ editorialStatus: { equals: 'published' } }, { author: { exists: false } }] }),
+      count('articles', { and: [{ editorialStatus: { equals: 'published' } }, { 'images.hero': { exists: false } }] }),
+      count('articles', { and: [{ editorialStatus: { equals: 'ready_for_review' } }, { category: { exists: false } }] }),
+    ]);
+  } catch {
+    /* leave warnings at 0 if a query operator is unsupported */
+  }
   const [recentContacts, recentRequests] = await Promise.all([
     payload.find({ collection: 'contact-messages', sort: '-createdAt', limit: 5, depth: 0 }),
     payload.find({ collection: 'product-requests', sort: '-submittedAt', limit: 5, depth: 0 }),
   ]);
   return {
-    counts: { published, drafts, review, categories, authors, subscribers, subsActive, contactsNew, requestsOpen, media: mediaCount, totalViews },
+    counts: {
+      published, drafts, review, categories, authors, subscribers, subsActive, contactsNew, requestsOpen, media: mediaCount, totalViews,
+      requestsApproved, requestsProcessing, runsRunning, runsPublished, runsFlagged, runsFailed,
+      warnPubNoCategory, warnPubNoAuthor, warnPubNoHero, warnReviewNoCategory,
+    },
     recentContacts: recentContacts.docs,
     recentRequests: recentRequests.docs,
   };

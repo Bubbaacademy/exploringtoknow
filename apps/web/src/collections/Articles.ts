@@ -9,7 +9,12 @@ import { buildArticleImagePopulation } from '@/lib/images';
  */
 export const Articles: CollectionConfig = {
   slug: 'articles',
-  admin: { useAsTitle: 'title', group: 'Content', defaultColumns: ['title', 'editorialStatus', 'status', 'category', 'editorialPublishedAt'] },
+  admin: {
+    useAsTitle: 'title',
+    group: 'Content',
+    description: 'Editorial standards: no hype, no fabricated testing/medical/performance claims; product images must be manually uploaded with permission; affiliate disclosure renders automatically. PUBLISH GATE: only editorialStatus="published" is public, requires a category, and never happens automatically — a human sets it. "status" is the AI-pipeline state, not public visibility.',
+    defaultColumns: ['title', 'editorialStatus', 'status', 'category', 'author', 'publishPriority', 'editorialPublishedAt'],
+  },
   access: { read: () => true },
   fields: [
     { name: 'title', type: 'text', required: true },
@@ -20,6 +25,8 @@ export const Articles: CollectionConfig = {
     { name: 'author', type: 'relationship', relationTo: 'authors', index: true, admin: { description: 'Editorial author/byline. Defaults to the ExploringToKnow Editorial Team when unset.' } },
     { name: 'excerpt', type: 'textarea', admin: { description: 'Short summary shown on cards/listings.' } },
     { name: 'featured', type: 'checkbox', defaultValue: false, admin: { description: 'Feature on the homepage (only if editorially published).' } },
+    { name: 'editorialNotes', type: 'textarea', admin: { description: 'Internal editor notes for the publishing queue (never shown publicly).' } },
+    { name: 'publishPriority', type: 'number', admin: { description: 'Optional editorial priority for the publishing queue (lower = sooner). Display/triage only — does not auto-publish.' } },
     {
       name: 'type', type: 'select', required: true, defaultValue: 'how_to',
       options: [
