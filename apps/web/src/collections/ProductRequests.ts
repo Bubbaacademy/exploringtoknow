@@ -18,7 +18,12 @@ const slugify = (s: string) =>
 export const ProductRequests: CollectionConfig = {
   slug: 'product-requests',
   labels: { singular: 'Product Request', plural: 'Product Requests' },
-  admin: { useAsTitle: 'productName', group: 'Intake', defaultColumns: ['productName', 'status', 'requesterEmail', 'submittedAt'] },
+  admin: {
+    useAsTitle: 'productName',
+    group: 'Intake',
+    description: 'Request queue. Approval is MANUAL: set a Requested category, then set Status = Approved to create the product + enqueue one generation job. A category is required; image permission and 3–30 images are enforced. Nothing publishes automatically.',
+    defaultColumns: ['productName', 'status', 'requestedCategory', 'requesterEmail', 'submittedAt'],
+  },
   access: {
     read: ({ req }) => Boolean(req.user),
     create: ({ req }) => Boolean(req.user), // public submissions go through the server route (Local API)

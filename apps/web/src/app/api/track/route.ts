@@ -8,7 +8,14 @@ import config from '@payload-config';
  * and a day bucket. Always responds 204 (fire-and-forget, no info leak). Drafts are
  * never counted (the article must be editorialStatus=published).
  */
+// Obvious automated clients we never count (best-effort; not security).
+const BOT_UA = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|embedly|quora|pinterest|preview|headless|phantom|puppeteer|playwright|lighthouse|pingdom|uptime|monitor|curl|wget|python-requests|axios|httpclient|go-http|java\/|okhttp|scrapy/i;
+
 export async function POST(req: Request) {
+  // Lightweight bot filtering: skip empty/obvious-bot user agents.
+  const ua = req.headers.get('user-agent') || '';
+  if (!ua || BOT_UA.test(ua)) return new NextResponse(null, { status: 204 });
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();

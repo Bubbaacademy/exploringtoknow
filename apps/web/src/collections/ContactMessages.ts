@@ -11,7 +11,8 @@ export const ContactMessages: CollectionConfig = {
   admin: {
     useAsTitle: 'subject',
     group: 'Intake',
-    defaultColumns: ['email', 'reason', 'subject', 'status', 'createdAt'],
+    description: 'Editorial inbox. Triage: New → Reviewed → Archived (or Spam). Notification status records whether an editor alert email was sent.',
+    defaultColumns: ['email', 'reason', 'subject', 'status', 'reviewedBy', 'createdAt'],
   },
   access: {
     read: ({ req }) => Boolean(req.user),
@@ -38,9 +39,15 @@ export const ContactMessages: CollectionConfig = {
       name: 'status', type: 'select', defaultValue: 'new', index: true,
       options: [
         { label: 'New', value: 'new' },
-        { label: 'Read', value: 'read' },
+        { label: 'Reviewed', value: 'reviewed' },
         { label: 'Archived', value: 'archived' },
+        { label: 'Spam', value: 'spam' },
+        { label: 'Read (legacy)', value: 'read' },
       ],
     },
+    { name: 'source', type: 'text', admin: { readOnly: true, description: 'Where the message came from (e.g. contact-page).' } },
+    { name: 'notifyStatus', type: 'text', admin: { readOnly: true, description: 'Result of the editor notification attempt (e.g. sent, local_no_send, error_*).' } },
+    { name: 'reviewedBy', type: 'relationship', relationTo: 'users', admin: { description: 'Editor who triaged this message.' } },
+    { name: 'reviewedAt', type: 'date', admin: { description: 'When this message was triaged.' } },
   ],
 };

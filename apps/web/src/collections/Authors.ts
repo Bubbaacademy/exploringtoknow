@@ -21,6 +21,7 @@ export const Authors: CollectionConfig = {
     { name: 'bio', type: 'textarea' },
     { name: 'image', type: 'relationship', relationTo: 'media', admin: { description: 'Optional author photo (manual upload only).' } },
     { name: 'websiteUrl', type: 'text' },
+    { name: 'sortOrder', type: 'number', admin: { description: 'Lower shows first where author ordering applies.' } },
     { name: 'active', type: 'checkbox', defaultValue: true, index: true, admin: { description: 'Inactive authors are hidden from public author pages.' } },
     {
       name: 'seo', type: 'group', fields: [
