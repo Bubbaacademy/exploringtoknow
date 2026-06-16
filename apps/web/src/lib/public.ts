@@ -119,6 +119,26 @@ export async function relatedArticles(article: Doc, limit = 3): Promise<Doc[]> {
   return out.slice(0, limit);
 }
 
+/**
+ * Deterministic "trending" ordering of PUBLISHED articles — featured first, then
+ * most recent. No analytics and NO fabricated view counts; this is an honest
+ * editorial ranking that stays correct as content grows. Drafts never included.
+ */
+export async function listTrendingArticles(limit = 6): Promise<Doc[]> {
+  const payload = await client();
+  const [featured, recent] = await Promise.all([
+    payload.find({ collection: 'articles', where: { and: [PUBLISHED_WHERE, { featured: { equals: true } }] }, sort: '-editorialPublishedAt', limit, depth: 1 }),
+    payload.find({ collection: 'articles', where: { and: [PUBLISHED_WHERE] }, sort: '-editorialPublishedAt', limit: limit * 2, depth: 1 }),
+  ]);
+  const out: Doc[] = [];
+  const seen = new Set<unknown>();
+  for (const d of [...featured.docs, ...recent.docs]) {
+    if (out.length >= limit) break;
+    if (!seen.has(d.id)) { out.push(d); seen.add(d.id); }
+  }
+  return out;
+}
+
 /** Published articles filtered by one or more `type` values (for nav listing pages). */
 export async function listPublishedArticlesByTypes(types: string[], opts: { limit?: number } = {}): Promise<Doc[]> {
   const payload = await client();

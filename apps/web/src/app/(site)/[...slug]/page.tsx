@@ -82,11 +82,22 @@ export default async function ArticlePage({ params }: Args) {
     publisher: { '@type': 'Organization', name: SITE_NAME },
   };
 
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+      ...(category ? [{ '@type': 'ListItem', position: 2, name: category.name, item: `${SITE_URL}/category/${category.slug}` }] : []),
+      { '@type': 'ListItem', position: category ? 3 : 2, name: a.title, item: url },
+    ],
+  };
+
   return (
     <>
       <ReadingProgress />
       <article className="article">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
 
         <header className="article-head">
           <nav className="breadcrumbs" aria-label="Breadcrumb">
@@ -108,7 +119,7 @@ export default async function ArticlePage({ params }: Args) {
           {a.excerpt ? <p className="article-deck">{a.excerpt as string}</p> : null}
 
           <div className="article-byline">
-            <span className="article-author">ExploringToKnow Editorial Team</span>
+            <Link href="/about" className="article-author">ExploringToKnow Editorial Team</Link>
             {publishedAt ? (
               <span className="article-meta-item">
                 <time dateTime={publishedAt.toISOString()}>{fmtDate(publishedAt)}</time>
@@ -129,7 +140,7 @@ export default async function ArticlePage({ params }: Args) {
         </figure>
 
         {affiliate ? (
-          <p className="article-disclosure" role="note">{ARTICLE_AFFILIATE_DISCLOSURE}</p>
+          <p className="article-disclosure" role="note">{ARTICLE_AFFILIATE_DISCLOSURE} <Link href="/affiliate-disclosure">Learn more</Link>.</p>
         ) : null}
 
         <ArticleToc items={toc} />

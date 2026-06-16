@@ -16,6 +16,7 @@ import { SocialPosts } from './collections/SocialPosts';
 import { GenerationRuns } from './collections/GenerationRuns';
 import { ProductRequests } from './collections/ProductRequests';
 import { NewsletterSubscribers } from './collections/NewsletterSubscribers';
+import { ContactMessages } from './collections/ContactMessages';
 import { BrandProfileGlobal } from './globals/BrandProfile';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -32,7 +33,7 @@ export default buildConfig({
   collections: [
     Users, Media, Brands, Categories,
     Products, ProductIntelligence, ContentBriefs, Articles, SocialPosts, GenerationRuns,
-    ProductRequests, NewsletterSubscribers,
+    ProductRequests, NewsletterSubscribers, ContactMessages,
   ],
   globals: [BrandProfileGlobal],
   editor: lexicalEditor({}),

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { listPublishedArticles, listActiveCategories, mediaUrl, SITE_NAME, SITE_URL, type Doc } from '@/lib/public';
+import { listPublishedArticles, listActiveCategories, listTrendingArticles, mediaUrl, SITE_NAME, SITE_URL, type Doc } from '@/lib/public';
 import { ArticleCard } from '@/components/site/ArticleCard';
 import { NewsletterSignup } from '@/components/site/NewsletterSignup';
 
@@ -20,15 +20,35 @@ const STEPS = [
 ];
 
 export default async function HomePage() {
-  const [latest, categories] = await Promise.all([listPublishedArticles({ limit: 9 }), listActiveCategories()]);
+  const [latest, categories, trendingAll] = await Promise.all([
+    listPublishedArticles({ limit: 12 }),
+    listActiveCategories(),
+    listTrendingArticles(6),
+  ]);
   const featured = (await listPublishedArticles({ limit: 1, featured: true }))[0] as Doc | undefined;
   // Prefer a dedicated featured story; otherwise lead with the newest article.
   const cover = featured || (latest[0] as Doc | undefined);
   const coverCat = cover && typeof cover.category === 'object' ? (cover.category as Doc) : null;
-  const grid = cover ? latest.filter((a) => a.id !== cover.id).slice(0, 8) : latest;
+  // Trending: deterministic (featured + recency), excluding the cover. No fake views.
+  const trending = trendingAll.filter((a) => a.id !== cover?.id).slice(0, 6);
+  const trendingIds = new Set(trending.map((t) => t.id));
+  // Latest: anything not already shown as cover or trending (hidden when empty).
+  const grid = latest.filter((a) => a.id !== cover?.id && !trendingIds.has(a.id)).slice(0, 8);
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      { '@type': 'Organization', name: SITE_NAME, url: SITE_URL, description: 'Independent buying guides and product reviews.' },
+      {
+        '@type': 'WebSite', name: SITE_NAME, url: SITE_URL,
+        potentialAction: { '@type': 'SearchAction', target: `${SITE_URL}/search?q={search_term_string}`, 'query-input': 'required name=search_term_string' },
+      },
+    ],
+  };
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Hero */}
       <section className="hero">
         <div className="container">
@@ -40,7 +60,7 @@ export default async function HomePage() {
               AI-assisted in the drafting, and human-reviewed before anything goes live.
             </p>
             <div className="hero-actions">
-              <Link href="#latest" className="btn btn-lg">Read the latest guides</Link>
+              <Link href="/explore" className="btn btn-lg">Read the latest guides</Link>
               <Link href="/request-product" className="btn btn-ghost btn-lg">Request a Review</Link>
             </div>
             <div className="hero-trust">
@@ -79,23 +99,37 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {/* Latest articles */}
-      <section className="section" id="latest">
-        <div className="container">
-          <div className="section-head">
-            <div className="section-title">
-              <span className="eyebrow">Fresh off the desk</span>
-              <h2>Latest guides</h2>
+      {/* Trending / Most read (deterministic — featured + recency) */}
+      {trending.length ? (
+        <section className="section" id="trending" style={{ paddingTop: cover ? 0 : undefined }}>
+          <div className="container">
+            <div className="section-head">
+              <div className="section-title">
+                <span className="eyebrow">Worth reading now</span>
+                <h2>Trending guides</h2>
+              </div>
+              <Link href="/explore" className="section-link">Explore more →</Link>
             </div>
-            <Link href="/categories" className="section-link">Browse all categories →</Link>
+            <div className="grid">{trending.map((a) => <ArticleCard key={String(a.id)} article={a} />)}</div>
           </div>
-          {grid.length ? (
+        </section>
+      ) : null}
+
+      {/* Latest articles (only when there are extras beyond cover + trending) */}
+      {grid.length ? (
+        <section className="section" id="latest" style={{ paddingTop: 0 }}>
+          <div className="container">
+            <div className="section-head">
+              <div className="section-title">
+                <span className="eyebrow">Fresh off the desk</span>
+                <h2>Latest guides</h2>
+              </div>
+              <Link href="/categories" className="section-link">Browse all categories →</Link>
+            </div>
             <div className="grid">{grid.map((a) => <ArticleCard key={String(a.id)} article={a} />)}</div>
-          ) : (
-            <div className="empty"><strong>No published guides yet</strong>New reviews are in editorial review — check back soon.</div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      ) : null}
 
       {/* Categories */}
       {categories.length ? (
