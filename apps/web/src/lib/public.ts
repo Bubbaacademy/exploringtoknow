@@ -139,6 +139,65 @@ export async function listTrendingArticles(limit = 6): Promise<Doc[]> {
   return out;
 }
 
+/**
+ * Real "most read" from first-party analytics (article_views), published-only.
+ * Sums per-article view counts within the window, returns top published articles
+ * ordered by views. Returns [] when there is no data — callers fall back to the
+ * deterministic trending ranking (never fabricated counts).
+ */
+export async function listMostReadArticles(days = 30, limit = 6): Promise<Doc[]> {
+  const payload = await client();
+  const since = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
+  const views = await payload.find({
+    collection: 'article-views',
+    where: { viewDate: { greater_than_equal: since } },
+    limit: 5000, depth: 0,
+  });
+  if (!views.docs.length) return [];
+  const totals = new Map<string | number, number>();
+  for (const v of views.docs) {
+    const aid = typeof v.article === 'object' ? (v.article as Doc)?.id : v.article;
+    if (aid == null) continue;
+    totals.set(aid, (totals.get(aid) ?? 0) + Number(v.count || 0));
+  }
+  const topIds = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit * 2).map(([id]) => id);
+  if (!topIds.length) return [];
+  const res = await payload.find({
+    collection: 'articles',
+    where: { and: [PUBLISHED_WHERE, { id: { in: topIds } }] },
+    depth: 1, limit: limit * 2,
+  });
+  return res.docs
+    .sort((a, b) => (totals.get(b.id) ?? 0) - (totals.get(a.id) ?? 0))
+    .slice(0, limit);
+}
+
+export async function listActiveAuthors(): Promise<Doc[]> {
+  const payload = await client();
+  const res = await payload.find({ collection: 'authors', where: { active: { equals: true } }, sort: 'name', limit: 100, depth: 0 });
+  return res.docs;
+}
+
+export async function getActiveAuthor(slug: string): Promise<Doc | null> {
+  const payload = await client();
+  const res = await payload.find({
+    collection: 'authors',
+    where: { and: [{ slug: { equals: slug } }, { active: { equals: true } }] },
+    limit: 1, depth: 1,
+  });
+  return res.docs[0] ?? null;
+}
+
+export async function listPublishedArticlesByAuthor(authorId: string | number, limit = 24): Promise<Doc[]> {
+  const payload = await client();
+  const res = await payload.find({
+    collection: 'articles',
+    where: { and: [PUBLISHED_WHERE, { author: { equals: authorId } }] },
+    sort: '-editorialPublishedAt', limit, depth: 1,
+  });
+  return res.docs;
+}
+
 /** Published articles filtered by one or more `type` values (for nav listing pages). */
 export async function listPublishedArticlesByTypes(types: string[], opts: { limit?: number } = {}): Promise<Doc[]> {
   const payload = await client();
