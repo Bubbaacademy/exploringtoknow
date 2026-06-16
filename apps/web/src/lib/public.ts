@@ -71,6 +71,19 @@ export async function countPublishedInCategory(categoryId: string | number): Pro
 }
 
 /**
+ * Active categories with their PUBLISHED article counts (read-only, published-gated).
+ * Sorted by count desc then name so topics with content surface first. Used by the
+ * categories hub and explore discovery; never mutates or exposes non-public data.
+ */
+export async function listActiveCategoriesWithCounts(): Promise<Array<Doc & { articleCount: number }>> {
+  const categories = await listActiveCategories();
+  const counts = await Promise.all(categories.map((c) => countPublishedInCategory(c.id)));
+  const enriched: Array<Doc & { articleCount: number }> = categories.map((c, i) => ({ ...c, articleCount: counts[i] ?? 0 }));
+  enriched.sort((a, b) => b.articleCount - a.articleCount || String(a.name).localeCompare(String(b.name)));
+  return enriched;
+}
+
+/**
  * Related published articles: same category first, then a safe fallback to other
  * published articles so the section is never empty when the category is thin.
  * Always excludes the current article and never returns duplicates or drafts.
