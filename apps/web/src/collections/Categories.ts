@@ -1,7 +1,12 @@
 import type { CollectionConfig } from 'payload';
 export const Categories: CollectionConfig = {
   slug: 'categories',
-  admin: { useAsTitle: 'name', group: 'Catalog', defaultColumns: ['name', 'slug', 'active'] },
+  admin: {
+    useAsTitle: 'name',
+    group: 'Catalog',
+    description: 'Topics powering navigation + category pages. Merchandising: heroImage (premium masthead; elegant fallback if empty), longDescription (intro copy), featured + sortOrder (ordering/curation), SEO title/description. Public pages list PUBLISHED articles only. Inactive categories are hidden from the public site.',
+    defaultColumns: ['name', 'slug', 'featured', 'sortOrder', 'active'],
+  },
   // Public may READ categories (for the request form); only authenticated admins
   // may create/update/delete — public users can never create arbitrary categories.
   access: {
