@@ -326,3 +326,30 @@ Production `main` @ `f24bc89` · app image `etk-web@sha256:6dbe655c…`. Native 
 
 ## 43. Known limitation
 - Deep Payload component theming (custom Nav/Logo, list-cell badges) not done (needs importMap; avoided for safety). Theme is CSS-variable + class-hook based; final pixel polish needs a human logged-in pass.
+
+---
+
+# Phase 13 additions — multi-tenant SaaS foundation (migration 12 → 13)
+
+Production `main` @ `c8a68a2` · app image `etk-web@sha256:1e721192…` · ExploringToKnow = tenant/workspace #1.
+Automated checks already PASSED live (see PROJECT_STATE Phase 13). Items below need a **logged-in** pass.
+
+## 44. Gating (verified live unauthenticated; re-confirm logged-in)
+- [x] `/app` and `/platform` redirect to `/admin/login` (307) when unauthenticated.
+- [ ] Logged-in as the super-admin owner: `/platform` renders (platform totals + per-tenant rollup; ExploringToKnow listed: 1 workspace, 3 published, 3 products).
+- [ ] Logged-in: `/app` renders the ExploringToKnow workspace overview; all counts match the editorial console; "Your access" shows the platform_super_admin membership.
+- [ ] `/dashboard` (editorial console) and `/admin` still work unchanged.
+
+## 45. Tenant data integrity (verified live via SQL; spot-check in /admin)
+- [x] Exactly 1 Tenant (`exploringtoknow`), 1 Workspace (`exploringtoknow`, mode exploring_network), 1 Membership (platform_super_admin) — no duplicates.
+- [x] Every row in all 10 operational collections has `tenant` = ExploringToKnow (0 NULL).
+- [x] Published articles = 3 (unchanged); no generation/approval triggered (generation_runs = 5); article fingerprints stable.
+- [ ] In `/admin`, the Platform group shows Tenants/Workspaces/Memberships; existing collections show a Tenant field set to ExploringToKnow.
+
+## 46. Public site unchanged (verified live)
+- [x] All public routes 200; published article 200; draft + bogus author 404; sitemap 200.
+- [ ] Spot-check homepage/article/category visually — no change vs pre-Phase-13.
+
+## 47. Known follow-ups (roadmap)
+- Authenticated super-admin happy-path render of `/app` + `/platform` (gating + build verified; logged-in pass pending).
+- Native `/admin` + collection `access` are still operator-wide; per-tenant tightening + media isolation deferred to the "real second tenant" phase (need a 2nd tenant to verify isolation safely).

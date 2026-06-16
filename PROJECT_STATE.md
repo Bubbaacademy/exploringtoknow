@@ -1,9 +1,81 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-16 after Phase 12 (admin pro redesign) deployment & live verification.
-> Documentation only — no application code, schema, or data changed by this docs update.
+> Current snapshot. Updated 2026-06-16 after **Phase 13 (multi-tenant SaaS foundation)** deployment & live verification.
 
 ---
+
+## ⭐ ARCHITECTURE PIVOT — ExploringToKnow is now Tenant/Workspace #1 of a SaaS platform
+
+ExploringToKnow is no longer a standalone magazine: it is the **first live tenant/workspace of an
+Owned Media AI OS / AI Commerce Media OS**. The live public magazine is **unchanged** — the pivot is
+additive foundation underneath it. Phase 13 shipped the data model + access model + operator surfaces.
+
+### Operator layers (two distinct surfaces + the existing two)
+| Surface | Who | Purpose | Gate |
+|---|---|---|---|
+| `/platform` | Platform **super admin** | Cross-tenant overview (all tenants/workspaces/users + per-tenant rollup) | `requireSuperAdmin()` server-side + middleware presence |
+| `/app` | Any **workspace member** | Tenant-scoped workspace overview (content/audience/access), all figures scoped to the actor's tenant | `requireWorkspaceMember()` server-side + middleware presence |
+| `/dashboard` | Operator | ETK internal **editorial console** (unchanged) | middleware presence |
+| `/admin` | Operator | Payload native CMS (internal source of truth, not the customer UI) | Payload login |
+
+### Role model (Memberships.role)
+`platform_super_admin` · `workspace_owner` · `workspace_admin` · `editor` · `viewer` (analyst).
+The actor + role are resolved **server-side** from the Payload session (`payload.auth`) and their
+Memberships — **never** from client-submitted tenant/workspace/role values (`apps/web/src/lib/tenant.ts`).
+
+### Data model (additive; all three in admin group "Platform")
+- **Tenants** — customer/organization account (slug unique, status, plan placeholder, trial/billing placeholders — **no Stripe**).
+- **Workspaces** — publication/site under a tenant (mode: `exploring_network` | `hosted` | `custom_domain_ready`; `primaryDomain` is a **placeholder — no DNS/SSL** activation).
+- **Memberships** — (user × tenant × workspace × role); the authority for access decisions. A `platform_super_admin` membership may carry no tenant (platform-wide).
+- **Additive `tenant` relationship** on all 10 operational collections: products, articles, product-requests, categories, authors, newsletter-subscribers, contact-messages, generation-runs, article-views, **media** (media read stays public so published-article images render).
+
+### Tenant scoping = TRUE server-side (not UI-only)
+Every scoped query derives its tenant filter from the session-resolved context. `/app` counts are filtered
+by `tenant: { equals: <session tenantId> }`; client cannot influence the tenant. Public routes/URLs and the
+published-only gate are **unchanged**.
+
+### SaaS roadmap (next phases — NOT in Phase 13)
+1. **Real second tenant + isolation proof** → then tighten native `/admin` + collection `access` to per-tenant scoping (deferred in P13: single super-admin user; couldn't verify isolation without a 2nd tenant; rewriting live admin/public access was too risky to bundle).
+2. **Media per-tenant isolation** (keep published-image public-read; scope management/listing by tenant).
+3. **Plan/billing activation** (Stripe) on the plan/subscription placeholders.
+4. **Custom domain activation** (DNS/SSL) on the workspace domain placeholders.
+5. **Workspace-scoped editorial console** (make `/dashboard` tenant-aware once multi-tenant content exists).
+6. **Membership invitation/management UI** under `/platform` + `/app`.
+
+---
+
+## Phase 13 — Multi-tenant SaaS foundation: COMPLETE & DEPLOYED (migration 12 → 13)
+ExploringToKnow became **tenant/workspace #1** of the platform; the live magazine is untouched. See the
+**ARCHITECTURE PIVOT** block at the top for the role/route/data blueprint + roadmap.
+- **New collections:** Tenants, Workspaces, Memberships (admin group "Platform"); additive `tenant`
+  relationship added to all 10 operational collections (media read stays public).
+- **Server-side scoping** (`lib/tenant.ts`): `getTenantContext` (session → user → memberships),
+  `requireSuperAdmin` / `requireWorkspaceMember`, `getPrimaryTenant`, tenant-scoped overviews. Tenant/role
+  derived from the Payload session only — never from client input.
+- **New surfaces:** `/platform` (super-admin, cross-tenant) + `/app` (workspace-member, tenant-scoped),
+  premium `.adm` shell; `middleware.ts` extended to gate `/app` + `/platform` (presence check; authoritative
+  gate is server-side in each page).
+- **Migration `20260616_070000_phase13_multitenant` — additive + idempotent:** creates the 3 tables
+  (+enums/indexes/FKs + `payload_locked_documents_rels` columns), adds nullable `tenant_id` to the 10 tables,
+  **seeds** the ExploringToKnow tenant (`exploringtoknow`) + ETK Magazine workspace + a
+  `platform_super_admin` membership for the owner user, and **backfills** every existing row to ETK.
+  Idempotent guards throughout (CREATE TYPE in exception block, IF NOT EXISTS, ON CONFLICT, WHERE NOT EXISTS,
+  WHERE tenant_id IS NULL). **Pre-validated in a rolled-back transaction on prod** before deploy.
+- **Live-verified:** migrations 12→13; tenants/workspaces/memberships = 1/1/1 (no duplicates); **0 NULL
+  tenant_id across all 10 tables**; backfill totals articles=5, categories=23, media=45, products=3, runs=5;
+  **published=3 unchanged**, generation_runs=5 (no generation/approval triggered), article fingerprints stable;
+  all public routes 200; draft + bogus author 404; `/admin` 200; **`/app` + `/platform` → 307 `/admin/login`**
+  unauthenticated; worker/Postgres/Caddy untouched; 0 pending jobs / 0 long-tx.
+- **Known follow-up:** the authenticated super-admin happy-path render of `/app` + `/platform` needs a
+  logged-in browser pass (gating + build verified; couldn't drive an authenticated session via curl without
+  credentials). Native `/admin` + collection `access` remain operator-wide (per-tenant tightening deferred to
+  the "real second tenant" phase — see roadmap).
+
+### Phase 13 migration
+`20260616_070000_phase13_multitenant` — additive/idempotent. Payload migrations **12 → 13**.
+
+### Phase 13 DB backup
+`/opt/exploringtoknow/backups/pre-phase13_20260616_200717.sql.gz` (verified before migration: gzip OK).
 
 ## Phase 12 — Admin UI/UX Pro Redesign: COMPLETE & DEPLOYED (no migration)
 The internal `/dashboard` operations console was upgraded from raw inline-styled pages into a
@@ -69,6 +141,8 @@ Completed, phase by phase:
 - **P9 — Email activation readiness + QA (verification + docs):** probed prod env (all provider keys missing → confirmed local-safe); verified local-safe flows; no defects found.
 - **P10 — Editorial platform:** editorial overview dashboard (pipeline stats + warnings); pipeline/publish-gate clarity + content guardrails in admin; publishing-queue fields (editorialNotes, publishPriority); dashboard noindex.
 - **P11 — Author SEO + analytics + merchandising:** author ordering + noindex-when-empty + sitemap-with-content; featured-topic surface; author-name search signal; 14-day analytics trend + product-request triage warnings.
+- **P12 / P12B — Admin UI/UX:** premium `/dashboard` editorial operations console (`.adm` design layer + components) and native Payload `/admin` brand theming (CSS-variable + stable class-hook layer; titleSuffix).
+- **P13 — Multi-tenant SaaS foundation:** ETK becomes tenant/workspace #1; Tenants/Workspaces/Memberships + additive `tenant` on 10 collections; server-side tenant scoping (`lib/tenant.ts`); `/platform` + `/app` gated consoles; additive seed+backfill migration (12→13). Public magazine unchanged.
 
 Big-picture summary of what's built:
 - Core public magazine is live; premium public UI design system + homepage complete.
@@ -174,16 +248,16 @@ keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ f24bc89`** (Phase 12B) + docs commit synced on top |
-| Local `main` HEAD | matches prod (app code) + docs commit |
-| Running app image | `etk-web@sha256:6dbe655c…` (verified == freshly-built) |
-| Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 31h, Postgres/Caddy up 5d, 0 restarts) |
-| App health | Healthy, 0 restarts |
+| Production HEAD | **`main @ c8a68a2`** (Phase 13 merge) |
+| Local `main` HEAD | matches prod (`c8a68a2`) |
+| Running app image | `etk-web@sha256:1e721192…` (verified == freshly-built) |
+| Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 45h, Postgres/Caddy up 5d, 0 restarts) |
+| App health | Healthy, freshly recreated on Phase-13 image |
 | Pending jobs / locks / long-tx | **0 / 0 / 0** |
-| Payload migrations applied | **12** (unchanged — Phases 11–12 added no migration; latest `20260616_060000_phase10_editorial`) |
+| Payload migrations applied | **13** (latest `20260616_070000_phase13_multitenant`) |
 
 ### Rollback points (prod tags)
-`prod-pre-phase12b-native-admin → 19b68e3` · `prod-pre-phase12-admin-pro-redesign → 41d9308` · `prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
+`prod-pre-phase13-multitenant → 4359697` · `prod-pre-phase12b-native-admin → 19b68e3` · `prod-pre-phase12-admin-pro-redesign → 41d9308` · `prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
 `prod-pre-phase6-growth → f89eaea` · `prod-pre-phase5-magazine → 7975891` ·
 `prod-pre-phase4-trust → 1bcd201` · `prod-pre-phase3-discovery → dcfb3bb` · `prod-pre-phase2-navsearch → 181e953`
 
