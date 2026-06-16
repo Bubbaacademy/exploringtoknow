@@ -212,6 +212,43 @@ export async function getMostReadDashboard(limit = 50): Promise<Array<{ article:
     .slice(0, limit);
 }
 
+/**
+ * Admin-only operational overview (counts + recent intake). Internal dashboard use.
+ * Read-only aggregation; no PII beyond what admins already see in collections.
+ */
+export async function getAdminOverview(): Promise<{
+  counts: Record<string, number>;
+  recentContacts: Doc[];
+  recentRequests: Doc[];
+}> {
+  const payload = await client();
+  const count = async (collection: string, where: Doc): Promise<number> =>
+    (await payload.find({ collection: collection as never, where, limit: 0, depth: 0 })).totalDocs;
+  const [published, drafts, review, categories, authors, subscribers, subsActive, contactsNew, requestsOpen, mediaCount] = await Promise.all([
+    count('articles', { editorialStatus: { equals: 'published' } }),
+    count('articles', { editorialStatus: { equals: 'draft' } }),
+    count('articles', { editorialStatus: { equals: 'ready_for_review' } }),
+    count('categories', { active: { equals: true } }),
+    count('authors', {}),
+    count('newsletter-subscribers', {}),
+    count('newsletter-subscribers', { status: { in: ['active', 'subscribed'] } }),
+    count('contact-messages', { status: { equals: 'new' } }),
+    count('product-requests', { status: { equals: 'submitted' } }),
+    count('media', {}),
+  ]);
+  const viewsAgg = await payload.find({ collection: 'article-views', limit: 10_000, depth: 0 });
+  const totalViews = viewsAgg.docs.reduce((s, v) => s + Number(v.count || 0), 0);
+  const [recentContacts, recentRequests] = await Promise.all([
+    payload.find({ collection: 'contact-messages', sort: '-createdAt', limit: 5, depth: 0 }),
+    payload.find({ collection: 'product-requests', sort: '-submittedAt', limit: 5, depth: 0 }),
+  ]);
+  return {
+    counts: { published, drafts, review, categories, authors, subscribers, subsActive, contactsNew, requestsOpen, media: mediaCount, totalViews },
+    recentContacts: recentContacts.docs,
+    recentRequests: recentRequests.docs,
+  };
+}
+
 export async function getActiveAuthor(slug: string): Promise<Doc | null> {
   const payload = await client();
   const res = await payload.find({
@@ -250,6 +287,39 @@ export const SEARCH_MIN_QUERY = 2;
 export const SEARCH_LIMIT = 24;
 
 /**
+ * Relevance score for a published article against a query. Field-weighted so title
+ * matches rank highest, then excerpt, then category/author, then body. Pure ranking
+ * over already-published results — it never changes which articles are eligible.
+ */
+function scoreArticle(a: Doc, q: string): number {
+  const ql = q.toLowerCase();
+  const has = (s: unknown) => (typeof s === 'string' ? s.toLowerCase().includes(ql) : false);
+  const title = typeof a.title === 'string' ? a.title.toLowerCase() : '';
+  let score = 0;
+  if (title.includes(ql)) score += 100;
+  if (title.startsWith(ql)) score += 50;
+  if (title === ql) score += 50;
+  if (has(a.excerpt)) score += 40;
+  const cat = typeof a.category === 'object' ? (a.category as Doc)?.name : a.category;
+  if (has(cat)) score += 25;
+  const author = typeof a.author === 'object' ? (a.author as Doc)?.name : undefined;
+  if (has(author)) score += 25;
+  const product = typeof a.product === 'object' ? (a.product as Doc)?.title : undefined;
+  if (has(product)) score += 20;
+  if (has(a.slug)) score += 15;
+  if (has(a.markdown)) score += 10;
+  return score;
+}
+
+function rankSearchResults(docs: Doc[], query: string): Doc[] {
+  return [...docs].sort((a, b) => {
+    const d = scoreArticle(b, query) - scoreArticle(a, query);
+    if (d !== 0) return d;
+    return new Date(String(b.editorialPublishedAt || 0)).getTime() - new Date(String(a.editorialPublishedAt || 0)).getTime();
+  });
+}
+
+/**
  * Native server-side search over PUBLISHED articles only. The query is trimmed and
  * length-capped; matching uses Payload's parameterized `like` (ILIKE) operator —
  * never raw string concatenation. Results are AND-gated by editorialStatus, so
@@ -284,7 +354,7 @@ export async function searchPublishedArticles(
       where: { and: [PUBLISHED_WHERE, { or: [...nativeOr, ...relationOr] }] },
       sort: '-editorialPublishedAt', limit, depth: 1,
     });
-    return { docs: res.docs, total: res.totalDocs, query, capped };
+    return { docs: rankSearchResults(res.docs, query), total: res.totalDocs, query, capped };
   } catch {
     // Defensive fallback: query only native article fields (no relationship join).
     const res = await payload.find({
@@ -292,7 +362,7 @@ export async function searchPublishedArticles(
       where: { and: [PUBLISHED_WHERE, { or: nativeOr }] },
       sort: '-editorialPublishedAt', limit, depth: 1,
     });
-    return { docs: res.docs, total: res.totalDocs, query, capped };
+    return { docs: rankSearchResults(res.docs, query), total: res.totalDocs, query, capped };
   }
 }
 
