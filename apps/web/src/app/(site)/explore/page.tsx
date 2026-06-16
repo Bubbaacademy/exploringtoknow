@@ -49,6 +49,7 @@ export default async function ExplorePage() {
   const coverCat = cover && typeof cover.category === 'object' ? (cover.category as Doc) : null;
   const grid = cover ? latest.filter((a) => a.id !== cover.id).slice(0, 12) : latest;
   const topicsForChips = [...cats].sort((a, b) => b.articleCount - a.articleCount);
+  const featuredCats = cats.filter((c) => c.featured);
 
   return (
     <>
@@ -102,8 +103,23 @@ export default async function ExplorePage() {
         </section>
       ) : null}
 
+      {/* Featured topics (editorial curation — only when categories are flagged featured) */}
+      {featuredCats.length ? (
+        <section className="section" style={{ paddingTop: grid.length ? 0 : undefined }}>
+          <div className="container">
+            <div className="section-head">
+              <div className="section-title">
+                <span className="eyebrow">Editor-curated</span>
+                <h2>Featured topics</h2>
+              </div>
+            </div>
+            <TopicChips categories={featuredCats} showCount />
+          </div>
+        </section>
+      ) : null}
+
       {/* Browse by topic */}
-      <section className="section" style={{ paddingTop: grid.length ? 0 : undefined }}>
+      <section className="section" style={{ paddingTop: (grid.length || featuredCats.length) ? 0 : undefined }}>
         <div className="container">
           <div className="section-head">
             <div className="section-title">

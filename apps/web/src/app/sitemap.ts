@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { listPublishedArticles, listActiveCategories, listActiveAuthors, SITE_URL } from '@/lib/public';
+import { listPublishedArticles, listActiveCategories, listActiveAuthorsWithContent, SITE_URL } from '@/lib/public';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +8,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [articles, categories, authors] = await Promise.all([
     listPublishedArticles({ limit: 1000 }),
     listActiveCategories(),
-    listActiveAuthors(),
+    listActiveAuthorsWithContent(),
   ]);
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE_URL, changeFrequency: 'daily', priority: 1 },
