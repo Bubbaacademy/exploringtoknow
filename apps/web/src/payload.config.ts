@@ -31,7 +31,12 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 export default buildConfig({
   serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL,
   secret: process.env.PAYLOAD_SECRET || '',
-  admin: { user: Users.slug },
+  admin: {
+    user: Users.slug,
+    // Brand the browser tab. Global admin CSS is injected via a scoped import in
+    // app/(payload)/layout.tsx (Payload 3.85.1 has no admin.css config key).
+    meta: { titleSuffix: ' · ExploringToKnow Ops' },
+  },
   collections: [
     Users, Media, Brands, Categories, Authors,
     Products, ProductIntelligence, ContentBriefs, Articles, SocialPosts, GenerationRuns,

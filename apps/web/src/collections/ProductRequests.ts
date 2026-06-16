@@ -53,10 +53,11 @@ export const ProductRequests: CollectionConfig = {
     },
     {
       name: 'status', type: 'select', required: true, defaultValue: 'submitted', index: true,
+      admin: { description: '⚠ Setting "Approved" creates a Product and ENQUEUES ONE generation job (then moves to Processing). Confirm a Requested category + 3–30 permission-confirmed images first. This is the only manual approval step — do not set Approved unless you intend to start generation.' },
       options: [
         { label: 'Submitted', value: 'submitted' },
         { label: 'Under review', value: 'under_review' },
-        { label: 'Approved', value: 'approved' },
+        { label: 'Approved (triggers generation)', value: 'approved' },
         { label: 'Processing', value: 'processing' },
         { label: 'Completed', value: 'completed' },
         { label: 'Rejected', value: 'rejected' },

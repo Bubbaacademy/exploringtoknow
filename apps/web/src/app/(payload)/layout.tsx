@@ -1,6 +1,7 @@
 /* THIS FILE IS THE STANDARD PAYLOAD 3 ADMIN MOUNT (do not edit by hand). */
 import config from '@payload-config';
 import '@payloadcms/next/css';
+import '../../admin-theme.css'; // ExploringToKnow native admin branding (scoped to /admin route group)
 import type { ServerFunctionClient } from 'payload';
 import { handleServerFunctions, RootLayout } from '@payloadcms/next/layouts';
 import React from 'react';

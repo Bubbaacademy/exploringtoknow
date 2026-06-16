@@ -1,0 +1,76 @@
+/* etk-admin-theme v1 — ExploringToKnow native Payload admin branding.
+   Cosmetic only: overrides Payload v3 public theme variables + a few stable class
+   hooks (.btn--style-primary, .nav, .card). No layout/logic risk — selectors that
+   don't match simply have no effect. Loaded via admin.css in payload.config.ts. */
+
+:root,
+html[data-theme='light'] {
+  /* Warm editorial paper background instead of flat gray */
+  --theme-bg: #f7f6f2;
+  --theme-input-bg: #ffffff;
+  --theme-border-color: #e6e3da;
+  /* Brand accents reused by custom rules below */
+  --etk-brand: #14543f;
+  --etk-brand-ink: #0e3a2b;
+  --etk-brand-tint: #e9f1ee;
+  --etk-accent: #bd6a36;
+}
+html[data-theme='dark'] {
+  --etk-brand: #2c8466;
+  --etk-brand-ink: #1c6b50;
+  --etk-brand-tint: rgba(44,132,102,.16);
+  --etk-accent: #d3854f;
+}
+
+/* Primary action buttons → brand forest (login, save, create, etc.) */
+.btn--style-primary {
+  background: var(--etk-brand) !important;
+  border-color: var(--etk-brand) !important;
+  color: #fff !important;
+}
+.btn--style-primary:hover,
+.btn--style-primary:focus {
+  background: var(--etk-brand-ink) !important;
+  border-color: var(--etk-brand-ink) !important;
+}
+
+/* Left navigation → branded sidebar with clearer rhythm */
+.nav {
+  background: var(--etk-brand-ink);
+  --theme-elevation-0: rgba(255,255,255,.06);
+}
+.nav,
+.nav a,
+.nav__link,
+.nav-group__toggle,
+.nav__link-label { color: #d7e6df; }
+.nav a:hover,
+.nav__link:hover { color: #ffffff; background: rgba(255,255,255,.08); border-radius: 6px; }
+.nav__link--active,
+.nav a.active { color: #ffffff; background: rgba(255,255,255,.12); border-radius: 6px; }
+.nav-group__label { color: #8fbcab !important; letter-spacing: .06em; text-transform: uppercase; font-size: 10.5px; }
+
+/* Brand the admin wordmark area / step-nav */
+.step-nav a:hover { color: var(--etk-brand-ink); }
+
+/* Cards / panels: a touch more presence + warmth */
+.card {
+  border-color: var(--etk-border, #e6e3da);
+  box-shadow: 0 1px 2px rgba(20,28,40,.05);
+}
+
+/* Links + active accents */
+a:where(:not(.btn)):hover { color: var(--etk-brand-ink); }
+
+/* Pill/badge readability for select cells (status columns) */
+.pill { font-weight: 650; }
+
+/* Login screen: a calmer, branded frame */
+.login__brand,
+.login__wrap { --theme-elevation-0: #ffffff; }
+.login .btn--style-primary { width: 100%; }
+
+/* Document/edit headers: stronger hierarchy */
+.doc-header__title,
+.collection-list__header h1,
+h1.render-title { letter-spacing: -.01em; }
