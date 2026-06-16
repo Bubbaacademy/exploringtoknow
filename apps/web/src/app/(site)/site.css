@@ -549,3 +549,92 @@ img { max-width: 100%; height: auto; display: block; }
   .search-bar { flex-direction: column; }
   .search-bar .btn { width: 100%; }
 }
+
+/* ============================================================================
+   PHASE 3 — Discovery layer (category page, topics hub, explore, search hero).
+   Additive; uses existing tokens. No Phase 1/2 rules changed.
+   ========================================================================== */
+
+/* ---- Shared page heads + premium empty panel ---------------------------- */
+.hub-head { max-width: 720px; margin-bottom: 28px; }
+.hub-head h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 4vw, 44px); line-height: 1.08; letter-spacing: -.022em; margin: 8px 0 12px; color: var(--fg); }
+.hub-head-desc { font-size: clamp(16px, 2vw, 18px); line-height: 1.6; color: var(--muted); margin: 0; }
+
+.empty-panel {
+  border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-lg);
+  padding: clamp(28px, 5vw, 48px); text-align: center; box-shadow: var(--shadow-xs);
+  max-width: 760px; margin: 8px auto;
+}
+.empty-panel h2 { font-family: var(--font-display); font-weight: 600; font-size: clamp(22px, 3vw, 30px); line-height: 1.15; letter-spacing: -.018em; margin: 10px 0 10px; color: var(--fg); }
+.empty-panel p { font-size: 16px; line-height: 1.6; color: var(--muted); margin: 0 auto; max-width: 520px; }
+.empty-panel-sub { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: var(--muted-2); margin: 26px 0 14px; }
+.empty-panel .cat-chips { justify-content: center; }
+.empty-panel-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 26px; }
+
+/* ---- Category masthead -------------------------------------------------- */
+.cat-masthead {
+  background: var(--brand-tint); border-bottom: 1px solid var(--line);
+  padding: clamp(28px, 5vw, 56px) 0 clamp(24px, 4vw, 40px);
+}
+.cat-masthead .breadcrumbs { margin-bottom: 14px; }
+.cat-masthead h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(32px, 5vw, 50px); line-height: 1.05; letter-spacing: -.024em; margin: 6px 0 12px; color: var(--fg); }
+.cat-masthead-desc { font-size: clamp(16px, 2.1vw, 19px); line-height: 1.6; color: var(--fg-soft); max-width: 640px; margin: 0 0 18px; }
+.cat-masthead-meta { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); font-size: 14px; }
+.cat-masthead-meta span { display: inline-flex; align-items: center; gap: 8px; }
+.cat-masthead-meta span::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
+
+/* ---- Topics hub: grouped topic cards ------------------------------------ */
+.hub-group { margin-top: 36px; }
+.hub-group:first-of-type { margin-top: 8px; }
+.hub-group-title { font-family: var(--font-display); font-weight: 600; font-size: 20px; letter-spacing: -.01em; margin: 0 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line); color: var(--fg); }
+.topic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.topic-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+  padding: 16px; box-shadow: var(--shadow-xs);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.topic-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--brand); }
+.topic-card-mark { width: 42px; height: 42px; flex: 0 0 auto; border-radius: 10px; display: grid; place-items: center; background: var(--brand-tint); color: var(--brand); font-family: var(--font-display); font-weight: 800; font-size: 18px; }
+.topic-card-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.topic-card-name { font-weight: 650; font-size: 15.5px; color: var(--fg); letter-spacing: -.01em; }
+.topic-card-desc { font-size: 13px; color: var(--muted); line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topic-card-count { font-size: 12.5px; color: var(--accent-ink); font-weight: 600; }
+
+/* ---- Chip count (browse-by-topic) -------------------------------------- */
+.cat-chip .chip-count { margin-left: 4px; min-width: 20px; padding: 1px 7px; border-radius: var(--r-pill); background: var(--brand-tint); color: var(--brand); font-size: 12px; font-weight: 700; }
+
+/* ---- Explore: entry-point cards ---------------------------------------- */
+.entry-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.entry-card {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 28px 26px; box-shadow: var(--shadow-xs);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.entry-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
+.entry-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 24px; letter-spacing: -.015em; margin: 4px 0 0; color: var(--fg); }
+.entry-card p { font-size: 15px; line-height: 1.55; color: var(--muted); margin: 0; }
+.entry-card-cta { margin-top: 8px; font-weight: 650; color: var(--brand); }
+.entry-card:hover .entry-card-cta { color: var(--brand-ink); }
+.cover-body .eyebrow { margin-bottom: 2px; }
+
+/* ---- Search hero ------------------------------------------------------- */
+.search-hero { max-width: 680px; margin: 0 auto 32px; text-align: center; }
+.search-hero h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 4vw, 44px); line-height: 1.08; letter-spacing: -.022em; margin: 8px 0 10px; color: var(--fg); }
+.search-hero-sub { font-size: 16.5px; line-height: 1.55; color: var(--muted); margin: 0 0 20px; }
+.search-hero .search-bar { position: relative; margin: 0 auto; }
+.search-hero .search-bar-ic { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--muted); display: grid; place-items: center; pointer-events: none; }
+.search-hero .search-bar input { padding-left: 46px; }
+.search-hero .search-count { text-align: center; margin-top: 14px; }
+
+/* ---- Phase 3 responsive ------------------------------------------------ */
+@media (max-width: 640px) {
+  .entry-cards { grid-template-columns: 1fr; gap: 14px; }
+  .topic-grid { grid-template-columns: 1fr; }
+  /* Keep the hero search bar a single row so the absolutely-positioned icon stays aligned. */
+  .search-hero .search-bar { flex-direction: row; }
+  .search-hero .search-bar input { padding-left: 44px; min-width: 0; }
+  .search-hero .search-bar .btn { width: auto; flex: 0 0 auto; }
+  .cat-masthead-meta { gap: 6px 14px; font-size: 13px; }
+}
