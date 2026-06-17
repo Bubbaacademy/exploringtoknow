@@ -105,6 +105,28 @@ Payload migrations **14 → 15**.
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
 
+### Phase 16 — Workspace Console UX consolidation + tenant-safe nav (no migration, app-only deploy)
+`/app` is now the **real customer workspace dashboard**, inheriting the premium `/dashboard` UX but fully
+tenant/workspace-scoped. No schema/business-logic change.
+- **Data layer `lib/workspace.ts`:** `requireWorkspace` + server-derived tenant+workspace scoping
+  (`wsCount`/`wsList`/`workspaceDashboard`). A member with no resolvable tenant matches **nothing** (never
+  leaks ETK/global data). `getTenantContext` wrapped in React `cache()` (dedupe layout+page).
+- **`/app` dashboard:** header (Welcome + workspace + role + plan), scoped overview cards, trial card,
+  needs-attention (warn/all-clear), editorial pipeline (informational), recent activity, integrated onboarding.
+- **New workspace-safe pages:** `/app/{articles,products,categories,product-requests,analytics,newsletter,
+  contact,media,editorial,settings}` — scoped lists, honest empty states, "setup in progress" panels for
+  self-serve actions not yet wired. **No page links to `/admin/collections/...`.**
+- **Sidebar redesign** (Overview / Content / Workflow / Growth / Workspace) → all links under `/app`.
+  Platform admin, ETK editorial console, and Payload CMS links are shown **only to platform_super_admin**.
+- **Gates unchanged & re-verified:** `/admin` denied to workspace users; `/platform` + `/dashboard` →
+  **307 `/app`** for non-super; super-admin paths untouched.
+- **Verified (temp owner, created→checked→deleted):** all 11 `/app/*` pages return **200 with no
+  Unauthorized screen and zero `/admin/collections` links**; no ETK data leak; non-super sidebar hides
+  admin/platform links; integrity unchanged (articles 5 / published 3 / runs 5 / media 45; fingerprints
+  stable); jobs/locks/long-tx 0; worker untouched. (Note: prod now has ETK + 1 operator-retained browser
+  test workspace = 2 tenants, intentionally kept.)
+Rollback tag `prod-pre-phase16-console → af1c14c`.
+
 ### Phase 15 follow-up — public signup OPENED in production (no migration, app-only deploy)
 Public signup is now **live**: `PUBLIC_SIGNUP_ENABLED=true` (+`FREE_TRIAL_DAYS=14`, `DEFAULT_WORKSPACE_PLAN=trial`,
 `REQUIRE_EMAIL_VERIFICATION=false`) appended to `/opt/exploringtoknow/env/.env` and the app recreated to load it.
@@ -369,9 +391,9 @@ keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ db1c3d0`** (Phase 15 + public-signup OPEN + auth fixes) |
+| Production HEAD | **`main @ 5cc818a`** (Phase 16 — workspace console) + docs commit |
 | Local `main` HEAD | matches prod (clean) |
-| Running app image | `etk-web@sha256:84df6544…` (verified == freshly-built) |
+| Running app image | `etk-web@sha256:ddf7100a…` (verified == freshly-built) |
 | Public signup | **OPEN** — `PUBLIC_SIGNUP_ENABLED=true` in VPS env (FREE_TRIAL_DAYS=14, DEFAULT_WORKSPACE_PLAN=trial, REQUIRE_EMAIL_VERIFICATION=false) |
 | Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 2d, Postgres/Caddy up 6d, 0 restarts) |
 | App health | Healthy, freshly recreated (app-only, SKIP_MIGRATE) |
