@@ -103,7 +103,7 @@ sending, or AI automation.** The ETK public magazine is unchanged.
 Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
-`/opt/exploringtoknow/backups/pre-phase15_<ts>.sql.gz` (verified before migration).
+`/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
 
 ## Phase 14 — Tenant isolation hardening + workspace scoping: COMPLETE & DEPLOYED (migration 13 → 14)
 Made the multi-tenant foundation safe to build on. Additive only; the public magazine is unchanged.
@@ -237,6 +237,7 @@ Completed, phase by phase:
 - **P12 / P12B — Admin UI/UX:** premium `/dashboard` editorial operations console (`.adm` design layer + components) and native Payload `/admin` brand theming (CSS-variable + stable class-hook layer; titleSuffix).
 - **P13 — Multi-tenant SaaS foundation:** ETK becomes tenant/workspace #1; Tenants/Workspaces/Memberships + additive `tenant` on 10 collections; server-side tenant scoping (`lib/tenant.ts`); `/platform` + `/app` gated consoles; additive seed+backfill migration (12→13). Public magazine unchanged.
 - **P14 — Tenant isolation hardening + workspace scoping:** added `workspace` everywhere (+tenant on 4 more collections); TRUE server-side access control (`lib/access.ts`) on all scoped collections; `/admin` super-admin-only; client-ids never trusted on write (stamp hook); second-tenant isolation proven (26/26 checks); migration 13→14. Public magazine unchanged.
+- **P15 — Public signup + workspace onboarding + free trial:** `/signup` + `/login` + `/api/auth/*` (Payload session cookie); transactional user+tenant+workspace+owner+trial creation (`lib/onboarding.ts`); trial fields; `/app` onboarding UX; `/platform` signup visibility; `/dashboard` gated to super admin; flag-gated, local-safe email, no billing/domains/AI. Migration 14→15. Public magazine unchanged.
 
 Big-picture summary of what's built:
 - Core public magazine is live; premium public UI design system + homepage complete.
@@ -342,16 +343,16 @@ keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ 8a7e7ef`** (Phase 14; app image built from merge `3f82b5d`, +test-script fix) |
+| Production HEAD | **`main @ 9c2d8e6`** (Phase 15 merge) + docs commit |
 | Local `main` HEAD | matches prod |
-| Running app image | `etk-web@sha256:9bb22b91…` (verified == freshly-built) |
+| Running app image | `etk-web@sha256:70685b98…` (verified == freshly-built) |
 | Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 2d, Postgres/Caddy up 6d, 0 restarts) |
-| App health | Healthy, freshly recreated on Phase-14 image |
+| App health | Healthy, freshly recreated on Phase-15 image |
 | Pending jobs / locks / long-tx | **0 / 0 / 0** |
-| Payload migrations applied | **14** (latest `20260616_080000_phase14_workspace_scoping`) |
+| Payload migrations applied | **15** (latest `20260616_090000_phase15_signup_onboarding`) |
 
 ### Rollback points (prod tags)
-`prod-pre-phase14-isolation → 74d5fac` · `prod-pre-phase13-multitenant → 4359697` · `prod-pre-phase12b-native-admin → 19b68e3` · `prod-pre-phase12-admin-pro-redesign → 41d9308` · `prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
+`prod-pre-phase15-signup → 122b75c` · `prod-pre-phase14-isolation → 74d5fac` · `prod-pre-phase13-multitenant → 4359697` · `prod-pre-phase12b-native-admin → 19b68e3` · `prod-pre-phase12-admin-pro-redesign → 41d9308` · `prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
 `prod-pre-phase6-growth → f89eaea` · `prod-pre-phase5-magazine → 7975891` ·
 `prod-pre-phase4-trust → 1bcd201` · `prod-pre-phase3-discovery → dcfb3bb` · `prod-pre-phase2-navsearch → 181e953`
 

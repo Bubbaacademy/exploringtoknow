@@ -380,4 +380,31 @@ Production `main` @ `8a7e7ef` · app image `etk-web@sha256:9bb22b91…`. Isolati
 ## 51. Remaining limitations / next
 - Media files are served statically (public by design); only listing/management is tenant-scoped.
 - Reference collections (categories/authors/media/brands) keep public anon read; authed members are tenant-scoped.
-- Next: Phase 15 public signup/onboarding · 16 billing · 17 custom domains · 18 email activation · 19 workspace AI limits · 20 attribution/affiliate analytics · 21 ad campaigns.
+
+---
+
+# Phase 15 additions — public signup + onboarding + free trial (migration 14 → 15)
+
+Production `main` @ Phase-15 merge. Signup proven by `scripts/verify-signup-onboarding.ts` (create→assert→delete on prod).
+
+## 52. Signup / auth (live + by script)
+- [x] `/signup` 200 (renders the form when `PUBLIC_SIGNUP_ENABLED=true`, else a tasteful early-access state; API 403 when off).
+- [x] `/login` 200; `/api/auth/{signup,login,logout}` set/clear the `payload-token` cookie.
+- [x] Signup creates exactly 1 tenant + 1 workspace + 1 `workspace_owner` membership + trial metadata; no content/generation/media side effects.
+- [x] Duplicate email → friendly 409; workspace slug sanitized + auto-uniqued; ids server-derived (never client-trusted).
+- [ ] With `PUBLIC_SIGNUP_ENABLED=true` + logged in as the new owner: `/app` shows welcome + trial banner + onboarding checklist; cannot reach `/platform`, `/admin`, or `/dashboard`.
+
+## 53. Access / isolation (re-verified)
+- [x] New owner isolated from ExploringToKnow across all scoped collections; ETK super admin sees both; ETK untouched.
+- [x] `/dashboard` is now super-admin-only (workspace owners redirected to `/app`); `/admin` + `/platform` still gated.
+
+## 54. Data integrity (live)
+- [x] No duplicate tenants/workspaces/memberships; ETK tenant/workspace untouched; signup test rows cleaned up.
+- [x] published count + generation_runs unchanged; no approval/generation triggered; 0 jobs / 0 long-tx / 0 locks.
+
+## 55. Intentionally NOT included yet
+- Billing/Stripe, custom domains/DNS/SSL, real email provider sending, AI generation automation, ad automation.
+- Per-workspace product/article creation tooling (owner currently sees an informational checklist) — Phase 18.
+
+## 56. Recommended next
+- Phase 16: Real email-provider activation (verification + welcome email) OR Billing/Plans/Usage limits.
