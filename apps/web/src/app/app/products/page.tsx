@@ -1,5 +1,5 @@
 import { requireWorkspace, wsList } from '@/lib/workspace';
-import { TopBar, Card, DataTable, StatusBadge, ComingSoon, fmtDate } from '../_ui';
+import { TopBar, Card, DataTable, StatusBadge, WsLink, fmtDate } from '../_ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,13 +14,14 @@ export default async function ProductsPage() {
   ]);
   return (
     <>
-      <TopBar title="Products" sub="The catalog behind your reviews and guides, scoped to your workspace." />
+      <TopBar
+        title="Products"
+        sub="The catalog behind your reviews and guides, scoped to your workspace. Submitting a product sends it for editorial review before it becomes a live catalog product."
+        actions={<WsLink href="/app/products/new" primary>Add a product</WsLink>}
+      />
       <div className="adm-content">
-        <div style={{ marginBottom: 16 }}>
-          <ComingSoon>Self-serve product creation is coming next. For now, submit products through <strong>Product Requests</strong> — an editor sets them up and nothing generates or publishes automatically.</ComingSoon>
-        </div>
         <Card title={`${docs.length} product${docs.length === 1 ? '' : 's'}`}>
-          <DataTable head={['Title', 'Offer type', 'Status', 'Added']} rows={rows} empty="No products yet. Start with a product request." />
+          <DataTable head={['Title', 'Offer type', 'Status', 'Added']} rows={rows} empty="No products yet. Click ‘Add a product’ to submit your first one — an editor reviews it before anything is generated or published." />
         </Card>
       </div>
     </>

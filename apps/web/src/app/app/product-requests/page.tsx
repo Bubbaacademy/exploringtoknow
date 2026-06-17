@@ -7,7 +7,7 @@ export default async function ProductRequestsPage() {
   const ws = await requireWorkspace();
   const docs = await wsList(ws.scope, 'product-requests', { sort: '-createdAt', limit: 100 });
   const rows = docs.map((r) => [
-    (r.productName as string) || '(untitled)',
+    <a key="t" href={`/app/product-requests/${r.id}`}>{(r.productName as string) || '(untitled)'}</a>,
     String(r.requesterEmail ?? '—'),
     <StatusBadge key="s" status={String(r.status)} />,
     fmtDate(r.submittedAt || r.createdAt),
@@ -17,7 +17,7 @@ export default async function ProductRequestsPage() {
       <TopBar
         title="Product requests"
         sub="Submit products for editorial review. Approval is always manual — nothing is generated or published automatically."
-        actions={<WsLink href="/request-product" primary>Submit a product</WsLink>}
+        actions={<WsLink href="/app/product-requests/new" primary>New request</WsLink>}
       />
       <div className="adm-content">
         <Card title={`${docs.length} request${docs.length === 1 ? '' : 's'}`}>

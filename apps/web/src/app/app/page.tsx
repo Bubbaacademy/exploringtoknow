@@ -44,7 +44,7 @@ export default async function AppHome() {
       <TopBar
         title={`Welcome, ${String(ws.tenant.name)}`}
         sub={`${(ws.workspace?.name as string) || 'Your workspace'} · ${role} · plan: ${String(ws.tenant.plan ?? 'free')}. Everything here is scoped to your workspace.`}
-        actions={<><WsLink href="/" >View public site</WsLink><WsLink href="/app/product-requests">Add a product</WsLink></>}
+        actions={<><WsLink href="/app/products/new" primary>Add a product</WsLink><WsLink href="/">View public site</WsLink></>}
       />
       <div className="adm-content">
         {isTrial ? (
