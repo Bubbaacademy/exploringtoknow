@@ -105,6 +105,30 @@ Payload migrations **14 → 15**.
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
 
+### Phase 18 — Team invitations + workspace roles: COMPLETE & DEPLOYED (migration 15 → 16)
+Each workspace is now multi-user: an owner invites teammates (admin/editor/viewer) and manages roles, fully
+tenant-scoped. Additive only; no generation/approval/publish/affiliate/content change.
+- **Roles** (existing Memberships enum): `workspace_owner` (full + team/settings), `workspace_admin` (content,
+  no owner-only settings), `editor` (create/edit products/requests + upload), `viewer` (read-only). Permissions
+  in `lib/roles.ts` (`canWrite`/`canManageTeam`/`canManageSettings`); enforced server-side AND in the UI.
+- **WorkspaceInvitations** collection + migration `20260617_010000_phase18_invitations` (table/enums/indexes/FKs
+  + locked_documents_rels column), pre-validated in a rolled-back tx. Hashed token (raw token only in the link).
+- **APIs (server-authorized, scoped):** `/api/app/team/invite` (owner-only; validates email; blocks duplicate
+  pending invite + existing member; local-safe link, `emailStatus=local_no_send`), `/api/app/team/manage`
+  (role/remove/revoke; **last-owner can't be demoted/removed**; never assigns platform_super_admin; cross-tenant
+  tamper checks), `/api/auth/accept-invite` (logged-in **email-match** OR new signup into the **invited**
+  workspace — no new tenant; single-use; wrong-email→403; expired→410). Write APIs now 403 for viewers.
+- **Pages:** `/app/team` (members + pending invites + owner invite form + copyable link), `/invite/[token]`
+  public accept (logged-out create/login, logged-in accept, mismatch/expired/used friendly states). Sidebar Team item.
+  Role-aware: viewers see no create/upload/invite CTAs; create pages show a read-only panel.
+- **Verified (temp owner+viewer, created→checked→deleted):** invite→accept created exactly the owner+viewer
+  memberships; invite marked accepted (scoped); duplicate 409, invalid email 422, reuse 410, wrong-email 403,
+  viewer write 403; ETK isolation (0 leaked invites); **generation_runs=5, articles=5, published=3, media=45
+  unchanged; fingerprints stable**; jobs/locks 0; worker untouched; all temp data removed (residue 0).
+  Rollback tag `prod-pre-phase18-team → 0486528`; backup `pre-phase18_20260617_211528.sql.gz`.
+- **Deferred:** admin-initiated invites (owner-only this phase); per-page granular admin-vs-editor content
+  permissions beyond viewer/non-viewer; real email sending (provider-ready, local-safe today).
+
 ### Phase 17 — Workspace product + article-request creation workflow (no migration, app-only deploy)
 `/app` gained its first real **write workflow**: a workspace owner can create product/article requests with
 image upload, fully tenant/workspace-scoped — no Payload admin, no ETK data, no generation/approval/publish.
@@ -426,14 +450,14 @@ keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ a57f2e1`** (Phase 17 — workspace create workflow) + docs commit |
+| Production HEAD | **`main @ a25bcf8`** (Phase 18 — team invitations + roles) + docs commit |
 | Local `main` HEAD | matches prod (clean) |
-| Running app image | `etk-web@sha256:65a79b8f…` (verified == freshly-built) |
+| Running app image | `etk-web@sha256:6e06f434…` (verified == freshly-built) |
 | Public signup | **OPEN** — `PUBLIC_SIGNUP_ENABLED=true` in VPS env (FREE_TRIAL_DAYS=14, DEFAULT_WORKSPACE_PLAN=trial, REQUIRE_EMAIL_VERIFICATION=false) |
 | Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 2d, Postgres/Caddy up 6d, 0 restarts) |
 | App health | Healthy, freshly recreated (app-only, SKIP_MIGRATE) |
 | Pending jobs / locks / long-tx | **0 / 0 / 0** |
-| Payload migrations applied | **15** (unchanged — these follow-ups added no migration; latest `20260616_090000_phase15_signup_onboarding`) |
+| Payload migrations applied | **16** (latest `20260617_010000_phase18_invitations`) |
 
 ### Rollback points (prod tags)
 `prod-pre-phase15-signup → 122b75c` · `prod-pre-phase14-isolation → 74d5fac` · `prod-pre-phase13-multitenant → 4359697` · `prod-pre-phase12b-native-admin → 19b68e3` · `prod-pre-phase12-admin-pro-redesign → 41d9308` · `prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
