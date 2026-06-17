@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { requireSuperAdmin, getPlatformOverview, getScopingHealth } from '@/lib/tenant';
+import { requireSuperAdmin, getPlatformOverview, getScopingHealth, getRecentSignups } from '@/lib/tenant';
+import { signupEnabled, freeTrialDays } from '@/lib/onboarding';
 import { Section, Stat, Card, Empty, Badge } from '../dashboard/_components';
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,10 @@ export default async function PlatformHome() {
   await requireSuperAdmin();
   const { totals, tenants } = await getPlatformOverview();
   const health = await getScopingHealth();
+  const signups = await getRecentSignups(12);
+  const signupOn = signupEnabled();
+  const trialDays = freeTrialDays();
+  const onboardingErrors = signups.filter((s) => s.missingWorkspace || s.missingOwner);
 
   return (
     <>
@@ -44,6 +49,34 @@ export default async function PlatformHome() {
             <Stat label="Articles" value={totals.articles} />
             <Stat label="Products" value={totals.products} />
           </div>
+        </Section>
+
+        <Section title="Signups & onboarding">
+          <div className="adm-panel" style={{ marginBottom: 12 }}>
+            Public signup is <strong>{signupOn ? 'ENABLED' : 'disabled'}</strong> (env <code>PUBLIC_SIGNUP_ENABLED</code>) ·
+            free trial <strong>{trialDays} days</strong>. {signupOn ? 'New businesses can self-serve at /signup.' : 'The /signup page shows an early-access state; flip the env flag to open it.'}
+          </div>
+          {onboardingErrors.length ? (
+            <div className="adm-panel warn" style={{ marginBottom: 12 }}>
+              <strong>⚠ Onboarding errors — tenants missing a workspace or owner:</strong>
+              {onboardingErrors.map((s) => (
+                <div key={String(s.id)} className="adm-row"><span className="t">{s.name} /{s.slug}</span><strong>{[s.missingWorkspace ? 'no workspace' : '', s.missingOwner ? 'no owner' : ''].filter(Boolean).join(' · ')}</strong></div>
+              ))}
+            </div>
+          ) : null}
+          <Card title="Recent signups">
+            {signups.length ? signups.map((s) => (
+              <div key={String(s.id)} className="adm-row">
+                <span className="t">
+                  <strong>{s.name}</strong>{' '}
+                  <span className="adm-note">/{s.slug}{s.workspaceName ? ` · ${s.workspaceName}` : ''}{s.ownerEmail ? ` · ${s.ownerEmail}` : ''}</span>{' '}
+                  <Badge variant={s.status === 'active' ? 'ok' : s.status === 'trial' ? 'info' : 'warn'}>{s.status || '—'}</Badge>{' '}
+                  {s.onboardingStatus ? <Badge variant="">{s.onboardingStatus.replace(/_/g, ' ')}</Badge> : null}
+                </span>
+                <span className="adm-note">{s.signupSource || 'seed'}{s.trialEndsAt ? ` · trial ends ${s.trialEndsAt.slice(0, 10)}` : ''}</span>
+              </div>
+            )) : <Empty>No signups yet.</Empty>}
+          </Card>
         </Section>
 
         <Section title="Tenants">
