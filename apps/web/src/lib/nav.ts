@@ -21,6 +21,19 @@ export const PRIMARY_NAV: NavLink[] = [
 /** The ONE primary call-to-action. Label is standardized everywhere. */
 export const CTA: NavLink = { label: 'Request a Review', href: '/request-product' };
 
+/** SaaS auth entry points (links are UX only — access control stays server-side). */
+export const LOGIN_HREF = '/login';
+export const SIGNUP_HREF = '/signup';
+export const WORKSPACE_HREF = '/app';
+
+/**
+ * Primary SaaS CTA, flag-aware. When public signup is enabled it invites a trial;
+ * otherwise it routes to the same /signup page, which renders an early-access state
+ * (never a bare 403). The label changes to match.
+ */
+export const saasCta = (signupEnabled: boolean): NavLink =>
+  signupEnabled ? { label: 'Start Free Trial', href: SIGNUP_HREF } : { label: 'Request Access', href: SIGNUP_HREF };
+
 /** Trust / editorial pages (footer). */
 export const ABOUT_NAV: NavLink[] = [
   { label: 'About', href: '/about' },
