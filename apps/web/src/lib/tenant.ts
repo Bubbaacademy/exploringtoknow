@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { headers as nextHeaders } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getPayload } from 'payload';
@@ -45,7 +46,7 @@ const refId = (rel: unknown): string | number | null => {
  * Resolve the authenticated actor and their memberships. Returns an empty,
  * unprivileged context when there is no valid session — callers gate on it.
  */
-export async function getTenantContext(): Promise<TenantContext> {
+export const getTenantContext = cache(async (): Promise<TenantContext> => {
   const payload = await getPayload({ config });
   let user: TenantContext['user'] = null;
   try {
@@ -86,7 +87,7 @@ export async function getTenantContext(): Promise<TenantContext> {
   }));
   const isSuperAdmin = memberships.some((m) => m.role === 'platform_super_admin');
   return { user, memberships, isSuperAdmin };
-}
+});
 
 /** Gate a /platform or /dashboard (ETK internal) page: authenticated super admin only. */
 export async function requireSuperAdmin(): Promise<TenantContext> {
