@@ -105,6 +105,23 @@ Payload migrations **14 → 15**.
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
 
+### Phase 15 follow-up — public signup OPENED in production (no migration, app-only deploy)
+Public signup is now **live**: `PUBLIC_SIGNUP_ENABLED=true` (+`FREE_TRIAL_DAYS=14`, `DEFAULT_WORKSPACE_PLAN=trial`,
+`REQUIRE_EMAIL_VERIFICATION=false`) appended to `/opt/exploringtoknow/env/.env` and the app recreated to load it.
+`/signup` shows the real form (no early-access state); header/drawer/footer CTA now reads **Start Free Trial**.
+Two auth bugs found-and-fixed while verifying the authenticated happy-path (which prior phases never exercised):
+1. **Real session login** — Payload v3 uses server-side sessions; a manually-set JWT cookie from `payload.login`
+   is NOT accepted by Payload's cookie strategy. `/api/auth/login` + signup now delegate to Payload's own REST
+   login over loopback and **forward its session `Set-Cookie`** (`lib/session.ts`).
+2. **CSRF/Origin** — Payload rejects cookie auth without a trusted Origin/Referer; SSR navigations to `/app`
+   often omit them. `getTenantContext` now presents our own first-party cookie to `payload.auth` with
+   `Origin = serverURL` (safe: the server reads the visitor's own cookie).
+**Verified live:** real signup → auto-login → **`/app` 200** (workspace owner sees Welcome + trial banner +
+onboarding); non-super owner `/platform`+`/dashboard` → 307 `/app`; `/admin` denied; isolation suite 26/26;
+3 test signups created (each 1 tenant/1 workspace/1 owner, trial) then **deleted** (ETK baseline restored,
+0 residue); content unchanged (articles 5 / published 3 / runs 5 / media 45); dup-email → 409; jobs/locks 0.
+Rollback tag `prod-pre-phase15fu2-opensignup → 682f05b`; backup `pre-opensignup_20260617_050151.sql.gz`.
+
 ### Phase 15 follow-up — public SaaS auth navigation (no migration, app-only deploy)
 The public header/mobile-drawer/footer/hero now expose the SaaS flow alongside editorial nav:
 **Log in** (`/login`) + a flag-aware primary CTA (**Start Free Trial** when `PUBLIC_SIGNUP_ENABLED=true`,
@@ -352,13 +369,14 @@ keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ d7c26bf`** (Phase 15 + nav follow-up) + docs commit |
-| Local `main` HEAD | matches prod |
-| Running app image | `etk-web@sha256:a3a42185…` (verified == freshly-built) |
+| Production HEAD | **`main @ db1c3d0`** (Phase 15 + public-signup OPEN + auth fixes) |
+| Local `main` HEAD | matches prod (clean) |
+| Running app image | `etk-web@sha256:84df6544…` (verified == freshly-built) |
+| Public signup | **OPEN** — `PUBLIC_SIGNUP_ENABLED=true` in VPS env (FREE_TRIAL_DAYS=14, DEFAULT_WORKSPACE_PLAN=trial, REQUIRE_EMAIL_VERIFICATION=false) |
 | Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 2d, Postgres/Caddy up 6d, 0 restarts) |
-| App health | Healthy, freshly recreated on the nav-follow-up image (app-only, SKIP_MIGRATE) |
+| App health | Healthy, freshly recreated (app-only, SKIP_MIGRATE) |
 | Pending jobs / locks / long-tx | **0 / 0 / 0** |
-| Payload migrations applied | **15** (unchanged — nav follow-up added no migration; latest `20260616_090000_phase15_signup_onboarding`) |
+| Payload migrations applied | **15** (unchanged — these follow-ups added no migration; latest `20260616_090000_phase15_signup_onboarding`) |
 
 ### Rollback points (prod tags)
 `prod-pre-phase15-signup → 122b75c` · `prod-pre-phase14-isolation → 74d5fac` · `prod-pre-phase13-multitenant → 4359697` · `prod-pre-phase12b-native-admin → 19b68e3` · `prod-pre-phase12-admin-pro-redesign → 41d9308` · `prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
