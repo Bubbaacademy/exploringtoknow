@@ -60,35 +60,46 @@ async function main() {
 
     const asA = { overrideAccess: false as const, user: actorA };
     const asB = { overrideAccess: false as const, user: uB };
+    // Payload THROWS Forbidden (403) when an access rule returns `false` (a hard
+    // deny), and returns a filtered (possibly empty) result when it returns a Where.
+    // safeFind normalises both so a deny reads as { forbidden:true }.
+    const safeFind = async (opts: any): Promise<{ totalDocs: number; docs: any[]; forbidden: boolean }> => {
+      try { const r = await payload.find(opts); return { totalDocs: r.totalDocs, docs: r.docs, forbidden: false }; }
+      catch (e: any) {
+        if (e?.status === 403 || /forbidden/i.test(String(e?.message))) return { totalDocs: 0, docs: [], forbidden: true };
+        throw e;
+      }
+    };
 
     // 1. super admin (A) can read Tenant B article
-    check('super admin can read Tenant B article', (await payload.find({ collection: 'articles', where: { id: { equals: artB.id } }, ...asA })).totalDocs === 1);
+    check('super admin can read Tenant B article', (await safeFind({ collection: 'articles', where: { id: { equals: artB.id } }, ...asA })).totalDocs === 1);
     // 2. Tenant B member can read own article
-    check('Tenant B member can read own article', (await payload.find({ collection: 'articles', where: { id: { equals: artB.id } }, ...asB })).totalDocs === 1);
-    // 3. Tenant B member CANNOT read a Tenant A article
-    check('Tenant B member CANNOT read Tenant A article', (await payload.find({ collection: 'articles', where: { id: { equals: etkArticle.id } }, ...asB })).totalDocs === 0);
+    check('Tenant B member can read own article', (await safeFind({ collection: 'articles', where: { id: { equals: artB.id } }, ...asB })).totalDocs === 1);
+    // 3. Tenant B member CANNOT read a Tenant A article (scoped Where → 0 rows)
+    check('Tenant B member CANNOT read Tenant A article', (await safeFind({ collection: 'articles', where: { id: { equals: etkArticle.id } }, ...asB })).totalDocs === 0);
     // 4. Tenant B listing leaks no Tenant A rows
-    const bList = await payload.find({ collection: 'articles', limit: 200, ...asB });
+    const bList = await safeFind({ collection: 'articles', limit: 200, ...asB });
     check('Tenant B article listing contains ONLY Tenant B', bList.docs.every((d: any) => String(refId(d.tenant)) === String(tB.id)) && bList.totalDocs >= 1);
     // 5. super admin sees BOTH tenants' articles
-    const aList = await payload.find({ collection: 'articles', limit: 500, ...asA });
+    const aList = await safeFind({ collection: 'articles', limit: 500, ...asA });
     const aTenants = new Set(aList.docs.map((d: any) => String(refId(d.tenant))));
     check('super admin sees Tenant A AND Tenant B articles', aTenants.has(String(etkT.id)) && aTenants.has(String(tB.id)));
-    // 6. cross-collection: Tenant B sees no Tenant A rows
+    // 6. cross-collection: Tenant B sees no Tenant A rows (scoped → 0 A rows, never a leak)
     for (const coll of ['products', 'categories', 'media', 'authors', 'newsletter-subscribers', 'contact-messages', 'generation-runs', 'article-views', 'product-requests', 'brands', 'content-briefs', 'product-intelligence', 'social-posts']) {
-      const r = await payload.find({ collection: coll as any, limit: 500, ...asB });
+      const r = await safeFind({ collection: coll as any, limit: 500, ...asB });
       const leak = r.docs.filter((d: any) => refId(d.tenant) != null && String(refId(d.tenant)) !== String(tB.id));
-      check(`Tenant B sees no Tenant A rows in ${coll}`, leak.length === 0);
+      check(`Tenant B sees no Tenant A rows in ${coll}`, !r.forbidden && leak.length === 0);
     }
     // 7. anonymous REST article read = published only (drafts hidden, no cross-tenant drafts)
-    const anon = await payload.find({ collection: 'articles', limit: 500, overrideAccess: false });
-    check('anonymous article read = published only (no drafts)', anon.docs.every((d: any) => d.editorialStatus === 'published'));
-    // 8. anonymous CANNOT read private collections
-    check('anonymous CANNOT read products', (await payload.find({ collection: 'products', limit: 10, overrideAccess: false })).totalDocs === 0);
-    check('anonymous CANNOT read product-requests', (await payload.find({ collection: 'product-requests', limit: 10, overrideAccess: false })).totalDocs === 0);
+    const anon = await safeFind({ collection: 'articles', limit: 500, overrideAccess: false });
+    check('anonymous article read = published only (no drafts)', !anon.forbidden && anon.docs.every((d: any) => d.editorialStatus === 'published'));
+    // 8. anonymous CANNOT read private collections (hard deny → Forbidden)
+    check('anonymous CANNOT read products', (await safeFind({ collection: 'products', limit: 10, overrideAccess: false })).forbidden === true);
+    check('anonymous CANNOT read product-requests', (await safeFind({ collection: 'product-requests', limit: 10, overrideAccess: false })).forbidden === true);
     // 9. Tenant B member cannot read Tenant A tenant/workspace/memberships
-    check('Tenant B cannot read Tenant A tenant row', (await payload.find({ collection: 'tenants', where: { id: { equals: etkT.id } }, ...asB })).totalDocs === 0);
-    check('Tenant B sees only its own memberships', (await payload.find({ collection: 'memberships', limit: 200, ...asB })).docs.every((m: any) => String(refId(m.user)) === String(uB.id)));
+    check('Tenant B cannot read Tenant A tenant row', (await safeFind({ collection: 'tenants', where: { id: { equals: etkT.id } }, ...asB })).totalDocs === 0);
+    const bMs = await safeFind({ collection: 'memberships', limit: 200, ...asB });
+    check('Tenant B sees only its own memberships', !bMs.forbidden && bMs.docs.every((m: any) => String(refId(m.user)) === String(uB.id)));
     // 10. admin-panel gate
     check('admin gate: super admin allowed', (await adminPanelAccess({ req: { user: actorA, payload } as any })) === true);
     check('admin gate: workspace user BLOCKED', (await adminPanelAccess({ req: { user: uB, payload } as any })) === false);
