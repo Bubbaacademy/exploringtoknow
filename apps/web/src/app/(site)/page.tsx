@@ -71,6 +71,9 @@ export default async function HomePage() {
               <span>Human-reviewed</span>
               <span>No sponsored rankings</span>
             </div>
+            <p className="hero-saas">
+              For brands &amp; publishers: <Link href="/signup">build your own content-commerce workspace →</Link>
+            </p>
           </div>
         </div>
       </section>

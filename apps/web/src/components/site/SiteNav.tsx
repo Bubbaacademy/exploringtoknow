@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Brand } from './Brand';
-import { PRIMARY_NAV, CTA, TOPICS_HREF, SEARCH_HREF, type TopicGroup } from '@/lib/nav';
+import { PRIMARY_NAV, CTA, TOPICS_HREF, SEARCH_HREF, LOGIN_HREF, WORKSPACE_HREF, saasCta, type TopicGroup } from '@/lib/nav';
 
 /* ---- icons (inline, no runtime font/icon dependency) ---- */
 function SearchIcon() {
@@ -56,8 +56,9 @@ function SearchForm({ id, inputRef, onSubmitNavigate }: { id: string; inputRef?:
   );
 }
 
-export function SiteNav({ groups }: { groups: TopicGroup[] }) {
+export function SiteNav({ groups, authed = false, signupEnabled = false }: { groups: TopicGroup[]; authed?: boolean; signupEnabled?: boolean }) {
   const pathname = usePathname();
+  const cta = saasCta(signupEnabled);
   const [topicsOpen, setTopicsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -203,7 +204,18 @@ export function SiteNav({ groups }: { groups: TopicGroup[] }) {
           </div>
         </div>
 
-        <Link href={CTA.href} className="btn btn-accent etk-cta">{CTA.label}</Link>
+        {/* Auth / SaaS actions (links are UX only; routes gate server-side) */}
+        <span className="etk-auth">
+          <Link href={CTA.href} className="etk-navlink etk-auth-secondary">{CTA.label}</Link>
+          {authed ? (
+            <Link href={WORKSPACE_HREF} className="btn btn-accent etk-cta">My Workspace</Link>
+          ) : (
+            <>
+              <Link href={LOGIN_HREF} className="etk-navlink etk-auth-login">Log in</Link>
+              <Link href={cta.href} className="btn btn-accent etk-cta">{cta.label}</Link>
+            </>
+          )}
+        </span>
       </nav>
 
       {/* ---------- Mobile bar (compact) ---------- */}
@@ -278,9 +290,19 @@ export function SiteNav({ groups }: { groups: TopicGroup[] }) {
             })}
           </div>
 
-          <Link href={CTA.href} className="btn btn-accent btn-block etk-drawer-cta" onClick={() => setDrawerOpen(false)}>
-            {CTA.label}
-          </Link>
+          <div className="etk-drawer-auth">
+            {authed ? (
+              <Link href={WORKSPACE_HREF} className="btn btn-accent btn-block" onClick={() => setDrawerOpen(false)}>My Workspace</Link>
+            ) : (
+              <>
+                <Link href={cta.href} className="btn btn-accent btn-block" onClick={() => setDrawerOpen(false)}>{cta.label}</Link>
+                <Link href={LOGIN_HREF} className="btn btn-ghost btn-block" onClick={() => setDrawerOpen(false)}>Log in</Link>
+              </>
+            )}
+            <Link href={CTA.href} className="btn btn-ghost btn-block etk-drawer-cta" onClick={() => setDrawerOpen(false)}>
+              {CTA.label}
+            </Link>
+          </div>
         </div>
       </div>
     </>

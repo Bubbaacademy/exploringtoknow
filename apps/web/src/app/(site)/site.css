@@ -454,6 +454,20 @@ img { max-width: 100%; height: auto; display: block; }
 .etk-acc-panel a:hover { background: var(--brand-tint); color: var(--brand-ink); }
 .etk-drawer-cta { margin-top: 4px; }
 
+/* ---- SaaS auth entry points (Phase 15 follow-up) ---- */
+.etk-auth { display: inline-flex; align-items: center; gap: 16px; padding-left: 6px; }
+.etk-auth-login { white-space: nowrap; }
+/* Keep the bar uncluttered on narrower desktops: drop the secondary text link
+   (Request a Review stays in the mobile drawer, footer, and homepage). */
+@media (max-width: 1080px) { .etk-auth-secondary { display: none; } }
+.etk-drawer-auth { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.etk-drawer-auth .btn-block { width: 100%; }
+
+/* Subtle business CTA under the hero — calm, not hype. */
+.hero-saas { margin-top: 18px; font-size: 14px; color: var(--muted); }
+.hero-saas a { color: var(--brand-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.hero-saas a:hover { color: var(--accent); }
+
 @media (max-width: 1023px) {
   .etk-nav { display: none; }
   .etk-nav-mobile { display: flex; }
