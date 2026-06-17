@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireSuperAdmin, getPlatformOverview, getScopingHealth, getRecentSignups } from '@/lib/tenant';
 import { signupEnabled, freeTrialDays } from '@/lib/onboarding';
+import { getBillingOverview } from '@/lib/billing';
 import { Section, Stat, Card, Empty, Badge } from '../dashboard/_components';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,7 @@ export default async function PlatformHome() {
   const signupOn = signupEnabled();
   const trialDays = freeTrialDays();
   const onboardingErrors = signups.filter((s) => s.missingWorkspace || s.missingOwner);
+  const billing = await getBillingOverview();
 
   return (
     <>
@@ -48,6 +50,20 @@ export default async function PlatformHome() {
             <Stat label="Users" value={totals.users} />
             <Stat label="Articles" value={totals.articles} />
             <Stat label="Products" value={totals.products} />
+          </div>
+        </Section>
+
+        <Section title="Billing & plans">
+          <div className="adm-panel" style={{ marginBottom: 12 }}>
+            Payment provider: <strong>{billing.provider}</strong> · Stripe secret <strong>{billing.stripePresent ? 'present' : 'not configured'}</strong> · online billing <strong>{billing.providerActive ? 'ACTIVE' : 'local-safe (off)'}</strong>. No secret values are shown.
+          </div>
+          <div className="adm-cols">
+            <Stat label="Tenants" value={billing.total} />
+            <Stat label="Trialing" value={billing.trialing} tone={billing.trialing > 0 ? 'attn' : undefined} />
+            <Stat label="Active (paid)" value={billing.active} tone="good" />
+            <Stat label="Past due" value={billing.pastDue} tone={billing.pastDue > 0 ? 'attn' : undefined} />
+            <Stat label="Canceled" value={billing.canceled} />
+            <Stat label="Comped" value={billing.comped} />
           </div>
         </Section>
 

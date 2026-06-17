@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import '../dashboard/dashboard.css';
 import { requireWorkspace } from '@/lib/workspace';
+import { canManageSettings } from '@/lib/roles';
 import { ROLE_LABEL, type Role } from '@/lib/tenant';
 
 // Workspace console (the customer SaaS surface). Never indexable; gated server-side.
@@ -21,6 +22,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const ws = await requireWorkspace();
   const wsName = (ws.workspace?.name as string) || (ws.tenant?.name as string) || 'Workspace';
   const roleLabel = ws.role ? ROLE_LABEL[ws.role as Role] : 'Member';
+  // Billing is owner-only.
+  const nav = NAV.map((g) =>
+    g.group === 'Workspace' && canManageSettings(ws.role)
+      ? { ...g, items: [['Team', '/app/team'], ['Billing', '/app/billing'], ['Settings', '/app/settings']] as Array<[string, string]> }
+      : g,
+  );
 
   return (
     <div className="adm">
@@ -31,7 +38,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <span><b>{wsName}</b><span>{roleLabel}</span></span>
           </div>
           <nav className="adm-nav" aria-label="Workspace">
-            {NAV.map((g) => (
+            {nav.map((g) => (
               <div key={g.group}>
                 <div className="adm-nav-group">{g.group}</div>
                 {g.items.map(([label, href]) => (

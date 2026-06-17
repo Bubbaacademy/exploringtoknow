@@ -3,6 +3,7 @@ import { getPayload } from 'payload';
 import config from '@payload-config';
 import { resolveWorkspace } from '@/lib/workspace';
 import { canWrite } from '@/lib/roles';
+import { workspaceCapability } from '@/lib/billing';
 
 /**
  * Workspace-scoped manual image upload. Requires a valid workspace session; the
@@ -19,6 +20,10 @@ export async function POST(req: Request) {
   }
   if (!canWrite(ws.role)) {
     return NextResponse.json({ ok: false, error: 'Your role is read-only.' }, { status: 403 });
+  }
+  const cap = await workspaceCapability(ws, 'upload_media');
+  if (!cap.ok) {
+    return NextResponse.json({ ok: false, error: cap.reason, code: 'LIMIT', upgrade: true }, { status: 402 });
   }
 
   const form = await req.formData().catch(() => null);
