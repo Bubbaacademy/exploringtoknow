@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getPayload } from 'payload';
-import config from '@payload-config';
 import { createWorkspaceOnboarding, signupEnabled, requireEmailVerification, OnboardingError } from '@/lib/onboarding';
-import { setAuthCookie } from '@/lib/session';
+import { payloadRestLogin, forwardCookies } from '@/lib/session';
 
 /**
  * Public signup → provisions a User + Tenant + Workspace + owner Membership and
- * logs the new owner in (unless email verification is required). Gated by
+ * logs the new owner in (unless email verification is required) by delegating to
+ * Payload's REST login and forwarding its session cookie. Gated by
  * PUBLIC_SIGNUP_ENABLED. Honeypot-guarded. No content/generation is ever created.
  */
 export async function POST(req: Request) {
@@ -23,6 +22,7 @@ export async function POST(req: Request) {
   }
 
   const str = (k: string) => (typeof body[k] === 'string' ? (body[k] as string) : '');
+  const email = str('email').trim().toLowerCase();
 
   try {
     await createWorkspaceOnboarding({
@@ -40,11 +40,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, verify: true, message: 'Account created. Check your email to verify before signing in.' });
     }
 
-    // Auto-login the new owner.
-    const payload = await getPayload({ config });
-    const login = await payload.login({ collection: 'users', data: { email: str('email').trim().toLowerCase(), password: str('password') } });
-    const res = NextResponse.json({ ok: true, redirect: '/app' });
-    if (login?.token) setAuthCookie(res, login.token, (login as { exp?: number }).exp);
+    // Auto-login the new owner via Payload's REST login (proper session cookie).
+    const { ok, cookies } = await payloadRestLogin(new URL(req.url).origin, email, str('password'));
+    const res = NextResponse.json({ ok: true, redirect: ok && cookies.length ? '/app' : '/login', loggedIn: ok && cookies.length > 0 });
+    if (ok && cookies.length) forwardCookies(res, cookies);
     return res;
   } catch (e) {
     if (e instanceof OnboardingError) {

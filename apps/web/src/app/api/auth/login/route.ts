@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getPayload } from 'payload';
-import config from '@payload-config';
-import { setAuthCookie } from '@/lib/session';
+import { payloadRestLogin, forwardCookies } from '@/lib/session';
 
 /**
- * Public login for workspace users (and operators). Authenticates against the
- * Payload `users` collection and sets the `payload-token` cookie, then the client
- * is sent to /app. Super admins can navigate on to /platform, /dashboard, /admin.
+ * Public login for workspace users (and operators). Delegates to Payload's own
+ * REST login so the session + session cookie are created exactly as Payload's
+ * cookie strategy expects, then forwards the cookie and sends the client to /app.
+ * Super admins can navigate on to /platform, /dashboard, /admin.
  */
 export async function POST(req: Request) {
   let body: Record<string, unknown>;
@@ -19,11 +18,10 @@ export async function POST(req: Request) {
   }
 
   try {
-    const payload = await getPayload({ config });
-    const login = await payload.login({ collection: 'users', data: { email, password } });
-    if (!login?.token) return NextResponse.json({ ok: false, error: 'Invalid email or password.' }, { status: 401 });
+    const { ok, cookies } = await payloadRestLogin(new URL(req.url).origin, email, password);
+    if (!ok || !cookies.length) return NextResponse.json({ ok: false, error: 'Invalid email or password.' }, { status: 401 });
     const res = NextResponse.json({ ok: true, redirect: '/app' });
-    setAuthCookie(res, login.token, (login as { exp?: number }).exp);
+    forwardCookies(res, cookies);
     return res;
   } catch {
     return NextResponse.json({ ok: false, error: 'Invalid email or password.' }, { status: 401 });
