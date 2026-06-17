@@ -41,12 +41,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="adm-side-foot">
-            <Link href="/">View public site →</Link>
-            <Link href="/editorial-policy">Editorial standards →</Link>
-            {/* Platform/CMS surfaces are shown ONLY to platform super admins. */}
-            {ws.isSuper ? <Link href="/platform">Platform admin →</Link> : null}
-            {ws.isSuper ? <Link href="/dashboard">ETK editorial console →</Link> : null}
-            {ws.isSuper ? <Link href="/admin">Payload CMS →</Link> : null}
+            {/* Workspace console footer is intentionally minimal — Sign out only.
+                Operator/super-admin surfaces (/platform, /dashboard, /admin) keep
+                their routes + gates but are NOT promoted inside the workspace UI. */}
             <a href="/api/auth/logout">Sign out →</a>
           </div>
         </aside>
