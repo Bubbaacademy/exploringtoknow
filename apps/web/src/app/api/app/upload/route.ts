@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getPayload } from 'payload';
 import config from '@payload-config';
 import { resolveWorkspace } from '@/lib/workspace';
+import { canWrite } from '@/lib/roles';
 
 /**
  * Workspace-scoped manual image upload. Requires a valid workspace session; the
@@ -15,6 +16,9 @@ export async function POST(req: Request) {
   const ws = await resolveWorkspace();
   if (!ws.ctx.user || ws.scope.tenantId == null) {
     return NextResponse.json({ ok: false, error: 'Not signed in to a workspace.' }, { status: 401 });
+  }
+  if (!canWrite(ws.role)) {
+    return NextResponse.json({ ok: false, error: 'Your role is read-only.' }, { status: 403 });
   }
 
   const form = await req.formData().catch(() => null);
