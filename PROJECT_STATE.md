@@ -105,6 +105,33 @@ Payload migrations **14 → 15**.
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
 
+### Phase 19 — Billing / Plans / Usage limits foundation: COMPLETE & DEPLOYED (migration 16 → 17)
+SaaS monetization foundation, **local-safe** (no real charges without Stripe env). Additive only; no
+generation/approval/publish/affiliate/content change.
+- **Plans (`lib/plans.ts`, single source of truth):** trial / starter / pro / agency / enterprise / comped,
+  each with limits (teamMembers, requestsPerMonth, mediaUploads, customDomain). Used by both UI and enforcement.
+- **Tenant billing fields + migration `20260617_020000_phase19_billing`:** `subscription_status` enum +
+  billing_subscription_id / current_period_start/end / cancel_at_period_end (plan/trial*/billingCustomerId
+  already existed). ETK backfilled to `comped` (unlimited). Pre-validated in a rolled-back tx.
+- **Usage + enforcement (`lib/billing.ts`):** real counts (`getWorkspaceUsage`), `getTenantPlan`,
+  `workspaceCapability(action)`. Enforced **server-side** in product-requests / upload / team-invite — over
+  limit → **402** + upgrade message; comped/unknown = unlimited (ETK never blocked); trial-expired blocks new
+  create actions but keeps data readable. Scope derived from session (client tenant/workspace ids ignored).
+- **Stripe-ready routes (fetch-only, no SDK):** `/api/app/billing/checkout` + `/portal` (owner-only;
+  server-side price ids from plan config; **local-safe disabled** response without env) and
+  `/api/billing/webhook` (HMAC signature verify, idempotent, matching-tenant-only, **inert** without env).
+- **UI:** `/app/billing` (plan/status/trial banner, usage meters, plan cards, upgrade buttons, expired
+  banner) — **owner-only** sidebar link + page guard. `/platform` gained a billing aggregate (status counts +
+  provider present/missing, no secrets). `.env.example` STRIPE_*/BILLING_* placeholders (empty).
+- **Verified (temp trial owner, created→checked→deleted):** `/app/billing` 200; checkout/portal return
+  local-safe disabled; webhook inert 200; **trial limit enforced** (3 requests OK, 4th → 402 upgrade);
+  **tamper with client tenant/workspace ids still 402**; created requests scoped to the temp tenant; **ETK
+  isolation intact** (requests unchanged) and ETK = comped; generation_runs=5 / articles=5 / published=3 /
+  fingerprints stable; jobs/locks 0; worker untouched; residue 0. Rollback tag
+  `prod-pre-phase19-billing → b81aa7a`; backup `pre-phase19_20260617_234219.sql.gz`.
+- **Deferred:** real Stripe activation (provider-ready; needs env + test-mode verification); proration/seat
+  metering; usage-reset cron (monthly window is computed from createdAt, not a stored counter — accurate, no cron needed).
+
 ### Phase 18 — Team invitations + workspace roles: COMPLETE & DEPLOYED (migration 15 → 16)
 Each workspace is now multi-user: an owner invites teammates (admin/editor/viewer) and manages roles, fully
 tenant-scoped. Additive only; no generation/approval/publish/affiliate/content change.
@@ -450,14 +477,15 @@ keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ a25bcf8`** (Phase 18 — team invitations + roles) + docs commit |
+| Production HEAD | **`main @ d540823`** (Phase 19 — billing/plans/usage) + docs commit |
 | Local `main` HEAD | matches prod (clean) |
-| Running app image | `etk-web@sha256:6e06f434…` (verified == freshly-built) |
+| Running app image | `etk-web@sha256:347a20e5…` (verified == freshly-built) |
 | Public signup | **OPEN** — `PUBLIC_SIGNUP_ENABLED=true` in VPS env (FREE_TRIAL_DAYS=14, DEFAULT_WORKSPACE_PLAN=trial, REQUIRE_EMAIL_VERIFICATION=false) |
 | Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 2d, Postgres/Caddy up 6d, 0 restarts) |
 | App health | Healthy, freshly recreated (app-only, SKIP_MIGRATE) |
 | Pending jobs / locks / long-tx | **0 / 0 / 0** |
-| Payload migrations applied | **16** (latest `20260617_010000_phase18_invitations`) |
+| Payload migrations applied | **17** (latest `20260617_020000_phase19_billing`) |
+| Billing provider | **local-safe** — `BILLING_ENABLED` off / no Stripe env (checkout/portal return disabled; webhook inert). ETK tenant = `comped` (unlimited). |
 
 ### Rollback points (prod tags)
 `prod-pre-phase15-signup → 122b75c` · `prod-pre-phase14-isolation → 74d5fac` · `prod-pre-phase13-multitenant → 4359697` · `prod-pre-phase12b-native-admin → 19b68e3` · `prod-pre-phase12-admin-pro-redesign → 41d9308` · `prod-pre-phase11-author-analytics-merch → 9aef1e8` · `prod-pre-phase10-editorial-platform → adccd7c` · `prod-pre-phase8-editorial-growth → 2f17557` · `prod-pre-phase7-growth-ops → fa171df` ·
