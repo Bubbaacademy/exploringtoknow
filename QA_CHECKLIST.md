@@ -352,4 +352,32 @@ Automated checks already PASSED live (see PROJECT_STATE Phase 13). Items below n
 
 ## 47. Known follow-ups (roadmap)
 - Authenticated super-admin happy-path render of `/app` + `/platform` (gating + build verified; logged-in pass pending).
-- Native `/admin` + collection `access` are still operator-wide; per-tenant tightening + media isolation deferred to the "real second tenant" phase (need a 2nd tenant to verify isolation safely).
+- Native `/admin` + collection `access` are still operator-wide; per-tenant tightening + media isolation deferred to the "real second tenant" phase (need a 2nd tenant to verify isolation safely). → **Done in Phase 14.**
+
+---
+
+# Phase 14 additions — tenant isolation hardening + workspace scoping (migration 13 → 14)
+
+Production `main` @ `8a7e7ef` · app image `etk-web@sha256:9bb22b91…`. Isolation proven by
+`scripts/verify-tenant-isolation.ts` (26/26 PASS on prod, temporary 2nd tenant, no residue).
+
+## 48. Access control (verified live / by script)
+- [x] super admin reads all tenants' data; workspace member reads only their own tenant (all 13 scoped collections).
+- [x] anonymous native-REST read = published-only for articles; hard-deny for products/product-requests/etc.
+- [x] `/admin` is platform-super-admin-only (Users.access.admin); workspace user blocked; anon blocked.
+- [x] writes never trust client tenant/workspace ids (stamp hook forces actor membership; system→ETK default).
+- [ ] Logged-in as a (future) workspace editor: confirm `/admin` shows the access-denied screen and `/app` works.
+- [ ] Logged-in super admin: `/platform` "Tenant isolation health" panel shows all-clear; `/app` summary scoped.
+
+## 49. Data integrity (verified live via SQL)
+- [x] 0 null tenant AND 0 null workspace across all 14 scoped collections.
+- [x] tenants/workspaces/memberships = 1/1/1, users = 1, no duplicates, no `iso-test%` residue.
+- [x] published=3 and generation_runs=5 unchanged; migrations=14; 0 jobs / 0 long-tx / 0 ungranted locks.
+
+## 50. Public site unchanged (verified live)
+- [x] all public routes 200; published article 200; draft 404; `/admin` 200; `/api/health` 200; `/app`+`/platform` → 307.
+
+## 51. Remaining limitations / next
+- Media files are served statically (public by design); only listing/management is tenant-scoped.
+- Reference collections (categories/authors/media/brands) keep public anon read; authed members are tenant-scoped.
+- Next: Phase 15 public signup/onboarding · 16 billing · 17 custom domains · 18 email activation · 19 workspace AI limits · 20 attribution/affiliate analytics · 21 ad campaigns.
