@@ -105,6 +105,31 @@ Payload migrations **14 → 15**.
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
 
+### Phase 17 — Workspace product + article-request creation workflow (no migration, app-only deploy)
+`/app` gained its first real **write workflow**: a workspace owner can create product/article requests with
+image upload, fully tenant/workspace-scoped — no Payload admin, no ETK data, no generation/approval/publish.
+No schema change.
+- **Creation entity = ProductRequest** (the platform's editorial-reviewed intake; has productName, free-text
+  brand, URL, notes, category, images, permission). Status is always **`submitted`** — never approved/enqueued.
+- **`/api/app/upload`** — session-scoped image upload; Media stamped with the actor's tenant/workspace
+  (server-derived); JPEG/PNG/WebP ≤8MB; **401** for anon. **`/api/app/product-requests`** — session-scoped
+  request create; server-side category validation (must exist+active; "Other" needs a suggestion); explicit
+  server-derived tenant/workspace (**client ids never trusted**); **401** for anon.
+- **Pages:** `/app/products/new`, `/app/product-requests/new` (premium `CreateProductForm`: searchable
+  category, image uploader + permission, validation, anti-double-submit), `/app/product-requests/[id]`
+  (scoped detail w/ ownership check → notFound on mismatch). Wired `/app/products`, `/app/product-requests`,
+  and the `/app` dashboard "Add a product".
+- **`/app/editorial`:** requests-by-status, needs-attention warnings (submitted requests missing
+  category/permission, drafts to review), next-action, recent products.
+- **`.adm`-scoped form styles** added to dashboard.css so console forms match the premium theme (no site.css leak).
+- **Verified (temp owner, created → checked → deleted):** create pages 200; uploaded 1 image (Media scoped to
+  the temp workspace, NOT ETK) + created exactly 1 ProductRequest (status submitted, tenant/workspace = temp);
+  **generation_runs unchanged (5), no product/article auto-created, no approval/publish**; ETK isolation intact;
+  all temp data removed (residue 0). Public routes 200, draft 404; every `/app/*` (incl. `/new`) → 307 `/login`
+  unauth; both write APIs → 401 anon; jobs/locks 0; worker untouched. Rollback tag `prod-pre-phase17-workflow → 87d4dc6`.
+- **Intentionally deferred:** direct catalog-Product create/edit (products are created by the editorial
+  approval of a request — the platform's safety model); team invites; billing; custom domains; email provider.
+
 ### Phase 16 follow-up — workspace console sidebar footer cleanup (UI-only, app-only deploy)
 The `/app` sidebar footer now contains **Sign out only**. Removed the operator/utility footer links
 (View public site, Editorial standards, Platform admin, ETK editorial console, Payload CMS). Routes + gates
@@ -401,9 +426,9 @@ keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ 5e0caea`** (Phase 16 + sidebar footer cleanup) + docs commit |
+| Production HEAD | **`main @ a57f2e1`** (Phase 17 — workspace create workflow) + docs commit |
 | Local `main` HEAD | matches prod (clean) |
-| Running app image | `etk-web@sha256:0d2ecf71…` (verified == freshly-built) |
+| Running app image | `etk-web@sha256:65a79b8f…` (verified == freshly-built) |
 | Public signup | **OPEN** — `PUBLIC_SIGNUP_ENABLED=true` in VPS env (FREE_TRIAL_DAYS=14, DEFAULT_WORKSPACE_PLAN=trial, REQUIRE_EMAIL_VERIFICATION=false) |
 | Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 2d, Postgres/Caddy up 6d, 0 restarts) |
 | App health | Healthy, freshly recreated (app-only, SKIP_MIGRATE) |
