@@ -49,8 +49,20 @@ export async function getTenantContext(): Promise<TenantContext> {
   const payload = await getPayload({ config });
   let user: TenantContext['user'] = null;
   try {
-    const h = await nextHeaders();
-    const res = await payload.auth({ headers: h as unknown as Headers });
+    const incoming = await nextHeaders();
+    // Present OUR OWN first-party session cookie to payload.auth as a same-origin
+    // request. Payload v3 rejects cookie auth unless the request Origin/Referer is
+    // trusted (CSRF) — but SSR navigations to /app often carry no Origin/Referer,
+    // which would bounce a logged-in user to /login. Injecting our serverURL as the
+    // Origin is safe (the server is reading the visitor's own cookie; an attacker
+    // cannot make our server read their cookie) and lets Payload validate the session.
+    const h = new Headers();
+    const cookie = incoming.get('cookie');
+    if (cookie) h.set('cookie', cookie);
+    const authz = incoming.get('authorization');
+    if (authz) h.set('authorization', authz);
+    h.set('origin', process.env.PAYLOAD_PUBLIC_SERVER_URL || incoming.get('origin') || incoming.get('referer') || '');
+    const res = await payload.auth({ headers: h });
     user = res.user ? { id: res.user.id, email: (res.user as Doc).email, name: (res.user as Doc).name } : null;
   } catch {
     user = null;
