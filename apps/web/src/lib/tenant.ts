@@ -76,19 +76,19 @@ export async function getTenantContext(): Promise<TenantContext> {
   return { user, memberships, isSuperAdmin };
 }
 
-/** Gate a /platform page: must be an authenticated platform super admin. */
+/** Gate a /platform or /dashboard (ETK internal) page: authenticated super admin only. */
 export async function requireSuperAdmin(): Promise<TenantContext> {
   const ctx = await getTenantContext();
-  if (!ctx.user) redirect('/admin/login');
+  if (!ctx.user) redirect('/login');
   if (!ctx.isSuperAdmin) redirect('/app');
   return ctx;
 }
 
-/** Gate a /app page: must be an authenticated member of at least one workspace. */
+/** Gate a /app page: any authenticated user. The page renders a "no workspace" state
+ *  if the user has no membership (it never shows another tenant's data). */
 export async function requireWorkspaceMember(): Promise<TenantContext> {
   const ctx = await getTenantContext();
-  if (!ctx.user) redirect('/admin/login');
-  if (!ctx.memberships.length) redirect('/admin');
+  if (!ctx.user) redirect('/login');
   return ctx;
 }
 
@@ -221,4 +221,38 @@ export async function getScopingHealth() {
   }));
   const problems = rows.filter((r) => r.nullTenant > 0 || r.nullWorkspace > 0);
   return { ok: problems.length === 0, problems };
+}
+
+/**
+ * Recent signups for the /platform console: newest tenants with their owner +
+ * workspace + trial/onboarding status. Also flags tenants missing a workspace or an
+ * owner membership (onboarding errors). No secrets are read.
+ */
+export async function getRecentSignups(limit = 12) {
+  const payload = await getPayload({ config });
+  const res = await payload.find({ collection: 'tenants', sort: '-createdAt', limit, depth: 0, pagination: false });
+  return Promise.all(res.docs.map(async (t: Doc) => {
+    const [ownerRes, wsRes] = await Promise.all([
+      payload.find({ collection: 'memberships', where: { and: [{ tenant: { equals: t.id } }, { role: { equals: 'workspace_owner' } }] }, limit: 1, depth: 1 }),
+      payload.find({ collection: 'workspaces', where: { tenant: { equals: t.id } }, limit: 1, depth: 0 }),
+    ]);
+    const owner = ownerRes.docs[0] as Doc | undefined;
+    const ownerUser = owner && typeof owner.user === 'object' ? (owner.user as Doc) : null;
+    const ws = wsRes.docs[0] as Doc | undefined;
+    return {
+      id: t.id,
+      name: String(t.name ?? ''),
+      slug: String(t.slug ?? ''),
+      status: String(t.status ?? ''),
+      plan: String(t.plan ?? ''),
+      onboardingStatus: String(t.onboardingStatus ?? ''),
+      signupSource: String(t.signupSource ?? ''),
+      trialEndsAt: t.trialEndsAt ? String(t.trialEndsAt) : null,
+      createdAt: t.createdAt ? String(t.createdAt) : null,
+      ownerEmail: ownerUser?.email ? String(ownerUser.email) : null,
+      workspaceName: ws?.name ? String(ws.name) : null,
+      missingWorkspace: !ws,
+      missingOwner: !owner,
+    };
+  }));
 }

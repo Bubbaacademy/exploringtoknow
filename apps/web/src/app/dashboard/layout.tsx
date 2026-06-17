@@ -1,9 +1,14 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import './dashboard.css';
+import { requireSuperAdmin } from '@/lib/tenant';
 
-// Internal command center — never indexable (also auth-gated in middleware).
+// Internal command center — never indexable. This console shows ETK editorial data
+// across the workspace, so it is gated to platform super admins server-side (workspace
+// customers are redirected to /app). Middleware also blocks unauthenticated access.
 export const metadata = { robots: { index: false, follow: false } };
+// Auth-gated (reads the session) → never prerender any /dashboard/* page at build.
+export const dynamic = 'force-dynamic';
 
 const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
   { group: 'Overview', items: [['Dashboard', '/dashboard']] },
@@ -13,7 +18,8 @@ const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
   { group: 'Pipeline', items: [['Products', '/admin/collections/products'], ['Generation Runs', '/admin/collections/generation-runs']] },
 ];
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default async function DashboardLayout({ children }: { children: ReactNode }) {
+  await requireSuperAdmin();
   return (
     <div className="adm">
       <div className="adm-shell">
@@ -37,6 +43,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <Link href="/platform">Platform admin →</Link>
             <Link href="/admin">Payload Admin (CMS) →</Link>
             <Link href="/">View public site →</Link>
+            <a href="/api/auth/logout">Sign out →</a>
           </div>
         </aside>
         <main className="adm-main">{children}</main>

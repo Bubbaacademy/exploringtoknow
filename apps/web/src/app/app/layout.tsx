@@ -32,9 +32,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="adm-side-foot">
-            <Link href="/platform">Platform admin →</Link>
-            <Link href="/admin">Payload Admin →</Link>
             <Link href="/">View public site →</Link>
+            <a href="/api/auth/logout">Sign out →</a>
           </div>
         </aside>
         <main className="adm-main">{children}</main>

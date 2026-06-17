@@ -17,4 +17,4 @@ export function hasSession(req: NextRequest): boolean {
   return Boolean(req.cookies.get(PAYLOAD_COOKIE)?.value);
 }
 
-export const AUTH = { cookieName: PAYLOAD_COOKIE, loginPath: '/admin/login' };
+export const AUTH = { cookieName: PAYLOAD_COOKIE, loginPath: '/login' };

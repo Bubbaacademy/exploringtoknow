@@ -1,6 +1,6 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-16 after **Phase 14 (tenant isolation hardening + workspace scoping)** deployment & live verification.
+> Current snapshot. Updated 2026-06-16 after **Phase 15 (public signup + workspace onboarding + free trial)** deployment & live verification.
 
 ---
 
@@ -15,10 +15,20 @@ additive foundation underneath it. Phase 13 shipped the data model + access mode
 |---|---|---|---|
 | `/platform` | Platform **super admin** | Cross-tenant overview (all tenants/workspaces/users + per-tenant rollup) | `requireSuperAdmin()` server-side + middleware presence |
 | `/app` | Any **workspace member** | Tenant-scoped workspace overview (content/audience/access), all figures scoped to the actor's tenant | `requireWorkspaceMember()` server-side + middleware presence |
-| `/dashboard` | Operator | ETK internal **editorial console** (unchanged) | middleware presence |
+| `/dashboard` | **Platform super admin only** (P15) | ETK internal editorial console (shows ETK data unscoped → gated to super admin server-side) | middleware presence + `requireSuperAdmin()` in the layout |
 | `/admin` | **Platform super admin only** | Payload native CMS (internal source of truth, NOT the customer UI) | Payload login + `Users.access.admin` (super-admin gate; legacy `role:'admin'` fallback) |
+| `/signup` · `/login` | **Public** | Self-serve workspace signup (flag-gated) + sign in | public; `/api/auth/{signup,login,logout}` |
 
-Customers/workspace users belong in **/app**; they are blocked from `/admin` by `access.admin`.
+Customers/workspace users belong in **/app**; they are blocked from `/admin` (access.admin), `/platform`
+(requireSuperAdmin → redirect to /app), and `/dashboard` (requireSuperAdmin). Auth is Payload's session
+cookie (`payload-token`); login/signup set it via `payload.login` + `lib/session.ts`. Unauthenticated
+operator routes redirect to **/login**.
+
+### Signup / trial config (env flags; safe defaults)
+`PUBLIC_SIGNUP_ENABLED` (default **off** → /signup shows an early-access state; API returns 403) ·
+`FREE_TRIAL_DAYS` (default 14) · `DEFAULT_WORKSPACE_PLAN` (default `trial`) · `REQUIRE_EMAIL_VERIFICATION`
+(default off → new owner auto-logged-in; no fake "email sent"). No billing, Stripe, custom domains, or real
+email sending in this phase.
 
 ### Role model (Memberships.role)
 `platform_super_admin` · `workspace_owner` · `workspace_admin` · `editor` · `viewer` (analyst).
@@ -49,16 +59,51 @@ Memberships — **never** from client-submitted tenant/workspace/role values (`a
   public published-only gate (`lib/public.ts`) and all URLs are **unchanged**.
 - Proven by `scripts/verify-tenant-isolation.ts` (temporary second tenant; create → assert → delete).
 
-### SaaS roadmap (next phases — NOT yet built)
-1. **Phase 15 — Public signup / onboarding / free trial** (self-serve tenant+workspace creation).
-2. **Phase 16 — Billing / subscriptions / usage limits** (Stripe on the plan/subscription placeholders).
-3. **Phase 17 — Custom domain / publication hosting** (DNS/SSL on the workspace domain placeholders).
-4. **Phase 18 — Real email-provider activation** (Resend env; code is provider-ready/local-safe today).
-5. **Phase 19 — Workspace-level AI generation limits + product/content workflows.**
-6. **Phase 20 — Attribution, affiliate analytics, conversion tracking.**
-7. **Phase 21 — Ad campaign generation / management.**
+### SaaS roadmap
+- ✅ **Phase 15 — Public signup / onboarding / free trial** (self-serve tenant+workspace creation) — DONE.
+- **Phase 16 (recommended next) — Real email-provider activation** (verify Resend env, double-opt-in,
+  signup verification + welcome email) OR **Billing / Plans / Usage limits** (Stripe) — pick by whether
+  provider credentials are ready. Email activation is lower-risk and unblocks `REQUIRE_EMAIL_VERIFICATION`.
+- **Phase 17 — Custom domain / publication hosting** (DNS/SSL on the workspace domain placeholders).
+- **Phase 18 — Workspace-level AI generation limits + per-workspace product/content workflows** (so a
+  workspace owner can add products + request articles scoped to THEIR workspace, not ETK).
+- **Phase 19 — Attribution, affiliate analytics, conversion tracking.**
+- **Phase 20 — Ad campaign generation / management.**
 
 ---
+
+## Phase 15 — Public signup + workspace onboarding + free trial: COMPLETE & DEPLOYED (migration 14 → 15)
+First self-serve SaaS onboarding layer. Foundation only — **no billing, Stripe, custom domains, real email
+sending, or AI automation.** The ETK public magazine is unchanged.
+- **Signup route + flow:** `/signup` (premium, on the public design system; honeypot, anti-double-submit,
+  validation, a11y, mobile). Flag-gated by `PUBLIC_SIGNUP_ENABLED` (default off → tasteful early-access
+  state + API 403). `/login` page + `/api/auth/{signup,login,logout}` route handlers using Payload
+  `payload.login` and the `payload-token` cookie (`lib/session.ts`). Middleware login redirect → `/login`.
+- **Transactional onboarding** (`lib/onboarding.ts`): one transaction creates User + Tenant + Workspace +
+  `workspace_owner` Membership + trial metadata. Email normalized; duplicate email → friendly 409; workspace
+  slug sanitized + auto-uniqued. All ids derived server-side; **no client-trusted tenant/workspace ids**.
+  **No product/article/generation/media/category** is created during signup.
+- **Free-trial model:** additive tenant fields `trialStartedAt`, `onboardingStatus`, `onboardingStep`,
+  `signupSource` (status already had `trial`, `trialEndsAt` existed). Trial = `FREE_TRIAL_DAYS` (14).
+- **/app onboarding:** welcome + business/workspace name + Owner role + trial banner; a 6-step onboarding
+  checklist for empty workspaces (informational — never triggers generation); role-aware quick links.
+- **/platform signup visibility:** signup-enabled flag, free-trial days, recent signups (business/workspace/
+  owner email/plan/status/trial-ends/source), and an onboarding-errors panel (tenants missing a workspace/owner).
+- **Security fix bundled:** `/dashboard` (ETK editorial console, shows ETK data unscoped) is now
+  `requireSuperAdmin()`-gated so newly-loggable workspace owners can't reach ETK's console.
+- **Email:** local-safe. `REQUIRE_EMAIL_VERIFICATION` default off (new owner auto-logged-in). When on,
+  signup returns a clear "check your email" state — never a fake "email sent". No provider creds touched.
+- **Verified:** `scripts/verify-signup-onboarding.ts` (run on prod via the migrate image, create→assert→delete)
+  proved a signup yields exactly 1 tenant/1 workspace/1 owner membership with trial status, full isolation from
+  ETK (and ETK super sees both), and **zero content/generation/media side effects**. Plus live route + data checks.
+
+### Phase 15 migration
+`20260616_090000_phase15_signup_onboarding` — additive/idempotent: `tenants.trial_started_at`,
+`onboarding_status` (enum), `onboarding_step`, `signup_source` (+index). Pre-validated in a rolled-back tx.
+Payload migrations **14 → 15**.
+
+### Phase 15 DB backup
+`/opt/exploringtoknow/backups/pre-phase15_<ts>.sql.gz` (verified before migration).
 
 ## Phase 14 — Tenant isolation hardening + workspace scoping: COMPLETE & DEPLOYED (migration 13 → 14)
 Made the multi-tenant foundation safe to build on. Additive only; the public magazine is unchanged.
