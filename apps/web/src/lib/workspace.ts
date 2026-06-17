@@ -129,3 +129,13 @@ export async function workspaceDashboard(scope: WorkspaceScope) {
 
   return { counts, needs, recentArticles, recentRequests, recentContacts, isEmpty };
 }
+
+/** Members of the actor's workspace (depth 1 → user populated). */
+export async function listWorkspaceMembers(scope: WorkspaceScope): Promise<Doc[]> {
+  return wsList(scope, 'memberships', { sort: 'createdAt', limit: 200, depth: 1 });
+}
+
+/** Pending invitations for the actor's workspace. */
+export async function listWorkspaceInvites(scope: WorkspaceScope): Promise<Doc[]> {
+  return wsList(scope, 'workspace-invitations', { sort: '-createdAt', limit: 100, depth: 0, extra: { status: { equals: 'pending' } } });
+}

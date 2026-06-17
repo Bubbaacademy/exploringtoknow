@@ -13,6 +13,7 @@ import * as migration_20260616_060000_phase10_editorial from './20260616_060000_
 import * as migration_20260616_070000_phase13_multitenant from './20260616_070000_phase13_multitenant';
 import * as migration_20260616_080000_phase14_workspace_scoping from './20260616_080000_phase14_workspace_scoping';
 import * as migration_20260616_090000_phase15_signup_onboarding from './20260616_090000_phase15_signup_onboarding';
+import * as migration_20260617_010000_phase18_invitations from './20260617_010000_phase18_invitations';
 
 export const migrations = [
   {
@@ -89,5 +90,10 @@ export const migrations = [
     up: migration_20260616_090000_phase15_signup_onboarding.up,
     down: migration_20260616_090000_phase15_signup_onboarding.down,
     name: '20260616_090000_phase15_signup_onboarding',
+  },
+  {
+    up: migration_20260617_010000_phase18_invitations.up,
+    down: migration_20260617_010000_phase18_invitations.down,
+    name: '20260617_010000_phase18_invitations',
   },
 ];

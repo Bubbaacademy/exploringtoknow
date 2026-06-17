@@ -1,6 +1,7 @@
 import { requireWorkspace } from '@/lib/workspace';
 import { workspaceDashboard } from '@/lib/workspace';
 import { ROLE_LABEL, type Role } from '@/lib/tenant';
+import { canWrite } from '@/lib/roles';
 import { TopBar, Section, Stat, Card, Empty, StatusBadge, WsLink, fmtDate } from './_ui';
 
 export const dynamic = 'force-dynamic';
@@ -44,7 +45,7 @@ export default async function AppHome() {
       <TopBar
         title={`Welcome, ${String(ws.tenant.name)}`}
         sub={`${(ws.workspace?.name as string) || 'Your workspace'} · ${role} · plan: ${String(ws.tenant.plan ?? 'free')}. Everything here is scoped to your workspace.`}
-        actions={<><WsLink href="/app/products/new" primary>Add a product</WsLink><WsLink href="/">View public site</WsLink></>}
+        actions={<>{canWrite(ws.role) ? <WsLink href="/app/products/new" primary>Add a product</WsLink> : null}<WsLink href="/">View public site</WsLink></>}
       />
       <div className="adm-content">
         {isTrial ? (

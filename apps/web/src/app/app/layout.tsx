@@ -14,7 +14,7 @@ const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
   { group: 'Content', items: [['Articles', '/app/articles'], ['Products', '/app/products'], ['Categories', '/app/categories'], ['Media', '/app/media']] },
   { group: 'Workflow', items: [['Product Requests', '/app/product-requests'], ['Editorial Console', '/app/editorial']] },
   { group: 'Growth', items: [['Analytics', '/app/analytics'], ['Newsletter', '/app/newsletter'], ['Contact Inbox', '/app/contact']] },
-  { group: 'Workspace', items: [['Settings', '/app/settings']] },
+  { group: 'Workspace', items: [['Team', '/app/team'], ['Settings', '/app/settings']] },
 ];
 
 export default async function AppLayout({ children }: { children: ReactNode }) {

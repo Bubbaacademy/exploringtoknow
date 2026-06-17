@@ -153,6 +153,9 @@
 .adm .combo-opt.active, .adm .combo-opt:hover { background: var(--a-brand-tint); color: var(--a-brand-ink); }
 .adm .combo-empty { padding: 8px 10px; color: var(--a-muted); font-size: 13.5px; }
 .adm .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.adm-select, .adm .field select { font: inherit; font-size: 14px; padding: 8px 11px; border: 1px solid var(--a-line-strong); border-radius: var(--a-r-sm); background: #fff; color: var(--a-ink); }
+.adm-select:focus { outline: 2px solid var(--a-brand-tint); border-color: var(--a-brand); }
+.adm code { background: var(--a-bg); padding: 2px 6px; border-radius: 6px; }
 
 /* ---- Responsive ---- */
 @media (max-width: 900px) {

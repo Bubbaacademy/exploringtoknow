@@ -1,4 +1,5 @@
 import { requireWorkspace, wsList } from '@/lib/workspace';
+import { canWrite } from '@/lib/roles';
 import { TopBar, Card, DataTable, StatusBadge, WsLink, fmtDate } from '../_ui';
 
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export default async function ProductsPage() {
       <TopBar
         title="Products"
         sub="The catalog behind your reviews and guides, scoped to your workspace. Submitting a product sends it for editorial review before it becomes a live catalog product."
-        actions={<WsLink href="/app/products/new" primary>Add a product</WsLink>}
+        actions={canWrite(ws.role) ? <WsLink href="/app/products/new" primary>Add a product</WsLink> : undefined}
       />
       <div className="adm-content">
         <Card title={`${docs.length} product${docs.length === 1 ? '' : 's'}`}>
