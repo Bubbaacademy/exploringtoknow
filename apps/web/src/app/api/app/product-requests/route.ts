@@ -3,6 +3,7 @@ import { getPayload } from 'payload';
 import config from '@payload-config';
 import { resolveWorkspace } from '@/lib/workspace';
 import { canWrite } from '@/lib/roles';
+import { workspaceCapability } from '@/lib/billing';
 
 /**
  * Workspace-scoped product-request creation. Requires a valid workspace session;
@@ -19,6 +20,10 @@ export async function POST(req: Request) {
   }
   if (!canWrite(ws.role)) {
     return NextResponse.json({ ok: false, error: 'Your role is read-only.' }, { status: 403 });
+  }
+  const cap = await workspaceCapability(ws, 'create_request');
+  if (!cap.ok) {
+    return NextResponse.json({ ok: false, error: cap.reason, code: 'LIMIT', upgrade: true }, { status: 402 });
   }
 
   let body: Record<string, unknown>;

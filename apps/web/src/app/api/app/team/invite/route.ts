@@ -3,6 +3,7 @@ import { getPayload } from 'payload';
 import config from '@payload-config';
 import { resolveWorkspace } from '@/lib/workspace';
 import { canManageTeam, isInvitableRole } from '@/lib/roles';
+import { workspaceCapability } from '@/lib/billing';
 import { makeToken } from '@/lib/newsletter';
 
 /**
@@ -52,6 +53,10 @@ export async function POST(req: Request) {
       limit: 1, depth: 0, overrideAccess: true,
     });
     if (dup.docs.length) return NextResponse.json({ ok: false, error: 'There is already a pending invitation for that email.' }, { status: 409 });
+
+    // Plan seat limit (members + pending invites).
+    const cap = await workspaceCapability(ws, 'invite');
+    if (!cap.ok) return NextResponse.json({ ok: false, error: cap.reason, code: 'LIMIT', upgrade: true }, { status: 402 });
 
     const { token, hash } = makeToken();
     const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
