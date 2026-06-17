@@ -25,10 +25,9 @@ export type WorkspaceSession = {
   scope: WorkspaceScope;
 };
 
-/** Resolve the signed-in workspace session, or redirect to /login. */
-export async function requireWorkspace(): Promise<WorkspaceSession> {
+/** Resolve the current workspace session WITHOUT redirecting (for API routes). */
+export async function resolveWorkspace(): Promise<WorkspaceSession> {
   const ctx = await getTenantContext();
-  if (!ctx.user) redirect('/login');
   const tenant = getPrimaryTenant(ctx);
   const workspace = getPrimaryWorkspace(ctx);
   const role = getPrimaryMembership(ctx)?.role ?? null;
@@ -36,6 +35,13 @@ export async function requireWorkspace(): Promise<WorkspaceSession> {
     ctx, tenant, workspace, role, isSuper: ctx.isSuperAdmin,
     scope: { tenantId: tenant?.id ?? null, workspaceId: workspace?.id ?? null },
   };
+}
+
+/** Resolve the signed-in workspace session, or redirect to /login (for pages). */
+export async function requireWorkspace(): Promise<WorkspaceSession> {
+  const ws = await resolveWorkspace();
+  if (!ws.ctx.user) redirect('/login');
+  return ws;
 }
 
 const client = () => getPayload({ config });
