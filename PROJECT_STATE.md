@@ -1,6 +1,119 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-16 after **Phase 15 (public signup + workspace onboarding + free trial)** deployment & live verification.
+> Current snapshot. Updated 2026-06-17 — **Master Blueprint v2 strategic pivot** (docs-only). Latest shipped
+> code: Phase 19 billing/plans/usage foundation. No application code/schema/data/runtime changed by this update.
+
+---
+
+# 🧭 MASTER BLUEPRINT v2 — Strategic Pivot (official)
+
+> Numbering note: the Blueprint v2 phase numbers below are the **forward strategic plan**. Several early items
+> already have a **shipped foundation** from prior implementation phases (multi-tenant, signup/trial, workspace
+> console, product/request workflow, team invites/roles, **billing/plans/usage**). Those are cross-referenced
+> as "foundation shipped" — the net-new work is the **marketing-OS output layer** (brand kit, landing pages,
+> social, video, ads, optimization, domains, unified analytics). The detailed per-phase shipped history is
+> preserved below this blueprint.
+
+## 1. Master Blueprint v2 / Strategic Pivot
+ExploringToKnow is no longer only a buying-guide magazine (or a magazine builder). It is a **multi-tenant
+Owned Media + Social + Ads + Landing Page AI OS** — a controlled marketing operating system where a business
+can **create, approve, publish, advertise, measure, and improve** content from one workspace.
+- The **magazine is one output, not the whole product.**
+- The SaaS platform supports **many tenants/workspaces**, each running its own content-commerce operation.
+- The **ETK public magazine remains workspace #1 / live proof-of-concept** and must stay stable as the SaaS expands.
+
+## 2. Core Product Model
+**Input layer:** products · product URLs · affiliate links · product descriptions · product images ·
+user-uploaded images · user-uploaded videos · brand profile · brand tone/style · logo/colors · audience ·
+campaign goals · compliance notes / claims to avoid.
+**Output layer:** editorial magazine articles · buying guides · product reviews · SEO content · landing pages /
+affiliate bridge pages · social media posts · short-form video concepts / video outputs · ad campaign drafts ·
+performance analytics · optimization recommendations.
+
+## 3. Operating Principles (all current safety rules preserved)
+- No auto-publish without approval. · No ad spend without approval. · No campaign launch without approval.
+- No fabricated product claims. · No fake reviews. · No fake performance numbers.
+- No client-provided tenant/workspace IDs trusted from the browser; **all workspace data stays server-scoped by membership.**
+- Expensive outputs (video / ad generation) must be **plan/usage-gated**.
+- Nothing destructive or cross-tenant is ever introduced.
+
+## 4. Roles
+- **Platform Super Admin:** full SaaS — tenants, workspaces, users, plans, billing, usage, system health, integrations, support, abuse monitoring.
+- **Workspace Owner:** owns one workspace — brand, products, assets, links, team, content requests, landing pages, social drafts, ad drafts, analytics, settings.
+- **Workspace Admin:** manages content/workflow, not ownership/billing/destructive settings (unless later permitted).
+- **Editor:** creates/edits products, content, requests, landing pages, social drafts.
+- **Viewer:** read-only.
+
+## 5. Current completed foundation (shipped & live)
+Public editorial magazine live · premium public UI · article/category/search/buying-guide/review/explore routes ·
+newsletter foundation · contact/request system · super-admin dashboard · admin UI/UX polish · multi-tenant
+foundation · Tenants/Workspaces/Memberships · server-side tenant isolation · signup/login/trial foundation ·
+workspace console · product/request workflow · image upload for requests · team invitations & roles ·
+super-admin vs workspace-owner route separation · product/request safety gates · **no auto-generation or
+auto-publish** · billing/plans/usage-limits foundation (local-safe) · standard backup/rollback/deploy verification.
+
+## 6. Updated roadmap from here (Blueprint v2)
+- **Phase 19 — Workspace QA, Navigation & Owner Experience Polish.** Stabilize/polish the signed-up owner
+  experience: signup/login/sign-out, owner/admin/editor/viewer permissions, /app routes, empty states, copy,
+  CTA hierarchy, mobile, product-request flow, team-invite flow, hidden super-admin links. *(Foundation shipped;
+  this is the QA/polish pass.)*
+- **Phase 20 — Real Email Provider Activation.** Resend (or similar): welcome, invite, newsletter confirm,
+  unsubscribe, contact + admin notifications, failure handling, provider status. No secrets committed.
+- **Phase 21 — Billing, Plans & Usage Limits.** Stripe, trial→paid, plans, usage limits for products/workspaces/
+  team/articles/social/landing/video/ad-drafts/connected-channels/monthly AI credits. *(Local-safe foundation
+  shipped; this is real activation + the expanded output-type limits.)*
+- **Phase 22 — Brand Kit, Asset Library & Product Data Foundation.** Central source of truth: brand profile,
+  tone, logo, colors, product library, images, videos, affiliate links, compliance notes, audience, campaign
+  goals, asset tagging/permissions.
+- **Phase 23 — Landing Page Builder v1.** Product landing + affiliate bridge pages: CTA blocks, product-image
+  blocks, benefits, FAQ, trust/disclosure, UTM-ready outbound links, draft/preview/publish, basic analytics.
+- **Phase 24 — Social Content Studio v1.** Lower-cost first: text/image posts, captions, carousel outlines,
+  hashtags, platform variants (IG/FB/TikTok/LinkedIn/YouTube Shorts/Pinterest later), content calendar,
+  approval, manual export first.
+- **Phase 25 — Social Account Connections & Publishing.** OAuth connections (Meta/IG/FB first, then LinkedIn/
+  TikTok/YouTube), scheduled posts, published-post tracking, failed-post handling, platform formatting, approval required.
+- **Phase 26 — Video Content Tier.** Higher-plan: Reel/TikTok/Shorts scripts, hooks, scenes, storyboards,
+  voiceover, caption overlays, user-uploaded video, image-to-video concepts, optional AI video provider later,
+  async jobs, AI-credit/plan gates.
+- **Phase 27 — Ads Studio v1.** Ad creative + campaign drafts (Google/Meta/TikTok/LinkedIn/YouTube): objectives,
+  audience suggestions, creative + copy variants, landing-page pairing, UTM suggestions, manual export first,
+  **no spending/launching**.
+- **Phase 28 — Ad Account Connections & Performance Data.** Read-only sync first (Meta/Google, then TikTok/
+  LinkedIn): impressions, clicks, CTR, CPC, spend, conversions, landing-page clickouts, affiliate clicks,
+  campaign/creative dashboards.
+- **Phase 29 — Optimization Engine.** Detect low CTR / high CPC / weak landing pages / strong topics; suggest
+  better hooks, new ad variants, landing-page improvements, audience tests, budget changes, social recycling,
+  SEO/internal-linking. **Recommend only; never auto-apply without approval.**
+- **Phase 30 — Custom Domains, White Label & Publishing Destinations.** Publish to ETK network, workspace-hosted
+  magazine, own connected domain, or both; white-label for higher plans; canonicals, per-workspace/domain
+  sitemap, disclosure, SSL/routing.
+- **Phase 31 — Advanced Analytics & Attribution.** Unified across content/landing/social/ads/affiliate: views,
+  clickouts, social + ad performance, referrers, UTMs, conversions, top products/articles/channels, time-series
+  charts, workspace performance score, exportable reports.
+- **Phase 32 — Content Volume & Demo Workspaces.** Investor/customer demos: more ETK content + demo workspaces
+  (beauty, electronics, home, wellness, Amazon-seller, DTC) showing article + landing page + social + ad draft + analytics.
+- **Phase 33 — Legal, Compliance & Launch Readiness.** Terms, Privacy, subscription terms, cancellation, AI
+  disclosure, affiliate disclosure, user-content ownership, acceptable use, ad-account responsibility
+  disclaimer, generated-content review disclaimer, abuse controls, data retention.
+
+## 7. Updated MVP Definition (investor/customer-ready)
+A business: signs up → creates workspace → adds brand/product/assets → uploads product images → creates a
+product/article request → receives controlled drafts → creates an article → creates a landing page → creates
+social post drafts → creates ad copy/campaign drafts → reviews/approves → **publishes only when approved** →
+tracks performance → gets recommendations.
+
+## 8. Valuation Narrative
+> “ExploringToKnow is a multi-tenant AI operating system for content-commerce brands that turns product data
+> into owned media, landing pages, social content, ad campaigns, and performance insights — with human
+> approval, tenant isolation, and measurable marketing feedback loops.”
+
+## 9. Immediate priority order
+1. Finish current sign-out / workspace console cleanup (if not already complete). 2. Phase 19 workspace QA &
+owner UX polish. 3. Phase 20 real email provider. 4. Phase 21 billing/plans/usage limits. 5. Phase 22 brand kit
++ asset library. 6. Phase 23 landing page builder. 7. Phase 24 social content studio. 8. Phase 25 social
+account connection/publishing. 9. Phase 26 video tier. 10. Phase 27 ads studio. 11. Phase 28 ad performance
+sync. 12. Phase 29 optimization engine. 13. Phase 30 custom domains/white label. 14. Phase 31 advanced
+analytics. 15. Phase 32 demo workspaces/content volume. 16. Phase 33 legal/compliance/launch readiness.
 
 ---
 

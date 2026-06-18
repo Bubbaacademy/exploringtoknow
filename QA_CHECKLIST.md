@@ -408,3 +408,25 @@ Production `main` @ Phase-15 merge. Signup proven by `scripts/verify-signup-onbo
 
 ## 56. Recommended next
 - Phase 16: Real email-provider activation (verification + welcome email) OR Billing/Plans/Usage limits.
+
+---
+
+# Master Blueprint v2 QA / Future Phase Guardrails
+
+Standing guardrails for every future phase (owned-media + social + ads + landing-page AI OS). Re-verify these
+on each phase that touches workspace data, generation, publishing, social/ads, analytics, or providers.
+
+- [ ] Multi-tenant isolation remains **server-side** (scope derived from membership; never from client input).
+- [ ] Workspace users can **never** see another tenant's data (articles, products, requests, media, analytics, team, billing).
+- [ ] **No auto-generation / auto-publish / ad-spend / campaign launch without explicit human approval.**
+- [ ] Social / ad / video outputs are **plan/usage-gated** before any public scale (expensive outputs metered).
+- [ ] Analytics clearly **separate real measured data from fallback / editorial ranking** (no blending).
+- [ ] Email provider secrets are **env-only** (never printed/committed; health shows present/missing only).
+- [ ] Ad / social provider secrets are **env-only** (never printed/committed; OAuth tokens stored safely, scoped per workspace).
+- [ ] **No fake performance metrics** (impressions/clicks/CTR/CPC/spend/conversions are real or clearly empty).
+- [ ] **No fake reviews / ratings / testimonials.** No fabricated product claims.
+- [ ] **No duplicate** article / media / product / author / category creation on retry/double-submit.
+- [ ] Existing **ETK public magazine stays stable** (routes 200, drafts 404, published fingerprints unchanged) while the SaaS expands.
+- [ ] Every new write path: server-authorized, role-checked, tenant-scoped, dedup-safe, with clear non-crash error states.
+- [ ] Cross-tenant tampering (ID swap in body/URL) is rejected; webhooks update only the matching tenant and are idempotent.
+- [ ] Backup + rollback tag before any migration; additive/idempotent migrations only; deploy verified live.
