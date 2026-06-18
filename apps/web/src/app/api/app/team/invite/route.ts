@@ -5,6 +5,7 @@ import { resolveWorkspace } from '@/lib/workspace';
 import { canManageTeam, isInvitableRole } from '@/lib/roles';
 import { workspaceCapability } from '@/lib/billing';
 import { makeToken } from '@/lib/newsletter';
+import { sendInviteEmail } from '@/lib/email-templates';
 
 /**
  * Owner-only workspace invite. Tenant/workspace/inviter are derived from the
@@ -60,6 +61,22 @@ export async function POST(req: Request) {
 
     const { token, hash } = makeToken();
     const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+    const base = process.env.PAYLOAD_PUBLIC_SERVER_URL || new URL(req.url).origin;
+    const inviteLink = `${base}/invite/${token}`;
+
+    // Best-effort invite email (local-safe no-op if no provider). The copyable
+    // link is always returned so the owner can share it either way.
+    let emailStatus = 'local_no_send';
+    try {
+      const r = await sendInviteEmail(email, {
+        workspaceName: (ws.workspace?.name as string) || undefined,
+        role,
+        acceptUrl: inviteLink,
+        inviterName: (ws.ctx.user.name as string) || undefined,
+      });
+      emailStatus = r.status;
+    } catch { emailStatus = 'error_network'; }
+
     const doc = await payload.create({
       collection: 'workspace-invitations',
       overrideAccess: true,
@@ -67,11 +84,10 @@ export async function POST(req: Request) {
         email, role: role as never, message: message || undefined,
         tenant: ws.scope.tenantId as never, workspace: ws.scope.workspaceId as never,
         invitedBy: ws.ctx.user.id as never, tokenHash: hash, status: 'pending',
-        expiresAt, emailStatus: 'local_no_send',
+        expiresAt, emailStatus,
       },
     });
-    const base = process.env.PAYLOAD_PUBLIC_SERVER_URL || new URL(req.url).origin;
-    return NextResponse.json({ ok: true, id: doc.id, inviteLink: `${base}/invite/${token}`, emailStatus: 'local_no_send' });
+    return NextResponse.json({ ok: true, id: doc.id, inviteLink, emailStatus, emailed: emailStatus === 'sent' });
   } catch {
     return NextResponse.json({ ok: false, error: 'Could not create the invitation. Please try again.' }, { status: 500 });
   }

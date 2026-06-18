@@ -210,6 +210,16 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 31. Phase 20 — Real email provider activation (local-safe verification)
+Prod has all six email env keys ABSENT → must stay local-safe; verify behavior + report missing key NAMES only (never values).
+- [ ] `/dashboard/health` → "Email delivery": provider/mode shows **local-safe**, "Missing to activate" lists key NAMES only, all six env keys show present/missing (NO values), per-flow readiness table shows local-safe.
+- [ ] Signup (temp owner): account creates and lands `/app` 200; welcome email is **best-effort** — signup still completes (local-safe = no send); no secret in logs.
+- [ ] Team invite (temp owner): invite creates; UI shows **copy-link fallback** (local-safe); invitation `emailStatus=local_no_send`; copyable single-use link works; wrong-email/duplicate/seat-limit protections intact.
+- [ ] Newsletter: valid subscribe → active/local (no send); duplicate → idempotent; invalid → 422; honeypot → silent success. Unsubscribe token page works + idempotent.
+- [ ] Contact: valid submit stored with `notifyStatus=local_no_send` (no send); honeypot silent; never blocks user.
+- [ ] No secrets in UI / logs / report; no generation/approval/publish/image/affiliate change; tenant isolation unchanged; temp records cleaned up.
+- [ ] (When env later added) flip NEWSLETTER_PROVIDER=resend + keys → readiness shows real-send; one controlled minimal test per flow; never print the API key.
+
 ---
 
 # Phase 9 — verification status (2026-06-16)

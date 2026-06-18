@@ -1,5 +1,5 @@
 import { getAdminOverview, type Doc } from '@/lib/public';
-import { emailProvider, emailEnabled } from '@/lib/email';
+import { emailProviderStatus } from '@/lib/email';
 import { Section, Stat, Card, Empty, StatusBadge } from '../_components';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +8,16 @@ export const dynamic = 'force-dynamic';
 export default async function HealthPage() {
   const { counts, recentContacts, recentRequests } = await getAdminOverview();
   const c = (k: string): number => counts[k] ?? 0;
-  const presence = (k: string) => (process.env[k] ? 'present' : 'missing');
+  const email = emailProviderStatus();
+  const yn = (b: boolean) => (b ? 'present' : 'missing');
+  const ENV_KEYS = ['NEWSLETTER_PROVIDER', 'RESEND_API_KEY', 'NEWSLETTER_FROM', 'NEWSLETTER_REPLY_TO', 'NEWSLETTER_DOUBLE_OPT_IN', 'CONTACT_NOTIFY_TO'] as const;
+  const FLOWS: Array<[string, boolean]> = [
+    ['Welcome email', email.readiness.welcome],
+    ['Team invitation email', email.readiness.teamInvite],
+    ['Newsletter confirmation', email.readiness.newsletterConfirm],
+    ['Newsletter unsubscribe', email.readiness.newsletterUnsubscribe],
+    ['Contact notification', email.readiness.contactNotify],
+  ];
 
   const STATS: Array<[string, number]> = [
     ['Published', c('published')], ['Ready for review', c('review')], ['Drafts', c('drafts')],
@@ -32,16 +41,32 @@ export default async function HealthPage() {
         </Section>
 
         <Section title="Email delivery (presence only — no secret values)">
-          <Card>
-            <table className="adm-table">
-              <tbody>
-                <tr><td>Provider</td><td className="num">{emailProvider()} — {emailEnabled() ? 'enabled' : 'local (no external send)'}</td></tr>
-                {(['RESEND_API_KEY', 'NEWSLETTER_FROM', 'NEWSLETTER_REPLY_TO', 'NEWSLETTER_DOUBLE_OPT_IN', 'CONTACT_NOTIFY_TO'] as const).map((k) => (
-                  <tr key={k}><td>{k}</td><td className="num"><span className={`adm-badge ${presence(k) === 'present' ? 'ok' : 'warn'}`}>{presence(k)}</span></td></tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+          <div className="adm-cols-2">
+            <Card title="Provider & environment">
+              <table className="adm-table">
+                <tbody>
+                  <tr><td>Provider</td><td className="num">{email.provider}</td></tr>
+                  <tr><td>Mode</td><td className="num"><span className={`adm-badge ${email.active ? 'ok' : 'warn'}`}>{email.mode}</span></td></tr>
+                  <tr><td>Double opt-in</td><td className="num">{email.doubleOptIn ? 'on' : 'off'}</td></tr>
+                  {email.missing.length ? (
+                    <tr><td>Missing to activate</td><td className="num"><span className="adm-badge warn">{email.missing.join(', ')}</span></td></tr>
+                  ) : null}
+                  {ENV_KEYS.map((k) => (
+                    <tr key={k}><td>{k}</td><td className="num"><span className={`adm-badge ${email.keys[k] ? 'ok' : 'warn'}`}>{yn(email.keys[k])}</span></td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+            <Card title="Per-flow readiness">
+              <table className="adm-table">
+                <tbody>
+                  {FLOWS.map(([label, ready]) => (
+                    <tr key={label}><td>{label}</td><td className="num"><span className={`adm-badge ${ready ? 'ok' : 'warn'}`}>{ready ? 'real-send' : 'local-safe'}</span></td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          </div>
         </Section>
 
         <Section title="Recent intake">

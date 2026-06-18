@@ -27,6 +27,45 @@ export function emailEnabled(): boolean {
   return false;
 }
 
+/** Reply-to presence (no value). */
+export const replyToSet = (): boolean => Boolean(process.env.NEWSLETTER_REPLY_TO);
+
+/**
+ * Provider status for admin/system-health visibility. Reports presence of each
+ * required/optional env key BY NAME ONLY — never any secret value. `missing` lists
+ * the required keys still needed to enable real delivery for the current provider.
+ */
+export function emailProviderStatus() {
+  const provider = emailProvider();
+  const active = emailEnabled();
+  const present = (k: string) => Boolean(process.env[k]);
+  const required = provider === 'resend' ? ['RESEND_API_KEY', 'NEWSLETTER_FROM'] : [];
+  const missing = required.filter((k) => !present(k));
+  const contactReady = active && present('CONTACT_NOTIFY_TO');
+  return {
+    provider,
+    active,
+    mode: active ? 'real-send' : 'local-safe (no external send)',
+    doubleOptIn: active && process.env.NEWSLETTER_DOUBLE_OPT_IN === 'true',
+    missing,
+    keys: {
+      NEWSLETTER_PROVIDER: present('NEWSLETTER_PROVIDER'),
+      RESEND_API_KEY: present('RESEND_API_KEY'),
+      NEWSLETTER_FROM: present('NEWSLETTER_FROM'),
+      NEWSLETTER_REPLY_TO: present('NEWSLETTER_REPLY_TO'),
+      NEWSLETTER_DOUBLE_OPT_IN: present('NEWSLETTER_DOUBLE_OPT_IN'),
+      CONTACT_NOTIFY_TO: present('CONTACT_NOTIFY_TO'),
+    },
+    readiness: {
+      welcome: active,
+      teamInvite: active,
+      newsletterConfirm: active,
+      newsletterUnsubscribe: true, // works without a provider (token-based page)
+      contactNotify: contactReady,
+    },
+  };
+}
+
 export async function sendEmail(msg: EmailMessage): Promise<SendResult> {
   if (!emailEnabled()) return { ok: false, status: 'local_no_send' };
   const p = emailProvider();

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createWorkspaceOnboarding, signupEnabled, requireEmailVerification, OnboardingError } from '@/lib/onboarding';
+import { createWorkspaceOnboarding, signupEnabled, requireEmailVerification, freeTrialDays, OnboardingError } from '@/lib/onboarding';
 import { payloadRestLogin, forwardCookies } from '@/lib/session';
+import { sendWelcomeEmail } from '@/lib/email-templates';
 
 /**
  * Public signup → provisions a User + Tenant + Workspace + owner Membership and
@@ -35,6 +36,16 @@ export async function POST(req: Request) {
       website: str('website'),
       source: 'public_signup',
     });
+
+    // Best-effort welcome email (local-safe no-op if no provider). Never blocks signup.
+    const base = process.env.PAYLOAD_PUBLIC_SERVER_URL || new URL(req.url).origin;
+    try {
+      await sendWelcomeEmail(email, {
+        workspaceName: str('workspaceName') || str('businessName'),
+        trialDays: freeTrialDays(),
+        appUrl: `${base}/app`,
+      });
+    } catch { /* welcome email is non-critical — signup already succeeded */ }
 
     if (requireEmailVerification()) {
       return NextResponse.json({ ok: true, verify: true, message: 'Account created. Check your email to verify before signing in.' });

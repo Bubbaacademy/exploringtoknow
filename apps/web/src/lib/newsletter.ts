@@ -1,6 +1,5 @@
 import crypto from 'node:crypto';
-import { emailEnabled, emailProvider, sendEmail } from '@/lib/email';
-import { SITE_NAME } from '@/lib/public';
+import { emailEnabled, emailProvider } from '@/lib/email';
 
 /**
  * Newsletter behavior. Default = safe LOCAL mode: subscribers are captured and
@@ -36,11 +35,7 @@ export function makeToken(): { token: string; hash: string } {
  */
 export async function sendConfirmationEmail(email: string, confirmUrl: string): Promise<string> {
   if (!emailEnabled()) return 'local_no_send';
-  const r = await sendEmail({
-    to: email,
-    subject: `Confirm your ${SITE_NAME} subscription`,
-    html: `<p>Thanks for subscribing to ${SITE_NAME}.</p><p>Please confirm your subscription:</p><p><a href="${confirmUrl}">Confirm subscription</a></p><p>If you didn’t request this, you can ignore this email.</p>`,
-    text: `Confirm your ${SITE_NAME} subscription: ${confirmUrl}`,
-  });
+  const { sendNewsletterConfirm } = await import('@/lib/email-templates');
+  const r = await sendNewsletterConfirm(email, confirmUrl);
   return r.status;
 }

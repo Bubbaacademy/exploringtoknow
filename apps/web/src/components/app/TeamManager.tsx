@@ -11,6 +11,7 @@ export function TeamManager({ members, invites, canManage }: { members: Member[]
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [inviteLink, setInviteLink] = useState('');
+  const [inviteEmailed, setInviteEmailed] = useState(false);
   const [copied, setCopied] = useState(false);
 
   async function post(url: string, body: unknown): Promise<any> {
@@ -28,7 +29,7 @@ export function TeamManager({ members, invites, canManage }: { members: Member[]
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const j = await post('/api/app/team/invite', { email: fd.get('email'), role: fd.get('role'), message: fd.get('message') });
-    if (j?.inviteLink) { setInviteLink(j.inviteLink); setCopied(false); (e.currentTarget as HTMLFormElement).reset(); }
+    if (j?.inviteLink) { setInviteLink(j.inviteLink); setInviteEmailed(Boolean(j.emailed)); setCopied(false); (e.currentTarget as HTMLFormElement).reset(); }
   }
   async function changeRole(id: Member['id'], role: string) { if (await post('/api/app/team/manage', { action: 'role', membershipId: id, role })) location.reload(); }
   async function removeMember(id: Member['id']) { if (confirm('Remove this member from the workspace?') && await post('/api/app/team/manage', { action: 'remove', membershipId: id })) location.reload(); }
@@ -84,7 +85,10 @@ export function TeamManager({ members, invites, canManage }: { members: Member[]
             </form>
             {inviteLink ? (
               <div className="adm-panel ok" style={{ marginTop: 14 }}>
-                <strong>Invitation created.</strong> Email isn’t configured yet, so copy this secure link and share it with your teammate:
+                <strong>Invitation created.</strong>{' '}
+                {inviteEmailed
+                  ? 'We’ve emailed the invitation. You can also copy this secure link to share it directly:'
+                  : 'Copy this secure link and share it with your teammate:'}
                 <div className="adm-row" style={{ marginTop: 8 }}>
                   <code className="t" style={{ fontSize: 12 }}>{inviteLink}</code>
                   <button className="adm-btn" onClick={copyLink}>{copied ? 'Copied ✓' : 'Copy link'}</button>

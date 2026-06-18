@@ -1,7 +1,8 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-17 — **Master Blueprint v2 strategic pivot** (docs-only). Latest shipped
-> code: Phase 19 billing/plans/usage foundation. No application code/schema/data/runtime changed by this update.
+> Current snapshot. Updated 2026-06-17 — **Blueprint v2 Phase 20 (Real Email Provider Activation)**: code
+> complete & local-safe; provider-ready, real delivery pending env. Deploy + live verify is the only remaining
+> step (blocked on production SSH access from this environment). Prior shipped code: Phase 19 billing/plans/usage.
 
 ---
 
@@ -217,6 +218,42 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Blueprint v2 Phase 20 — Real Email Provider Activation: CODE COMPLETE & LOCAL-SAFE VERIFIED — DEPLOY PENDING (no migration)
+Activates the real email-provider layer (Resend, fetch-only, no SDK) while preserving the existing
+local-safe fallback. **Additive, no schema/migration**, no generation/approval/publish/affiliate change.
+Production currently has **all six email env keys absent**, so prod stays **local-safe**: flows complete,
+status rows record `local_no_send`, nothing is sent. Real delivery is **provider-ready, pending env**.
+- **`lib/email.ts` hardened:** added `emailProviderStatus()` — reports provider, active flag, mode
+  (`real-send` / `local-safe`), double-opt-in flag, **missing required keys by NAME only**, per-key presence,
+  and per-flow readiness (welcome / team-invite / newsletter-confirm / unsubscribe / contact-notify). **Never
+  prints or returns any secret value.** Kept fetch-only Resend send + `local_no_send` fallback (idempotent,
+  no raw token/key ever logged).
+- **`lib/email-templates.ts` (new):** shared brand-consistent HTML + text wrapper (`renderEmail`), plus
+  `sendWelcomeEmail`, `sendInviteEmail`, `sendNewsletterConfirm`. Honest copy (no hype), ETK / owned-media-OS
+  positioning, safe fallback when workspace name is missing; all senders no-op (`local_no_send`) when the
+  provider is inactive so callers never branch on env.
+- **Welcome email** wired into `/api/auth/signup` — best-effort after onboarding (workspace name, trial days,
+  `/app` link, "add product / request article / review before publish", "nothing publishes automatically");
+  wrapped in try/catch so **signup always completes** even if the send fails.
+- **Team-invite email** wired into `/api/app/team/invite` — sends when active, records the real result into the
+  invitation's `emailStatus`, and **always returns the copyable secure link** (single-use hashed token, wrong-
+  email / duplicate / seat-limit protections unchanged). `TeamManager` now shows **"we've emailed the
+  invitation"** vs the copy-link fallback based on the returned `emailed` flag.
+- **Newsletter confirm** now uses the branded template (double opt-in behavior unchanged; still gated by
+  `emailEnabled() && NEWSLETTER_DOUBLE_OPT_IN=true`). Unsubscribe (hashed-token, idempotent) unchanged.
+  **Contact notification** already best-effort (`CONTACT_NOTIFY_TO`, `notifyStatus`, never blocks the user) —
+  retained.
+- **Admin visibility:** `/dashboard/health` now renders provider+environment (presence only, missing-to-activate
+  by key name) and a per-flow readiness table (`real-send` vs `local-safe`). No secret values anywhere.
+- **Validation:** changed pure-TS files typecheck clean (local standalone `tsc` can't resolve workspace
+  `next`/`react`/`@types/node` — environmental, not code). Real gate is the Docker prod build at deploy.
+- **Env model (env-only, no hardcoding):** `NEWSLETTER_PROVIDER=resend`, `RESEND_API_KEY`, `NEWSLETTER_FROM`,
+  `NEWSLETTER_REPLY_TO` (optional), `NEWSLETTER_DOUBLE_OPT_IN=true`, `CONTACT_NOTIFY_TO`. Missing → local-safe.
+- **Rollback tag `pre-phase20-email → 125d114`** (last deployed state). **No DB migration → no backup needed.**
+- **DEPLOY PENDING:** app-only deploy (`SKIP_MIGRATE=1 bash infra/server/deploy-app.sh`) + live local-safe
+  verification not yet run — blocked on production SSH access from this environment (local key not authorized
+  on the VPS for root/deploy). Code is committed and ready; deploy + verify is the only remaining step.
 
 ### Blueprint v2 Phase 19 — Workspace QA, Navigation & Owner UX polish: COMPLETE & DEPLOYED (no migration)
 UX/QA polish of the authenticated workspace console (the customer SaaS layer), ahead of email/Stripe/landing/
