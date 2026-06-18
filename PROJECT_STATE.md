@@ -1,8 +1,9 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-18 — **Blueprint v2 Phase 20 (Real Email Provider Activation): COMPLETE &
-> DEPLOYED & VERIFIED LIVE.** Production HEAD `40174e6`, image `etk-web@sha256:13af565b…` healthy; local-safe
-> (all email env keys absent → no real send); migrations unchanged (17). Prior shipped: Phase 19 billing/plans/usage.
+> Current snapshot. Updated 2026-06-18 — **Blueprint v2 Phase 21 (Billing/Plans/Usage real activation, Stripe-
+> ready production path): COMPLETE & DEPLOYED & VERIFIED LIVE.** Production HEAD `dfa94f5`, image
+> `etk-web@sha256:6536c7ee…` healthy; migrations unchanged (17). Billing **local-safe** (no Stripe env → no
+> charges, inert webhook); email still local-safe (Phase 20). Prior shipped: Phase 20 email, Phase 19 billing foundation.
 
 ---
 
@@ -218,6 +219,37 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Blueprint v2 Phase 21 — Billing / Plans / Usage real activation (Stripe-ready production path): COMPLETE & DEPLOYED (no migration)
+Completes the Stripe-ready production billing path on top of the Phase 19 foundation. **Additive, no
+schema/migration**, and **still INERT without Stripe env** — production has no billing/Stripe keys, so it stays
+**local-safe: no real charges, no checkout/portal, inert webhook.** No generation/approval/publish/affiliate/
+image/email change; tenant isolation and the public magazine untouched.
+- **Plan reflection (core fix):** `/api/app/billing/checkout` now passes the plan id in session + subscription
+  metadata; the webhook sets `tenant.plan` (and thus limits) on `checkout.session.completed`, so a real
+  purchase actually grants the purchased plan. Only a known **selectable paid** plan id is honored.
+- **Portal-driven plan changes reflect:** new `planByPriceId()` maps the active Stripe price id back to a plan;
+  the webhook applies it on `customer.subscription.*` updates (fallback: subscription metadata plan).
+- **Inactive-subscription enforcement:** `getTenantPlan` now exposes `restricted` (canceled/unpaid → new
+  create actions blocked server-side via `workspaceCapability`, data stays readable) and `pastDue` (grace —
+  warn only). Comped (ETK) remains unlimited; trial-expiry behavior unchanged.
+- **UI:** `/app/billing` adds **inactive** and **past-due** banners; the Enterprise card shows **“Contact
+  sales”** (→ `/contact`) instead of an erroring upgrade button. Plan cards, usage meters, and the
+  “online checkout isn’t active” notice (when `billingLive()` is false) unchanged from Phase 19.
+- **Owner-only & workspace-scoped:** checkout/portal owner-gated (`canManageSettings`); tenant/plan derived
+  from session; webhook updates only the single matching tenant (by client_reference_id / metadata / customer).
+- **No real charges without env + explicit test mode:** activation requires `BILLING_ENABLED=true` +
+  `STRIPE_SECRET_KEY` (+ `STRIPE_PRICE_*`, `STRIPE_WEBHOOK_SECRET`); use Stripe **test mode** first. `.env.example`
+  already documents these (local-safe placeholders).
+- **Rollback tag `pre-phase21-billing → 27df9d6`. No DB migration → no backup needed.**
+- **DEPLOYED & VERIFIED LIVE 2026-06-18** (app-only, `SKIP_MIGRATE=1 deploy-app.sh`, on the VPS as `deploy`
+  via sudo): prod HEAD `dfa94f5`; image `etk-web@sha256:6536c7ee…` healthy; worker/postgres/caddy untouched.
+  **payload_migrations 17 → 17 (unchanged)**; content unchanged (gen 5/art 5/media 45). **All billing/Stripe env
+  absent → local-safe, no charges; webhook inert** (`ignored: billing-not-configured`, no DB write). Public
+  routes 200; `/app`/`/app/billing`/`/platform`/`/dashboard` → 307 (gated); `/admin` → 200. Email still
+  local-safe (Phase 20 preserved). UI states (plan cards, usage meters, disabled checkout/portal, upgrade/
+  Contact-sales buttons, trial/inactive/past-due banners) verified by code + local-safe behavior; no temp
+  billing records created. No secrets printed/committed; tenant isolation unchanged.
 
 ### Blueprint v2 Phase 20 — Real Email Provider Activation: COMPLETE & DEPLOYED (no migration)
 Activates the real email-provider layer (Resend, fetch-only, no SDK) while preserving the existing

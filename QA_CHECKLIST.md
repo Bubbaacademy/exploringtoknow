@@ -210,6 +210,18 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 32. Phase 21 — Billing/Plans/Usage real activation (Stripe-ready, local-safe verification)
+**VERIFIED LIVE 2026-06-18 — prod HEAD `dfa94f5`, image `etk-web@sha256:6536c7ee…` healthy; migrations 17 (unchanged); content unchanged (gen 5/art 5/media 45). All billing/Stripe env ABSENT → local-safe (no charges); webhook inert (`ignored: billing-not-configured`, no DB write). Public routes 200; `/app`/`/app/billing`/`/platform`/`/dashboard` 307; `/admin` 200. Email still local-safe.**
+Prod has no Stripe/billing env → must stay local-safe (no real charges); verify behavior, never expose keys.
+- [ ] `/app/billing` (owner): plan cards (Starter/Pro/Agency + Enterprise→Contact sales), usage meters reflect real counts, "online checkout isn't active" notice when `billingLive()` false, Manage-billing button present.
+- [ ] Non-owner → "Only the workspace owner can view and manage billing." Page + checkout/portal owner-gated.
+- [ ] Checkout (local-safe): POST returns `disabled` notice (no Stripe call); portal returns disabled when no env/customer.
+- [ ] Webhook inert without env: POST → `{ok:true, ignored:"billing-not-configured"}`, no tenant write.
+- [ ] Banners: trial countdown / trial-expired / **inactive (canceled/unpaid)** / **past-due** render per `subscriptionStatus`.
+- [ ] Enforcement: trial-expired AND canceled/unpaid block new requests/uploads/invites (402), data stays readable; comped (ETK) unlimited.
+- [ ] (When env later added, Stripe TEST mode first) checkout sets tenant.plan via webhook; portal plan change maps price→plan; never print keys.
+- [ ] No generation/approval/publish/email/charge side effects; tenant isolation intact; public magazine unchanged.
+
 ## 31. Phase 20 — Real email provider activation (local-safe verification)
 **VERIFIED LIVE 2026-06-18 — prod HEAD `40174e6`, image `etk-web@sha256:13af565b…` healthy; migrations 17 (unchanged); all six email env keys ABSENT → local-safe (no real send); public routes 200; `/app`/`/platform`/`/dashboard` 307; `/admin` 200; no secrets printed; content unchanged (gen 5/art 5/media 45).**
 Prod has all six email env keys ABSENT → must stay local-safe; verify behavior + report missing key NAMES only (never values).
