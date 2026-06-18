@@ -211,6 +211,7 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
 ## 31. Phase 20 — Real email provider activation (local-safe verification)
+**VERIFIED LIVE 2026-06-18 — prod HEAD `40174e6`, image `etk-web@sha256:13af565b…` healthy; migrations 17 (unchanged); all six email env keys ABSENT → local-safe (no real send); public routes 200; `/app`/`/platform`/`/dashboard` 307; `/admin` 200; no secrets printed; content unchanged (gen 5/art 5/media 45).**
 Prod has all six email env keys ABSENT → must stay local-safe; verify behavior + report missing key NAMES only (never values).
 - [ ] `/dashboard/health` → "Email delivery": provider/mode shows **local-safe**, "Missing to activate" lists key NAMES only, all six env keys show present/missing (NO values), per-flow readiness table shows local-safe.
 - [ ] Signup (temp owner): account creates and lands `/app` 200; welcome email is **best-effort** — signup still completes (local-safe = no send); no secret in logs.

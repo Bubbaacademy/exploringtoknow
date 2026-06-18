@@ -1,8 +1,8 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-17 — **Blueprint v2 Phase 20 (Real Email Provider Activation)**: code
-> complete & local-safe; provider-ready, real delivery pending env. Deploy + live verify is the only remaining
-> step (blocked on production SSH access from this environment). Prior shipped code: Phase 19 billing/plans/usage.
+> Current snapshot. Updated 2026-06-18 — **Blueprint v2 Phase 20 (Real Email Provider Activation): COMPLETE &
+> DEPLOYED & VERIFIED LIVE.** Production HEAD `40174e6`, image `etk-web@sha256:13af565b…` healthy; local-safe
+> (all email env keys absent → no real send); migrations unchanged (17). Prior shipped: Phase 19 billing/plans/usage.
 
 ---
 
@@ -219,7 +219,7 @@ Payload migrations **14 → 15**.
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
 
-### Blueprint v2 Phase 20 — Real Email Provider Activation: CODE COMPLETE & LOCAL-SAFE VERIFIED — DEPLOY PENDING (no migration)
+### Blueprint v2 Phase 20 — Real Email Provider Activation: COMPLETE & DEPLOYED (no migration)
 Activates the real email-provider layer (Resend, fetch-only, no SDK) while preserving the existing
 local-safe fallback. **Additive, no schema/migration**, no generation/approval/publish/affiliate change.
 Production currently has **all six email env keys absent**, so prod stays **local-safe**: flows complete,
@@ -251,9 +251,14 @@ status rows record `local_no_send`, nothing is sent. Real delivery is **provider
 - **Env model (env-only, no hardcoding):** `NEWSLETTER_PROVIDER=resend`, `RESEND_API_KEY`, `NEWSLETTER_FROM`,
   `NEWSLETTER_REPLY_TO` (optional), `NEWSLETTER_DOUBLE_OPT_IN=true`, `CONTACT_NOTIFY_TO`. Missing → local-safe.
 - **Rollback tag `pre-phase20-email → 125d114`** (last deployed state). **No DB migration → no backup needed.**
-- **DEPLOY PENDING:** app-only deploy (`SKIP_MIGRATE=1 bash infra/server/deploy-app.sh`) + live local-safe
-  verification not yet run — blocked on production SSH access from this environment (local key not authorized
-  on the VPS for root/deploy). Code is committed and ready; deploy + verify is the only remaining step.
+- **DEPLOYED & VERIFIED LIVE 2026-06-18** (app-only, `SKIP_MIGRATE=1 deploy-app.sh`, run on the VPS as
+  `deploy` via sudo): production HEAD `40174e6`; freshly built image `etk-web@sha256:13af565b…` running and
+  **healthy**; worker/postgres/caddy untouched. **payload_migrations 17 → 17 (unchanged, no migration)**;
+  content unchanged (generation_runs 5 / articles 5 / media 45). **All six email env keys absent → local-safe;
+  no real email sent.** Routes verified: `/ /signup /login /request-product /categories /search /sitemap.xml
+  /api/health` → 200; `/app /platform /dashboard` → 307 (gated); `/admin` → 200 (Payload login). No secrets
+  printed/committed; no generation/approval/publish/image/affiliate/content change; tenant isolation unchanged.
+  Transport: git bundle over SSH → fast-forward `main` 125d114 → 40174e6 (established no-remote pattern).
 
 ### Blueprint v2 Phase 19 — Workspace QA, Navigation & Owner UX polish: COMPLETE & DEPLOYED (no migration)
 UX/QA polish of the authenticated workspace console (the customer SaaS layer), ahead of email/Stripe/landing/

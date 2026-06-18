@@ -1,9 +1,11 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Status as confirmed by operator on the VPS (45.76.26.5). Updated: 2026-06-11T02:21:41Z._
-_This build environment has no SSH route to the VPS; live facts below are
-operator-verified. Regenerate authoritative status anytime with
-`infra/server/verify-app.sh`._
+_Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
+over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+
+**Production HEAD: `40174e6` (Blueprint v2 Phase 20 — Real Email Provider Activation, local-safe).**
+App image `etk-web@sha256:13af565b…` healthy; payload_migrations 17; email layer **local-safe** (all provider
+env keys absent → no external send; provider-ready when `NEWSLETTER_PROVIDER`/`RESEND_API_KEY`/… are set).
 
 ## Live now — all green
 | Component | Status |
