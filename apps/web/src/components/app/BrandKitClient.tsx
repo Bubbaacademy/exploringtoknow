@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { ASSET_TYPE_LABELS, ASSET_PERMISSION_LABELS } from '@/lib/brandkit';
+import { ASSET_TYPE_LABELS, ASSET_PERMISSION_LABELS } from '@/lib/brandkit-constants';
 
 type Profile = Record<string, string>;
 type Asset = { id: string | number; label: string; assetType: string; permission: string; sourceUrl?: string; notes?: string };

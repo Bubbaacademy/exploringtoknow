@@ -16,14 +16,6 @@ export async function listBrandAssets(scope: WorkspaceScope): Promise<Doc[]> {
   return wsList(scope, 'brand-assets', { sort: '-createdAt', limit: 200, depth: 0 });
 }
 
-export const ASSET_TYPES = ['logo', 'brand_image', 'product_image', 'document', 'link', 'other'] as const;
-export const ASSET_PERMISSIONS = ['user_provided', 'permission_cleared', 'needs_review', 'unknown'] as const;
-
-export const ASSET_TYPE_LABELS: Record<string, string> = {
-  logo: 'Logo', brand_image: 'Brand image', product_image: 'Product image',
-  document: 'Document', link: 'Link / reference', other: 'Other',
-};
-export const ASSET_PERMISSION_LABELS: Record<string, string> = {
-  user_provided: 'User-provided', permission_cleared: 'Permission-cleared',
-  needs_review: 'Needs review', unknown: 'Unknown',
-};
+// Re-export the pure constants so existing server imports of these from '@/lib/brandkit'
+// keep working. Client components must import them from '@/lib/brandkit-constants'.
+export { ASSET_TYPES, ASSET_PERMISSIONS, ASSET_TYPE_LABELS, ASSET_PERMISSION_LABELS } from './brandkit-constants';
