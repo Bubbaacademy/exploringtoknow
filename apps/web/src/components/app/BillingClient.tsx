@@ -42,9 +42,13 @@ export function BillingClient({ plans, currentPlanId }: { plans: Plan[]; current
               <li>{limitText(p.limits.mediaUploads)} media uploads</li>
               <li>{p.limits.customDomain ? 'Custom domain' : 'No custom domain'}</li>
             </ul>
-            <button className="adm-btn adm-btn-block" disabled={busy === p.id || p.id === currentPlanId} onClick={() => upgrade(p.id)}>
-              {busy === p.id ? 'Starting…' : p.id === currentPlanId ? 'Current plan' : `Upgrade to ${p.label}`}
-            </button>
+            {p.priceEnvKey ? (
+              <button className="adm-btn adm-btn-block" disabled={busy === p.id || p.id === currentPlanId} onClick={() => upgrade(p.id)}>
+                {busy === p.id ? 'Starting…' : p.id === currentPlanId ? 'Current plan' : `Upgrade to ${p.label}`}
+              </button>
+            ) : (
+              <a className="adm-btn adm-btn-block ghost" href="/contact" style={{ textAlign: 'center', display: 'block' }}>Contact sales</a>
+            )}
           </div>
         ))}
       </div>

@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getPayload } from 'payload';
 import config from '@payload-config';
+import { planFor } from '@/lib/plans';
+import { planByPriceId } from '@/lib/billing';
+
+/** Accept only a known, selectable, paid plan id (never enterprise/contact-only or unknown). */
+function validPaidPlan(id: unknown): string | undefined {
+  if (typeof id !== 'string') return undefined;
+  const p = planFor(id);
+  return p.id === id && p.selectable && p.priceEnvKey ? p.id : undefined;
+}
 
 /**
  * Stripe webhook. INERT unless BILLING_ENABLED=true and STRIPE_WEBHOOK_SECRET is
@@ -58,12 +67,20 @@ export async function POST(req: Request) {
       if (customerId) data.billingCustomerId = customerId;
       if (typeof obj.subscription === 'string') data.billingSubscriptionId = obj.subscription;
       data.subscriptionStatus = 'active';
+      // Reflect the purchased plan (and its limits). Only a known paid plan is honored.
+      const purchased = validPaidPlan(obj?.metadata?.plan);
+      if (purchased) data.plan = purchased;
     } else if (event.type?.startsWith('customer.subscription')) {
       data.billingSubscriptionId = String(obj.id ?? '') || undefined;
       data.subscriptionStatus = STATUS_MAP[String(obj.status)] ?? 'active';
       data.cancelAtPeriodEnd = Boolean(obj.cancel_at_period_end);
       data.currentPeriodStart = tsToDate(obj.current_period_start);
       data.currentPeriodEnd = tsToDate(obj.current_period_end);
+      // Reflect plan changes made via the billing portal: map the active price id
+      // back to a plan, falling back to the subscription metadata plan.
+      const mapped = planByPriceId(obj?.items?.data?.[0]?.price?.id);
+      const planId = mapped?.id ?? validPaidPlan(obj?.metadata?.plan);
+      if (planId) data.plan = planId;
       if (event.type === 'customer.subscription.deleted') data.subscriptionStatus = 'canceled';
     } else {
       return NextResponse.json({ ok: true, ignored: event.type }, { status: 200 });

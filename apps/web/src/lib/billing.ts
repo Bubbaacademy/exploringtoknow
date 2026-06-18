@@ -1,7 +1,7 @@
 import { getPayload } from 'payload';
 import config from '@payload-config';
 import { wsCount, type WorkspaceScope, type WorkspaceSession } from './workspace';
-import { planFor, type Plan, type PlanLimits } from './plans';
+import { planFor, SELECTABLE_PLANS, type Plan, type PlanLimits } from './plans';
 import type { Doc } from './tenant';
 
 /**
@@ -46,6 +46,10 @@ export type TenantPlan = {
   limits: PlanLimits;
   trialEndsAt: Date | null;
   trialExpired: boolean;
+  /** Subscription is inactive (canceled/unpaid) → new create actions are blocked. */
+  restricted: boolean;
+  /** Last payment failed (grace period) → warn, but not blocked. */
+  pastDue: boolean;
   comped: boolean;
 };
 
@@ -56,7 +60,22 @@ export function getTenantPlan(tenant: Doc | null): TenantPlan {
   const trialEndsAt = tenant?.trialEndsAt ? new Date(String(tenant.trialEndsAt)) : null;
   const comped = plan.id === 'comped' || status === 'comped' || status === 'manual';
   const trialExpired = !comped && status === 'trialing' && !!trialEndsAt && trialEndsAt.getTime() < Date.now();
-  return { plan, planId: plan.id, status, limits: plan.limits, trialEndsAt, trialExpired, comped };
+  const restricted = !comped && (status === 'canceled' || status === 'unpaid');
+  const pastDue = !comped && status === 'past_due';
+  return { plan, planId: plan.id, status, limits: plan.limits, trialEndsAt, trialExpired, restricted, pastDue, comped };
+}
+
+/**
+ * Server-side reverse map: resolve a Stripe price id back to its plan via each
+ * selectable plan's price env key. Returns null if no plan matches (or no env).
+ * Lets the webhook reflect portal-driven plan changes into the tenant's plan.
+ */
+export function planByPriceId(priceId: string | null | undefined): Plan | null {
+  if (!priceId) return null;
+  for (const p of SELECTABLE_PLANS) {
+    if (p.priceEnvKey && process.env[p.priceEnvKey] && process.env[p.priceEnvKey] === priceId) return p;
+  }
+  return null;
 }
 
 export type ActionKey = 'create_request' | 'upload_media' | 'invite';
@@ -66,6 +85,7 @@ export async function workspaceCapability(ws: WorkspaceSession, action: ActionKe
   const tp = getTenantPlan(ws.tenant);
   if (tp.comped) return { ok: true };
   if (tp.trialExpired) return { ok: false, reason: 'Your free trial has ended. Upgrade to continue.' };
+  if (tp.restricted) return { ok: false, reason: 'Your subscription is inactive. Update billing to continue.' };
   const usage = await getWorkspaceUsage(ws.scope);
   const limit = action === 'create_request' ? tp.limits.requestsPerMonth
     : action === 'upload_media' ? tp.limits.mediaUploads

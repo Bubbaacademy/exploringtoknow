@@ -44,6 +44,14 @@ export default async function BillingPage() {
           <div className="adm-panel warn" style={{ marginBottom: 16 }}>
             <strong>Your free trial has ended.</strong> Your data is safe and readable, but creating new requests, uploads, or invites is paused. Upgrade below to continue.
           </div>
+        ) : tp.restricted ? (
+          <div className="adm-panel warn" style={{ marginBottom: 16 }}>
+            <strong>Your subscription is inactive (status: {tp.status}).</strong> Your data is safe and readable, but creating new requests, uploads, or invites is paused. Use “Manage billing” to reactivate.
+          </div>
+        ) : tp.pastDue ? (
+          <div className="adm-panel warn" style={{ marginBottom: 16 }}>
+            <strong>Your last payment didn’t go through.</strong> Please update your payment method via “Manage billing” to avoid interruption.
+          </div>
         ) : tp.status === 'trialing' && daysLeft != null ? (
           <div className="adm-panel" style={{ marginBottom: 16 }}>
             <strong>Free trial.</strong> {daysLeft} day{daysLeft === 1 ? '' : 's'} remaining — no credit card required.

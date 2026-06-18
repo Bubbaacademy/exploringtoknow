@@ -47,7 +47,12 @@ export async function POST(req: Request) {
     const customerId = ws.tenant?.billingCustomerId ? String(ws.tenant.billingCustomerId) : '';
     if (customerId) params.set('customer', customerId);
     else if (ws.ctx.user.email) params.set('customer_email', String(ws.ctx.user.email));
+    // Carry tenant + plan on both the session and the subscription so the webhook
+    // can set the tenant's plan (and limits) when checkout completes.
+    params.set('metadata[tenantId]', String(ws.scope.tenantId));
+    params.set('metadata[plan]', plan.id);
     params.set('subscription_data[metadata][tenantId]', String(ws.scope.tenantId));
+    params.set('subscription_data[metadata][plan]', plan.id);
 
     const r = await fetch('https://api.stripe.com/v1/checkout/sessions', {
       method: 'POST',
