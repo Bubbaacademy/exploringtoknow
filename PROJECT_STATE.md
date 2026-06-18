@@ -1,9 +1,9 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-18 — **Blueprint v2 Phase 21 (Billing/Plans/Usage real activation, Stripe-
-> ready production path): COMPLETE & DEPLOYED & VERIFIED LIVE.** Production HEAD `dfa94f5`, image
-> `etk-web@sha256:6536c7ee…` healthy; migrations unchanged (17). Billing **local-safe** (no Stripe env → no
-> charges, inert webhook); email still local-safe (Phase 20). Prior shipped: Phase 20 email, Phase 19 billing foundation.
+> Current snapshot. Updated 2026-06-18 — **Blueprint v2 Phase 22 (Brand Kit / Asset Library foundation): COMPLETE
+> & DEPLOYED & VERIFIED LIVE.** Production HEAD `4ea5b66`, image `etk-web@sha256:11d175ad…` healthy; **migrations
+> 18** (phase22 brand-kit applied). Email + billing still **local-safe**. Prior shipped: Phase 21 billing activation,
+> Phase 20 email, Phase 19 billing foundation.
 
 ---
 
@@ -219,6 +219,36 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Blueprint v2 Phase 22 — Brand Kit / Asset Library foundation: COMPLETE & DEPLOYED (migration 17 → 18)
+Workspace-level brand identity + asset foundation that future outputs (magazine, landing pages, social, video,
+ads) will draw on. **Additive** — two new workspace-scoped collections + an additive/idempotent migration. No AI/
+generation/approval/publish/image/email/billing/Stripe/external calls; public magazine + platform/admin/dashboard
+gates + email & billing local-safe modes all unchanged.
+- **New scoped collections:** `brand-profiles` (one per workspace — brand/publication name, description, target
+  audience, voice/tone, editorial style, primary/accent color, website, social links, affiliate-disclosure notes,
+  focus notes) and `brand-assets` (metadata entries: label, type [logo/brand image/product image/document/link/
+  other], permission [user-provided/permission-cleared/needs-review/unknown], source URL, notes). Both
+  `scopedRead('deny')` + super-only native mutate + `stampTenantWorkspace`. **No binary upload pipeline** this
+  phase (per safety guidance) — assets are references/metadata; the tenant-safe Media store can be wired later.
+- **Migration `20260618_010000_phase22_brand_kit`:** 2 tables, 2 enums, indexes, tenant/workspace FKs, and the
+  `payload_locked_documents_rels` columns. Additive + idempotent (guarded CREATE TYPE / IF NOT EXISTS / guarded FKs).
+- **Data layer + access:** `lib/brandkit.ts` (workspace-scoped reads), `lib/brandkit-constants.ts` (client-safe
+  labels), `canManageBrand` (owner **or** workspace admin). Routes `/api/app/brand` (upsert profile) and
+  `/api/app/brand/assets` (create + delete) are owner/admin-gated; tenant/workspace are **server-derived** (client
+  ids ignored); delete re-verifies workspace ownership before removing.
+- **UI:** `/app/brand` (premium console style) — owner/admin get the editable brand form + asset manager; viewer/
+  editor get a read-only view. Empty states + helper copy ("powers every future output"). Sidebar link under Content.
+- **Rollback tag `pre-phase22-brandkit → 4a2736d`; backup `pre-phase22_20260618_202657.sql.gz` (gzip-verified).**
+- **DEPLOYED & VERIFIED LIVE 2026-06-18** (on the VPS as `deploy` via sudo): prod HEAD `4ea5b66`; image
+  `etk-web@sha256:11d175ad…` healthy; worker/postgres/caddy untouched. **payload_migrations 17 → 18** (phase22
+  migration applied cleanly, 32ms). New tables/columns/enums confirmed via psql (exact snake_case match to config).
+  Content unchanged (gen 5/art 5/media 45). Public routes 200; `/app/brand`/`/app`/`/platform`/`/dashboard` → 307
+  (gated); `/admin` → 200. Email + billing still local-safe. **Tenant isolation, Payload config↔DB match, and the
+  owner/admin role gate verified via a temp owner (signup → created brand profile + asset → rendered on /app/brand;
+  only the temp tenant held brand data, ETK had none; unauth POST → 401) → temp account fully deleted, zero residue.**
+  No secrets printed/committed. _(First build attempt failed fast — a client component imported a server-only module;
+  fixed by splitting client-safe constants. Deploy aborts before migrate on build failure, so prod was never at risk.)_
 
 ### Blueprint v2 Phase 21 — Billing / Plans / Usage real activation (Stripe-ready production path): COMPLETE & DEPLOYED (no migration)
 Completes the Stripe-ready production billing path on top of the Phase 19 foundation. **Additive, no

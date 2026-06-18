@@ -210,6 +210,14 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 33. Phase 22 — Brand Kit / Asset Library foundation
+**VERIFIED LIVE 2026-06-18 — prod HEAD `4ea5b66`, image `etk-web@sha256:11d175ad…` healthy; migrations 17→18 (phase22 applied); content unchanged (gen 5/art 5/media 45). Tenant isolation + config↔DB + owner role gate verified via temp owner (created→checked→deleted, zero residue). Email + billing still local-safe.**
+- [ ] `/app/brand` (owner/admin): editable brand form (name, publication, description, audience, voice, editorial style, colors, website, social links, affiliate disclosure, focus notes) + asset manager (add/remove, type + permission labels). Empty states + helper copy.
+- [ ] Viewer/editor → read-only brand view (no edit form); page route 307 when unauthenticated.
+- [ ] Role gate: `/api/app/brand` and `/api/app/brand/assets` reject non-owner/admin (403) and unauthenticated (401); writes are server-scoped (client tenant/workspace ids ignored); delete re-checks workspace ownership.
+- [ ] Tenant isolation: a workspace only ever sees its own brand profile/assets; no ETK/global brand data leaks; one profile per workspace.
+- [ ] Safety: no AI/generation/publish/image/email/billing/Stripe/external calls; public magazine + /platform + /dashboard + /admin gates unchanged; no binary upload added (metadata/reference entries only).
+
 ## 32. Phase 21 — Billing/Plans/Usage real activation (Stripe-ready, local-safe verification)
 **VERIFIED LIVE 2026-06-18 — prod HEAD `dfa94f5`, image `etk-web@sha256:6536c7ee…` healthy; migrations 17 (unchanged); content unchanged (gen 5/art 5/media 45). All billing/Stripe env ABSENT → local-safe (no charges); webhook inert (`ignored: billing-not-configured`, no DB write). Public routes 200; `/app`/`/app/billing`/`/platform`/`/dashboard` 307; `/admin` 200. Email still local-safe.**
 Prod has no Stripe/billing env → must stay local-safe (no real charges); verify behavior, never expose keys.
