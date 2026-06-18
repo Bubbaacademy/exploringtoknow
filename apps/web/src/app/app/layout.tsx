@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 // Workspace-safe navigation — every link stays under /app (never Payload /admin).
 const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
   { group: 'Overview', items: [['Dashboard', '/app']] },
-  { group: 'Content', items: [['Articles', '/app/articles'], ['Products', '/app/products'], ['Categories', '/app/categories'], ['Media', '/app/media']] },
+  { group: 'Content', items: [['Articles', '/app/articles'], ['Products', '/app/products'], ['Categories', '/app/categories'], ['Media', '/app/media'], ['Brand Kit', '/app/brand']] },
   { group: 'Workflow', items: [['Product Requests', '/app/product-requests'], ['Editorial Console', '/app/editorial']] },
   { group: 'Growth', items: [['Analytics', '/app/analytics'], ['Newsletter', '/app/newsletter'], ['Contact Inbox', '/app/contact']] },
   { group: 'Workspace', items: [['Team', '/app/team'], ['Settings', '/app/settings']] },

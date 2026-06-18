@@ -18,6 +18,10 @@ export const canManageTeam = (r: Role | null | undefined): boolean => r === 'wor
 /** Manage sensitive workspace settings. Owner only. */
 export const canManageSettings = (r: Role | null | undefined): boolean => r === 'workspace_owner';
 
+/** Manage the workspace brand kit + asset library. Owner or workspace admin. */
+export const canManageBrand = (r: Role | null | undefined): boolean =>
+  r === 'workspace_owner' || r === 'workspace_admin';
+
 /** Roles an owner may assign to a teammate (never owner/super-admin). */
 export const INVITABLE_ROLES: ReadonlyArray<Exclude<Role, 'workspace_owner' | 'platform_super_admin'>> = [
   'workspace_admin', 'editor', 'viewer',
