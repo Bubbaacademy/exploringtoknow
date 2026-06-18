@@ -25,6 +25,7 @@ import { Memberships } from './collections/Memberships';
 import { WorkspaceInvitations } from './collections/WorkspaceInvitations';
 import { BrandProfiles } from './collections/BrandProfiles';
 import { BrandAssets } from './collections/BrandAssets';
+import { LandingPages } from './collections/LandingPages';
 import { BrandProfileGlobal } from './globals/BrandProfile';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -45,7 +46,7 @@ export default buildConfig({
   },
   collections: [
     Tenants, Workspaces, Memberships, WorkspaceInvitations,
-    BrandProfiles, BrandAssets,
+    BrandProfiles, BrandAssets, LandingPages,
     Users, Media, Brands, Categories, Authors,
     Products, ProductIntelligence, ContentBriefs, Articles, SocialPosts, GenerationRuns,
     ProductRequests, NewsletterSubscribers, ContactMessages, ArticleViews,
