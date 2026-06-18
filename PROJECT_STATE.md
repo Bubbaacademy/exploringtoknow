@@ -218,6 +218,23 @@ Payload migrations **14 → 15**.
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
 
+### Blueprint v2 Phase 19 — Workspace QA, Navigation & Owner UX polish: COMPLETE & DEPLOYED (no migration)
+UX/QA polish of the authenticated workspace console (the customer SaaS layer), ahead of email/Stripe/landing/
+social/ads activation. No schema/business-logic change; app-only deploy.
+- **Auth fix:** `/api/auth/logout` GET now redirects to `PAYLOAD_PUBLIC_SERVER_URL` (never an internal/
+  localhost host that the proxy may place on `req.url`) — sign-out always lands on the public homepage. Signup/
+  login auto-login + `/app` redirects use relative paths (verified no local/dev URL leaks to users).
+- **/app dashboard:** role-aware quick links (owner → Invite team + Billing; writers → Request an article);
+  aligned onboarding copy; new **“More from your workspace”** positioning surface (Landing pages · Social ·
+  Short-form video · Ad campaigns · Performance insights — labeled **planned / coming soon**, not overpromised),
+  positioning ETK as an owned-media OS where the magazine is the first output.
+- **Verified live (temp owner, created→checked→deleted):** signup→`/app` 200; **all 13 `/app/*` pages render
+  200**; **logout → `https://exploringtoknow.com/`** (not localhost); **zero** `/admin`//platform//dashboard//
+  admin-collections/Payload-CMS links in `/app`; gates intact (`/platform`+`/dashboard` → 307 `/app`, unauth
+  `/app` → 307 `/login`, `/admin` denied); public routes 200, draft 404; isolation intact; generation_runs=5 /
+  articles=5 / published=3 / media=45 / fingerprints stable; jobs/locks 0; worker untouched; residue 0.
+  Rollback tag `prod-pre-phase19v2-polish → f83367e`. (No DB migration → no backup needed.)
+
 ### Phase 19 — Billing / Plans / Usage limits foundation: COMPLETE & DEPLOYED (migration 16 → 17)
 SaaS monetization foundation, **local-safe** (no real charges without Stripe env). Additive only; no
 generation/approval/publish/affiliate/content change.
@@ -590,9 +607,9 @@ keyboard nav, screen-reader basics, overflow/spacing/hierarchy (see QA_CHECKLIST
 
 | Item | Value |
 |---|---|
-| Production HEAD | **`main @ d540823`** (Phase 19 — billing/plans/usage) + docs commit |
+| Production HEAD | **`main @ 618d98e`** (Blueprint v2 Phase 19 — workspace QA/owner polish) + docs |
 | Local `main` HEAD | matches prod (clean) |
-| Running app image | `etk-web@sha256:347a20e5…` (verified == freshly-built) |
+| Running app image | `etk-web@sha256:a66e921d…` (verified == freshly-built) |
 | Public signup | **OPEN** — `PUBLIC_SIGNUP_ENABLED=true` in VPS env (FREE_TRIAL_DAYS=14, DEFAULT_WORKSPACE_PLAN=trial, REQUIRE_EMAIL_VERIFICATION=false) |
 | Worker / Postgres / Caddy | **Unchanged** — not rebuilt/recreated (worker up 2d, Postgres/Caddy up 6d, 0 restarts) |
 | App health | Healthy, freshly recreated (app-only, SKIP_MIGRATE) |
