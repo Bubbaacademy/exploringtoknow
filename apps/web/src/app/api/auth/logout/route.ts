@@ -9,8 +9,10 @@ export async function POST() {
 }
 
 export async function GET(req: Request) {
-  const url = new URL('/', req.url);
-  const res = NextResponse.redirect(url);
+  // Redirect to the PUBLIC origin (never an internal/localhost host that a proxy
+  // may put on req.url) so sign-out always lands on the real public homepage.
+  const base = process.env.PAYLOAD_PUBLIC_SERVER_URL || new URL(req.url).origin;
+  const res = NextResponse.redirect(new URL('/', base));
   clearAuthCookie(res);
   return res;
 }
