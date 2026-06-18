@@ -1,7 +1,7 @@
 import { requireWorkspace } from '@/lib/workspace';
 import { workspaceDashboard } from '@/lib/workspace';
 import { ROLE_LABEL, type Role } from '@/lib/tenant';
-import { canWrite } from '@/lib/roles';
+import { canWrite, canManageTeam, canManageSettings } from '@/lib/roles';
 import { TopBar, Section, Stat, Card, Empty, StatusBadge, WsLink, fmtDate } from './_ui';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +16,9 @@ const ONBOARDING = [
 ] as const;
 
 const PIPELINE = ['Request', 'Product', 'Brief / Intelligence', 'Article draft', 'Editorial review', 'Published'] as const;
+
+// Positioning: this workspace is an owned-media OS — more output types are planned.
+const ROADMAP = ['Landing pages', 'Social posts', 'Short-form video', 'Ad campaigns', 'Performance insights'] as const;
 
 export default async function AppHome() {
   const ws = await requireWorkspace();
@@ -94,8 +97,9 @@ export default async function AppHome() {
                 ))}
               </ol>
               <p className="adm-note" style={{ marginTop: 10 }}>
-                Workspace product &amp; article tooling is being set up for your account. Explore the live magazine to see the
-                kind of content-commerce pages you’ll create. Nothing is generated or published without your explicit approval.
+                Start with editorial content (articles, buying guides, reviews) — then landing pages, social posts and ad
+                campaigns arrive in upcoming updates. Explore the live magazine to see what you’ll create. Nothing is
+                generated or published without your explicit approval.
               </p>
             </Card>
           </Section>
@@ -111,6 +115,18 @@ export default async function AppHome() {
             <p className="adm-note" style={{ marginTop: 10 }}>
               Every step is manual and reviewed by you — a product request becomes a product, then a researched brief, then an
               article draft you review before publishing. Nothing auto-generates or auto-publishes.
+            </p>
+          </div>
+        </Section>
+
+        <Section title="More from your workspace">
+          <div className="adm-panel">
+            <p style={{ margin: '0 0 8px' }}>Your workspace is an <strong>owned-media operating system</strong> — editorial is just the first output.</p>
+            <div className="adm-quicklinks" aria-hidden="true">
+              {ROADMAP.map((s) => <span key={s} className="adm-badge">{s} · planned</span>)}
+            </div>
+            <p className="adm-note" style={{ marginTop: 10 }}>
+              These outputs are on the roadmap and aren’t available yet — your products, images and brand will power them when they ship. You’ll always review and approve before anything publishes or runs.
             </p>
           </div>
         </Section>
@@ -138,9 +154,10 @@ export default async function AppHome() {
         <Section title="Quick links">
           <div className="adm-quicklinks">
             <WsLink href="/app/articles" primary>Manage articles</WsLink>
-            <WsLink href="/app/product-requests">Product requests</WsLink>
+            {canWrite(ws.role) ? <WsLink href="/app/product-requests/new">Request an article</WsLink> : null}
             <WsLink href="/app/analytics">Analytics</WsLink>
-            <WsLink href="/app/settings">Workspace settings</WsLink>
+            {canManageTeam(ws.role) ? <WsLink href="/app/team">Invite team</WsLink> : null}
+            {canManageSettings(ws.role) ? <WsLink href="/app/billing">Billing</WsLink> : null}
           </div>
         </Section>
       </div>
