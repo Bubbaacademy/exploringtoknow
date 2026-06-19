@@ -18,6 +18,7 @@ import * as migration_20260617_020000_phase19_billing from './20260617_020000_ph
 import * as migration_20260618_010000_phase22_brand_kit from './20260618_010000_phase22_brand_kit';
 import * as migration_20260618_020000_phase23_landing_pages from './20260618_020000_phase23_landing_pages';
 import * as migration_20260618_030000_phase24_landing_enrich from './20260618_030000_phase24_landing_enrich';
+import * as migration_20260619_010000_phase25_social_studio from './20260619_010000_phase25_social_studio';
 
 export const migrations = [
   {
@@ -119,5 +120,10 @@ export const migrations = [
     up: migration_20260618_030000_phase24_landing_enrich.up,
     down: migration_20260618_030000_phase24_landing_enrich.down,
     name: '20260618_030000_phase24_landing_enrich',
+  },
+  {
+    up: migration_20260619_010000_phase25_social_studio.up,
+    down: migration_20260619_010000_phase25_social_studio.down,
+    name: '20260619_010000_phase25_social_studio',
   },
 ];
