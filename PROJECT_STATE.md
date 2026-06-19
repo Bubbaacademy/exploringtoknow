@@ -1,9 +1,9 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-18 — **Blueprint v2 Phase 22 (Brand Kit / Asset Library foundation): COMPLETE
-> & DEPLOYED & VERIFIED LIVE.** Production HEAD `4ea5b66`, image `etk-web@sha256:11d175ad…` healthy; **migrations
-> 18** (phase22 brand-kit applied). Email + billing still **local-safe**. Prior shipped: Phase 21 billing activation,
-> Phase 20 email, Phase 19 billing foundation.
+> Current snapshot. Updated 2026-06-18 — **Blueprint v2 Phase 23 (Landing Page foundation): COMPLETE & DEPLOYED &
+> VERIFIED LIVE.** Production HEAD `9bcc25c`, image `etk-web@sha256:b9202591…` healthy; **migrations 19** (phase23
+> landing-pages applied). Manual create/edit/publish; public `/lp/[workspaceSlug]/[slug]` (published-only). Email +
+> billing still **local-safe**. Prior shipped: Phase 22 brand kit, Phase 21 billing activation, Phase 20 email.
 
 ---
 
@@ -219,6 +219,40 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Blueprint v2 Phase 23 — Landing Page foundation: COMPLETE & DEPLOYED (migration 18 → 19)
+First workspace-scoped landing-page system: owner/admin/editor create, edit, preview, and **manually** publish
+simple pages. **Additive** — one new collection + an additive/idempotent migration. **No AI/generation, no
+auto-publish, no external/ad/social/image-API calls, no email, no billing/Stripe.** Public magazine + platform/
+admin/dashboard gates + email & billing local-safe modes all unchanged.
+- **New scoped collection `landing-pages`:** title, slug (**unique per workspace** via a DB unique index), status
+  (draft / ready_for_review / published / archived), pageType (affiliate_bridge / product_promo / lead_capture_
+  placeholder / general), headline, subheadline, body (plain text → paragraphs), CTA label + URL (http(s) only),
+  disclosure text, SEO title/description, noindex (default on), publishedAt, relatedProduct/relatedRequest,
+  createdBy/updatedBy, tenant/workspace. `scopedRead('deny')` + super-only native mutate + `stampTenantWorkspace`.
+- **Migration `20260618_020000_phase23_landing_pages`:** table, 2 enums, indexes, `UNIQUE(workspace_id, slug)`,
+  product/request/user/tenant/workspace FKs, locked-doc rels. Additive + idempotent.
+- **APIs:** `/api/app/landing-pages` (create) + `/api/app/landing-pages/[id]` (PATCH update, POST status action,
+  DELETE) — `canWrite` (owner/admin/editor); tenant/workspace + createdBy/updatedBy **server-derived**; page
+  ownership re-verified on every edit/delete; CTA URL validated (rejects `javascript:`/`data:`); **publish is an
+  explicit, guarded action** (requires title+slug; never automatic).
+- **Console UI `/app/landing-pages`** (list / new / [id], premium style): status badges, role-aware controls
+  (owner/admin/editor edit; viewer read-only), brand-kit empty-state hint, helper copy ("reviewed and published
+  manually — nothing is generated or published automatically"). Sidebar link under Content.
+- **Public route `/lp/[workspaceSlug]/[slug]`:** renders **only published** pages (draft/archived/missing/wrong-
+  workspace → 404); uses the workspace Brand Kit colors (hex-validated, no CSS injection); CTA validated +
+  `rel="nofollow sponsored noopener"`; disclosure shown when set; `noindex` respected (default no-index).
+- **Brand Kit integration:** the list/new pages prompt to set up `/app/brand` when no profile exists; the public
+  page reads brand colors. No Brand Kit data duplicated. Asset references only — no binary upload added.
+- **Rollback tag `pre-phase23-landing → 173c389`; backup `pre-phase23_20260618_231405.sql.gz` (gzip-verified).**
+- **DEPLOYED & VERIFIED LIVE 2026-06-18** (on the VPS as `deploy` via sudo): prod HEAD `9bcc25c`; image
+  `etk-web@sha256:b9202591…` healthy; worker/postgres/caddy untouched. **payload_migrations 18 → 19** (applied,
+  19ms); table/columns/enums/unique-index confirmed via psql (exact config match). Content unchanged (gen 5/art 5/
+  media 45). Routes: public magazine 200; `/app/landing-pages`/`/app`/`/platform`/`/dashboard` → 307; `/admin` → 200;
+  `/lp/*/missing` & `/lp/missing/*` → 404. **Verified via temp owner (created→checked→deleted, zero residue):**
+  create draft → draft hidden (404) → CTA `javascript:` rejected (422) → explicit publish → public page live (200,
+  content rendered) → cross-workspace `/lp/exploringtoknow/<slug>` → 404 (isolation; total landing_pages scoped to
+  the temp tenant, ETK had none) → owner/auth role gate enforced. No secrets printed/committed.
 
 ### Blueprint v2 Phase 22 — Brand Kit / Asset Library foundation: COMPLETE & DEPLOYED (migration 17 → 18)
 Workspace-level brand identity + asset foundation that future outputs (magazine, landing pages, social, video,

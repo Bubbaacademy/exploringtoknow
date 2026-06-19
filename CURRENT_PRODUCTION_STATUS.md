@@ -3,10 +3,11 @@
 _Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
 over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `4ea5b66` (Blueprint v2 Phase 22 — Brand Kit / Asset Library foundation).**
-App image `etk-web@sha256:11d175ad…` healthy; **payload_migrations 18** (phase22 brand-kit applied: brand_profiles
-+ brand_assets, additive). Workspace Brand Kit live at `/app/brand` (owner/admin editable, tenant-scoped); no
-binary upload yet (metadata/reference entries only). Prior: Phase 21 billing activation (Stripe-ready, local-safe).
+**Production HEAD: `9bcc25c` (Blueprint v2 Phase 23 — Landing Page foundation).**
+App image `etk-web@sha256:b9202591…` healthy; **payload_migrations 19** (phase23 landing_pages applied, additive).
+Workspace landing pages live at `/app/landing-pages` (owner/admin/editor create/edit/**manually** publish,
+tenant-scoped); public published pages at `/lp/[workspaceSlug]/[slug]` (published-only, brand-styled, CTA
+validated). Brand Kit live at `/app/brand` (Phase 22). No binary upload yet. Email + billing still local-safe.
 - **Billing layer: local-safe** — no Stripe/billing env → no real charges, checkout/portal return disabled,
   webhook inert. Stripe-ready: activates only with `BILLING_ENABLED=true` + `STRIPE_SECRET_KEY` (+ `STRIPE_PRICE_*`,
   `STRIPE_WEBHOOK_SECRET`); use Stripe **test mode** first. On real checkout the webhook sets the tenant's plan;

@@ -210,6 +210,15 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 34. Phase 23 — Landing Page foundation
+**VERIFIED LIVE 2026-06-18 — prod HEAD `9bcc25c`, image `etk-web@sha256:b9202591…` healthy; migrations 18→19; content unchanged (gen 5/art 5/media 45). Temp-owner E2E (created→checked→deleted, zero residue): draft hidden (404) → CTA javascript: rejected (422) → explicit publish → public 200 with content → cross-workspace 404 (isolation). Public magazine + gates unchanged.**
+- [ ] `/app/landing-pages` (owner/admin/editor): list + New; `/new` create form; `/[id]` edit with status actions (ready / publish / unpublish / archive / restore) + delete. Viewer → read-only.
+- [ ] Publishing is explicit (button + confirm); nothing publishes automatically; publish requires title+slug.
+- [ ] Public `/lp/[workspaceSlug]/[slug]`: published only; draft/archived/missing/wrong-workspace → 404; brand colors applied (hex-validated); CTA http(s)-only with rel="nofollow sponsored noopener"; disclosure shown when set; noindex respected.
+- [ ] Tenant isolation: a workspace only sees its own pages; slug unique per workspace; same slug under another workspace 404s; no ETK/global leakage.
+- [ ] Role/access: create/edit/delete require canWrite (401 unauth, 403 viewer); writes server-scoped (client ids ignored); CTA rejects javascript:/data:.
+- [ ] Safety: no AI/generation/article/approval/email/billing/Stripe/ad/social/image-API calls; public magazine routes unchanged; no binary upload added.
+
 ## 33. Phase 22 — Brand Kit / Asset Library foundation
 **VERIFIED LIVE 2026-06-18 — prod HEAD `4ea5b66`, image `etk-web@sha256:11d175ad…` healthy; migrations 17→18 (phase22 applied); content unchanged (gen 5/art 5/media 45). Tenant isolation + config↔DB + owner role gate verified via temp owner (created→checked→deleted, zero residue). Email + billing still local-safe.**
 - [ ] `/app/brand` (owner/admin): editable brand form (name, publication, description, audience, voice, editorial style, colors, website, social links, affiliate disclosure, focus notes) + asset manager (add/remove, type + permission labels). Empty states + helper copy.
