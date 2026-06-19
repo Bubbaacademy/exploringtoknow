@@ -17,7 +17,11 @@ export function SectionsEditor({ initial }: { initial: Section[] }) {
   const remove = (i: number) => setSections((s) => s.filter((_, j) => j !== i));
   const move = (i: number, d: number) => setSections((s) => {
     const j = i + d; if (j < 0 || j >= s.length) return s;
-    const c = [...s]; [c[i], c[j]] = [c[j], c[i]]; return c;
+    const c = [...s];
+    const a = c[i]; const b = c[j];
+    if (a === undefined || b === undefined) return s;
+    c[i] = b; c[j] = a;
+    return c;
   });
 
   return (

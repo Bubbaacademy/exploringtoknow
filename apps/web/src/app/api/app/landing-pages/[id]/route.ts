@@ -26,7 +26,7 @@ async function guard(idStr: string) {
 export async function PATCH(req: Request, { params }: Ctx) {
   const { id } = await params;
   const g = await guard(id);
-  if (g.err) return g.err;
+  if ('err' in g) return g.err;
   const { ws } = g;
 
   let body: Record<string, unknown>;
@@ -74,7 +74,7 @@ const ACTIONS: Record<string, { status: string; setPublishedAt?: boolean }> = {
 export async function POST(req: Request, { params }: Ctx) {
   const { id } = await params;
   const g = await guard(id);
-  if (g.err) return g.err;
+  if ('err' in g) return g.err;
   const { ws, existing } = g;
 
   let body: Record<string, unknown>;
@@ -102,7 +102,7 @@ export async function POST(req: Request, { params }: Ctx) {
 export async function DELETE(_req: Request, { params }: Ctx) {
   const { id } = await params;
   const g = await guard(id);
-  if (g.err) return g.err;
+  if ('err' in g) return g.err;
   try {
     const payload = await getPayload({ config });
     await payload.delete({ collection: 'landing-pages', id: id as never, overrideAccess: true });
