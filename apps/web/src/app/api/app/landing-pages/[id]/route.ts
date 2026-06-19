@@ -3,8 +3,8 @@ import { getPayload } from 'payload';
 import config from '@payload-config';
 import { resolveWorkspace } from '@/lib/workspace';
 import { canWrite } from '@/lib/roles';
-import { getWorkspaceLandingPage, landingSlugTaken } from '@/lib/landing';
-import { LP_PAGE_TYPES, slugify, isSafeHttpUrl } from '@/lib/landing-constants';
+import { getWorkspaceLandingPage, landingSlugTaken, relationInWorkspace } from '@/lib/landing';
+import { LP_PAGE_TYPES, slugify, isSafeHttpUrl, normalizeSections } from '@/lib/landing-constants';
 
 /**
  * Update / status-transition / delete a workspace landing page. canWrite, and the
@@ -49,6 +49,10 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (typeof body[k] === 'string') data[k] = str(body[k], max) || null;
   }
   if (typeof body.noindex === 'boolean') data.noindex = body.noindex;
+  if ('sections' in body) data.sections = normalizeSections(body.sections);
+  // Related product/request: accept null to clear, or a value that belongs to this workspace.
+  if ('relatedProduct' in body) data.relatedProduct = (body.relatedProduct && await relationInWorkspace(ws!.scope, 'products', body.relatedProduct)) ? body.relatedProduct : null;
+  if ('relatedRequest' in body) data.relatedRequest = (body.relatedRequest && await relationInWorkspace(ws!.scope, 'product-requests', body.relatedRequest)) ? body.relatedRequest : null;
 
   try {
     const payload = await getPayload({ config });

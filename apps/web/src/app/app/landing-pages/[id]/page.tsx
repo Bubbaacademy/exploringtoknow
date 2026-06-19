@@ -1,13 +1,16 @@
 import { notFound } from 'next/navigation';
 import { requireWorkspace } from '@/lib/workspace';
 import { canWrite } from '@/lib/roles';
-import { getWorkspaceLandingPage } from '@/lib/landing';
+import { getWorkspaceLandingPage, listProductOptions, listRequestOptions, landingViewTotals } from '@/lib/landing';
+import { getBrandProfile } from '@/lib/brandkit';
 import { LP_STATUS_LABELS, LP_PAGE_TYPE_LABELS, lpStatusVariant } from '@/lib/landing-constants';
 import { TopBar, Card, WsLink } from '../../_ui';
 import { LandingPageEditor } from '@/components/app/LandingPageEditor';
 
 export const dynamic = 'force-dynamic';
 type Args = { params: Promise<{ id: string }> };
+
+const refId = (v: unknown): string | number | null => (v == null ? null : (typeof v === 'object' ? ((v as { id?: string | number }).id ?? null) : (v as string | number)));
 
 export default async function EditLandingPage({ params }: Args) {
   const { id } = await params;
@@ -17,6 +20,14 @@ export default async function EditLandingPage({ params }: Args) {
   const d = doc!;
   const editable = canWrite(ws.role);
   const wsSlug = (ws.workspace?.slug as string) || undefined;
+  const [products, requests, brandDoc, totals] = await Promise.all([
+    listProductOptions(ws.scope), listRequestOptions(ws.scope), getBrandProfile(ws.scope), landingViewTotals(ws.scope),
+  ]);
+  const brand = brandDoc ? {
+    publicationName: (brandDoc.publicationName as string) || '', brandVoice: (brandDoc.brandVoice as string) || '',
+    accentColor: (brandDoc.accentColor as string) || '', affiliateDisclosure: (brandDoc.affiliateDisclosure as string) || '',
+  } : null;
+  const views = totals[String(d.id)] || 0;
 
   const page = {
     id: d.id as string | number,
@@ -25,24 +36,25 @@ export default async function EditLandingPage({ params }: Args) {
     body: (d.body as string) || '', ctaLabel: (d.ctaLabel as string) || '', ctaUrl: (d.ctaUrl as string) || '',
     disclosureText: (d.disclosureText as string) || '', seoTitle: (d.seoTitle as string) || '', seoDescription: (d.seoDescription as string) || '',
     noindex: d.noindex !== false, publishedAt: (d.publishedAt as string) || '',
+    relatedProduct: refId(d.relatedProduct), relatedRequest: refId(d.relatedRequest),
+    sections: Array.isArray(d.sections) ? d.sections : [],
   };
 
   return (
     <>
       <TopBar
         title={page.title || 'Landing page'}
-        sub={<>Status: {LP_STATUS_LABELS[page.status] || page.status} · {LP_PAGE_TYPE_LABELS[page.pageType] || page.pageType}</>}
+        sub={<>Status: {LP_STATUS_LABELS[page.status] || page.status} · {LP_PAGE_TYPE_LABELS[page.pageType] || page.pageType} · {views} view{views === 1 ? '' : 's'}</>}
         actions={<WsLink href="/app/landing-pages">Back to list</WsLink>}
       />
       <div className="adm-content">
         {editable ? (
-          <LandingPageEditor page={page} workspaceSlug={wsSlug} />
+          <LandingPageEditor page={page} workspaceSlug={wsSlug} products={products} requests={requests} brand={brand} views={views} />
         ) : (
           <Card>
             <div className="adm-row"><span className="t">Status</span><span className={`adm-badge ${lpStatusVariant(page.status)}`}>{LP_STATUS_LABELS[page.status] || page.status}</span></div>
+            <div className="adm-row"><span className="t">Views</span><strong>{views}</strong></div>
             <div className="adm-row"><span className="t">Headline</span><strong>{page.headline || '—'}</strong></div>
-            <div className="adm-row"><span className="t">Body</span><span style={{ whiteSpace: 'pre-wrap' }}>{page.body || '—'}</span></div>
-            <div className="adm-row"><span className="t">CTA</span><span>{page.ctaLabel || '—'} {page.ctaUrl ? <a href={page.ctaUrl} target="_blank" rel="noreferrer noopener">{page.ctaUrl}</a> : null}</span></div>
             <p className="adm-note" style={{ marginTop: 8 }}>Your role has read-only access. Ask an owner, admin, or editor to make changes.</p>
           </Card>
         )}

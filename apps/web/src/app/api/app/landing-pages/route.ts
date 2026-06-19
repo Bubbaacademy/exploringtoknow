@@ -3,8 +3,8 @@ import { getPayload } from 'payload';
 import config from '@payload-config';
 import { resolveWorkspace } from '@/lib/workspace';
 import { canWrite } from '@/lib/roles';
-import { landingSlugTaken } from '@/lib/landing';
-import { LP_PAGE_TYPES, slugify, isSafeHttpUrl } from '@/lib/landing-constants';
+import { landingSlugTaken, relationInWorkspace } from '@/lib/landing';
+import { LP_PAGE_TYPES, slugify, isSafeHttpUrl, normalizeSections } from '@/lib/landing-constants';
 
 /**
  * Create a workspace landing page (draft). canWrite (owner/admin/editor). Tenant/
@@ -34,9 +34,14 @@ export async function POST(req: Request) {
   const pageType = (LP_PAGE_TYPES as readonly string[]).includes(String(body.pageType)) ? String(body.pageType) : 'general';
 
   // Unique slug within the workspace (derive from title if not supplied).
-  let base = slugify(str(body.slug, 80) || title) || 'page';
+  const base = slugify(str(body.slug, 80) || title) || 'page';
   let slug = base;
   for (let i = 2; i <= 50 && (await landingSlugTaken(ws.scope, slug)); i++) slug = `${base}-${i}`;
+
+  // Related product/request — only if it belongs to this workspace (no cross-tenant refs).
+  const relatedProduct = (await relationInWorkspace(ws.scope, 'products', body.relatedProduct)) ? body.relatedProduct : undefined;
+  const relatedRequest = (await relationInWorkspace(ws.scope, 'product-requests', body.relatedRequest)) ? body.relatedRequest : undefined;
+  const sections = normalizeSections(body.sections);
 
   try {
     const payload = await getPayload({ config });
@@ -47,12 +52,14 @@ export async function POST(req: Request) {
         headline: str(body.headline, 300) || undefined,
         subheadline: str(body.subheadline, 500) || undefined,
         body: str(body.body, 20000) || undefined,
+        sections: sections.length ? sections : undefined,
         ctaLabel: str(body.ctaLabel, 120) || undefined,
         ctaUrl: ctaUrl || undefined,
         disclosureText: str(body.disclosureText, 2000) || undefined,
         seoTitle: str(body.seoTitle, 200) || undefined,
         seoDescription: str(body.seoDescription, 500) || undefined,
         noindex: true,
+        relatedProduct: relatedProduct as never, relatedRequest: relatedRequest as never,
         createdBy: ws.ctx.user.id, updatedBy: ws.ctx.user.id,
         tenant: ws.scope.tenantId, workspace: ws.scope.workspaceId,
       } as never,

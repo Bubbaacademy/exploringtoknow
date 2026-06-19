@@ -34,6 +34,54 @@ export async function landingSlugTaken(scope: WorkspaceScope, slug: string, exce
   return r.totalDocs > 0;
 }
 
+/** Workspace products for the editor picker (id + label + safe prefill URL). */
+export async function listProductOptions(scope: WorkspaceScope): Promise<Array<{ id: string | number; label: string; url: string }>> {
+  const docs = await wsList(scope, 'products', { sort: '-updatedAt', limit: 200, depth: 0 });
+  return docs.map((p) => ({
+    id: p.id as string | number,
+    label: String(p.name ?? p.title ?? `Product ${p.id}`),
+    url: String(p.affiliateUrl ?? p.externalUrl ?? ''),
+  }));
+}
+
+/** Workspace product-requests for the editor picker. */
+export async function listRequestOptions(scope: WorkspaceScope): Promise<Array<{ id: string | number; label: string; url: string }>> {
+  const docs = await wsList(scope, 'product-requests', { sort: '-createdAt', limit: 200, depth: 0 });
+  return docs.map((r) => ({
+    id: r.id as string | number,
+    label: String(r.productName ?? `Request ${r.id}`),
+    url: String(r.affiliateUrl ?? r.productUrl ?? ''),
+  }));
+}
+
+/** Is `id` a record in `collection` that belongs to the actor's workspace? */
+export async function relationInWorkspace(scope: WorkspaceScope, collection: 'products' | 'product-requests', id: unknown): Promise<boolean> {
+  if (id == null || scope.tenantId == null || scope.workspaceId == null) return false;
+  const payload = await getPayload({ config });
+  const r = await payload.count({
+    collection,
+    where: { and: [{ id: { equals: id as never } }, { tenant: { equals: scope.tenantId } }, { workspace: { equals: scope.workspaceId } }] },
+  });
+  return r.totalDocs > 0;
+}
+
+/** Total real view counts per landing page in the actor's workspace (summed across days). */
+export async function landingViewTotals(scope: WorkspaceScope): Promise<Record<string, number>> {
+  if (scope.workspaceId == null) return {};
+  const payload = await getPayload({ config });
+  const r = await payload.find({
+    collection: 'landing-page-views', limit: 5000, depth: 0, pagination: false, overrideAccess: true,
+    where: { and: [{ tenant: { equals: scope.tenantId } }, { workspace: { equals: scope.workspaceId } }] },
+  });
+  const totals: Record<string, number> = {};
+  for (const row of r.docs as Doc[]) {
+    const lp = row.landingPage;
+    const key = String(lp && typeof lp === 'object' ? (lp as Doc).id : lp);
+    totals[key] = (totals[key] || 0) + Number(row.count || 0);
+  }
+  return totals;
+}
+
 /** Public reader: published page in the named workspace + that workspace's brand. */
 export async function getPublishedLandingPage(workspaceSlug: string, slug: string): Promise<{ page: Doc; workspace: Doc; brand: Doc | null } | null> {
   const payload = await getPayload({ config });
