@@ -210,6 +210,15 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 35. Phase 24 — Landing Page enrichment + analytics
+**VERIFIED LIVE 2026-06-19 — prod HEAD `b11d01d`, image `etk-web@sha256:97024fcf…` healthy; migrations 19→20; content unchanged (gen 5/art 5/media 45). Temp-owner E2E (created→checked→deleted, zero residue): cross-tenant relatedProduct rejected (null); top-level + section CTA javascript: rejected/stripped; sections render; analytics counted 2 real pings, excluded bot; scoped to temp tenant.**
+- [ ] Editor: product/request picker shows only workspace items (empty-state links to /app/products & /app/product-requests); "Use link → CTA" prefills CTA (manual, http(s)-validated); structured sections editor (add/remove/reorder, 7 types); Brand Kit helper + "use brand disclosure"; analytics view count shown.
+- [ ] Cross-tenant tamper: setting relatedProduct/relatedRequest to a foreign id is ignored server-side (stored null).
+- [ ] CTA validation: top-level + cta_block section URLs accept only http/https; javascript:/data: rejected or stripped; public CTAs keep rel="nofollow sponsored noopener".
+- [ ] Public /lp renders structured sections (escaped, no raw HTML); falls back to body when no sections; Phase 23 pages still render; published-only (404 otherwise); noindex respected.
+- [ ] Analytics: /api/lp-track counts only published pages, one row per page/day, bot-filtered, no PII; counts scoped to workspace on list + detail; no fake metrics.
+- [ ] Safety: no AI/generation/approval/publish-automation/email/billing/social/ad/image/external calls; affiliate logic unchanged; public magazine + gates unchanged; migration additive (down() safe).
+
 ## 34. Phase 23 — Landing Page foundation
 **VERIFIED LIVE 2026-06-18 — prod HEAD `9bcc25c`, image `etk-web@sha256:b9202591…` healthy; migrations 18→19; content unchanged (gen 5/art 5/media 45). Temp-owner E2E (created→checked→deleted, zero residue): draft hidden (404) → CTA javascript: rejected (422) → explicit publish → public 200 with content → cross-workspace 404 (isolation). Public magazine + gates unchanged.**
 - [ ] `/app/landing-pages` (owner/admin/editor): list + New; `/new` create form; `/[id]` edit with status actions (ready / publish / unpublish / archive / restore) + delete. Viewer → read-only.

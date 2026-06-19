@@ -1,9 +1,9 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-18 — **Blueprint v2 Phase 23 (Landing Page foundation): COMPLETE & DEPLOYED &
-> VERIFIED LIVE.** Production HEAD `9bcc25c`, image `etk-web@sha256:b9202591…` healthy; **migrations 19** (phase23
-> landing-pages applied). Manual create/edit/publish; public `/lp/[workspaceSlug]/[slug]` (published-only). Email +
-> billing still **local-safe**. Prior shipped: Phase 22 brand kit, Phase 21 billing activation, Phase 20 email.
+> Current snapshot. Updated 2026-06-19 — **Blueprint v2 Phase 24 (Landing Page enrichment + analytics): COMPLETE &
+> DEPLOYED & VERIFIED LIVE.** Production HEAD `b11d01d`, image `etk-web@sha256:97024fcf…` healthy; **migrations 20**
+> (phase24 landing enrich applied). Product/request picker + CTA prefill, structured sections, real view analytics —
+> all manual/tenant-scoped. Email + billing still **local-safe**. Prior: Phase 23 landing foundation, Phase 22 brand kit.
 
 ---
 
@@ -219,6 +219,39 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Blueprint v2 Phase 24 — Landing Page enrichment + analytics: COMPLETE & DEPLOYED (migration 19 → 20)
+Enriches Phase 23 landing pages: workspace product/request picker + CTA prefill, structured sections, Brand Kit
+helper context, and **real** first-party view analytics. **Additive** — one new column + one new table. Still
+manual, tenant-scoped, no AI/auto-publish/external/ad/social/image calls.
+- **Product/request picker:** editor selects a workspace product or product-request; the relation is **verified
+  server-side to belong to the workspace** (`relationInWorkspace`) — cross-tenant ids are ignored (tamper-proof).
+  Empty states link to `/app/products` and `/app/product-requests`.
+- **CTA prefill (manual):** a button copies the selected product/request affiliate/product URL into the CTA URL
+  field; the user must review + save. Validated http(s) only (rejects `javascript:`/`data:`/etc.); global affiliate
+  logic untouched.
+- **Structured sections (`landing_pages.sections` jsonb):** types text / feature_list / pros_cons /
+  product_highlight / disclosure / faq_placeholder / cta_block — **whitelisted + normalized server-side**
+  (`normalizeSections`), rendered **escaped** on the public page (no raw HTML; section CTA URLs http(s)-only). The
+  Phase 23 `body` is preserved and rendered as a fallback when there are no sections (existing pages keep working).
+- **Brand Kit integration:** editor shows publication/voice/accent/disclosure helper context + a "use brand
+  disclosure" fill; soft prompt to `/app/brand` when absent. No Brand Kit data duplicated.
+- **Analytics (`landing-page-views`, mirrors article-views):** one row per (published page, UTC day) incremented
+  by `/api/lp-track` (published-only, bot-filtered, privacy-light — no IP/PII; tenant/workspace copied from the
+  page). Real counts shown on the list + detail (server-scoped to the workspace). No fake/placeholder metrics.
+- **Migration `20260618_030000_phase24_landing_enrich`:** `ALTER landing_pages ADD sections jsonb` + create
+  `landing_page_views` (+indexes/FKs/locked-doc rels). Additive + idempotent; `down()` drops both safely.
+- **Rollback tag `pre-phase24-landing-enrich → 91b817e`; backup `pre-phase24_20260619_012220.sql.gz` (gzip-verified).**
+- **DEPLOYED & VERIFIED LIVE 2026-06-19** (on the VPS as `deploy` via sudo): prod HEAD `b11d01d`; image
+  `etk-web@sha256:97024fcf…` healthy; worker/postgres/caddy untouched. **payload_migrations 19 → 20** (applied,
+  24ms); `sections` jsonb + `landing_page_views` confirmed via psql. Content unchanged (gen 5/art 5/media 45).
+  Routes: public magazine 200; `/app/landing-pages`/`/app`/`/platform`/`/dashboard` → 307; `/admin` → 200;
+  `/lp/*/missing` → 404. **Verified via temp owner (created→checked→deleted, zero residue):** cross-tenant
+  `relatedProduct` **rejected** (stored null) · top-level CTA `javascript:` → 422 · section `javascript:` CTA
+  **stripped** (0 in rendered HTML) · sections render on the public page · publish → public 200 · **analytics
+  counted 2 real pings, excluded the bot ping**, scoped to the temp tenant (ETK had none). No secrets printed.
+  _(First build attempt failed on a strict `noUncheckedIndexedAccess` swap + a union-narrowing access; fixed; deploy
+  aborts before migrate on build failure so prod was never at risk.)_
 
 ### Blueprint v2 Phase 23 — Landing Page foundation: COMPLETE & DEPLOYED (migration 18 → 19)
 First workspace-scoped landing-page system: owner/admin/editor create, edit, preview, and **manually** publish

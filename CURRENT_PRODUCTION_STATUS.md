@@ -3,11 +3,12 @@
 _Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
 over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `9bcc25c` (Blueprint v2 Phase 23 — Landing Page foundation).**
-App image `etk-web@sha256:b9202591…` healthy; **payload_migrations 19** (phase23 landing_pages applied, additive).
-Workspace landing pages live at `/app/landing-pages` (owner/admin/editor create/edit/**manually** publish,
-tenant-scoped); public published pages at `/lp/[workspaceSlug]/[slug]` (published-only, brand-styled, CTA
-validated). Brand Kit live at `/app/brand` (Phase 22). No binary upload yet. Email + billing still local-safe.
+**Production HEAD: `b11d01d` (Blueprint v2 Phase 24 — Landing Page enrichment + analytics).**
+App image `etk-web@sha256:97024fcf…` healthy; **payload_migrations 20** (phase24: landing_pages.sections jsonb +
+landing_page_views table, additive). Landing pages at `/app/landing-pages` now have a workspace product/request
+picker + manual CTA prefill, structured sections, Brand Kit helper, and **real** view analytics (one row per
+published page/day, bot-filtered, scoped). Public `/lp/[workspaceSlug]/[slug]` published-only, sections rendered
+safely. Brand Kit `/app/brand` (Phase 22). No binary upload yet. Email + billing still local-safe.
 - **Billing layer: local-safe** — no Stripe/billing env → no real charges, checkout/portal return disabled,
   webhook inert. Stripe-ready: activates only with `BILLING_ENABLED=true` + `STRIPE_SECRET_KEY` (+ `STRIPE_PRICE_*`,
   `STRIPE_WEBHOOK_SECRET`); use Stripe **test mode** first. On real checkout the webhook sets the tenant's plan;
