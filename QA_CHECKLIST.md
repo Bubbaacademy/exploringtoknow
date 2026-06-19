@@ -210,6 +210,17 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 36. Phase 25 — Social Studio foundation
+**VERIFIED LIVE 2026-06-19 — prod HEAD `3d293c3`, image `etk-web` (id `sha256:96918ee9…`) healthy; migrations 20→21; content unchanged (gen 5/art 5/media 45); legacy `social_posts` untouched (0 rows). Temp-owner E2E (created→checked→deleted, zero residue): unauth create 401; CTA javascript: → 422; cross-tenant relatedProduct + foreign relatedLandingPage both stored null; post stamped to temp tenant (ETK had 0); approve → approved_to_copy; copied → copyCount 1; pickers scoped (no ETK leak). Manual + copy-export only — no social/AI/schedule/publish/external calls.**
+- [ ] `/app/social-posts` (owner/admin/editor): list + New; `/new` create form; `/[id]` edit with status actions (Mark ready / Approve to copy / Back to draft / Archive / Restore) + delete. Viewer → read-only.
+- [ ] Editor: channel + format selectors with per-channel helper copy; hook/caption/hashtags; CTA label + URL; product/request/landing-page pickers (workspace-only; "Use link → CTA" manual prefill, http(s)-validated); Brand Kit helper + "use brand disclosure"; live preview/copy panel composes the post text; copy-to-clipboard with non-browser fallback.
+- [ ] Approve-to-copy is the furthest a post goes — NOTHING is generated, scheduled, or posted to any network; no platform API/OAuth. The `copied` counter is first-party only (no external call), allowed only when approved.
+- [ ] Tenant isolation: a workspace only sees its own social posts; posts stamped server-side to the actor's tenant/workspace; no ETK/global leakage; pickers show only workspace products/requests/landing pages.
+- [ ] Cross-tenant tamper: relatedProduct/relatedRequest/relatedLandingPage/relatedBrandProfile set to a foreign id is ignored server-side (stored null).
+- [ ] Role/access: create/edit/action/delete require canWrite (401 unauth, 403 viewer); writes server-scoped (client tenant/workspace ids ignored); CTA rejects javascript:/data:.
+- [ ] Create-from-landing-page: landing-page detail "Create social post" → preselects related landing page + prefills (published) public URL into a draft; no copy generated, no publish, no API.
+- [ ] Safety: no AI/generation/approval/publish/schedule/social/ad/image/video/email/billing/external calls; legacy `social-posts` pipeline untouched; public magazine + landing pages + gates unchanged; migration additive (down() safe).
+
 ## 35. Phase 24 — Landing Page enrichment + analytics
 **VERIFIED LIVE 2026-06-19 — prod HEAD `b11d01d`, image `etk-web@sha256:97024fcf…` healthy; migrations 19→20; content unchanged (gen 5/art 5/media 45). Temp-owner E2E (created→checked→deleted, zero residue): cross-tenant relatedProduct rejected (null); top-level + section CTA javascript: rejected/stripped; sections render; analytics counted 2 real pings, excluded bot; scoped to temp tenant.**
 - [ ] Editor: product/request picker shows only workspace items (empty-state links to /app/products & /app/product-requests); "Use link → CTA" prefills CTA (manual, http(s)-validated); structured sections editor (add/remove/reorder, 7 types); Brand Kit helper + "use brand disclosure"; analytics view count shown.

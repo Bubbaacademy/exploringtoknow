@@ -3,12 +3,14 @@
 _Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
 over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `b11d01d` (Blueprint v2 Phase 24 — Landing Page enrichment + analytics).**
-App image `etk-web@sha256:97024fcf…` healthy; **payload_migrations 20** (phase24: landing_pages.sections jsonb +
-landing_page_views table, additive). Landing pages at `/app/landing-pages` now have a workspace product/request
-picker + manual CTA prefill, structured sections, Brand Kit helper, and **real** view analytics (one row per
-published page/day, bot-filtered, scoped). Public `/lp/[workspaceSlug]/[slug]` published-only, sections rendered
-safely. Brand Kit `/app/brand` (Phase 22). No binary upload yet. Email + billing still local-safe.
+**Production HEAD: `3d293c3` (Blueprint v2 Phase 25 — Social Studio foundation).**
+App image `etk-web` (id `sha256:96918ee9…`) healthy; **payload_migrations 21** (phase25: `social_studio_posts` table,
+additive). New **Social Studio** at `/app/social-posts` — owner/admin/editor **manually** create, review, organize,
+and **copy-export** social post drafts (channel/format, hook/caption/hashtags, CTA, disclosure) connected to products /
+requests / landing pages / Brand Kit, with a live preview/copy panel. **Manual + clipboard export ONLY** — no
+social-network API/OAuth, no auto-posting, no scheduling execution, no AI generation. Deliberately a SEPARATE collection
+from the legacy `social-posts` AI/worker FB+IG pipeline (left untouched). Landing pages `/app/landing-pages` (Phase
+23/24) + Brand Kit `/app/brand` (Phase 22) unchanged. No binary upload yet. Email + billing still local-safe.
 - **Billing layer: local-safe** — no Stripe/billing env → no real charges, checkout/portal return disabled,
   webhook inert. Stripe-ready: activates only with `BILLING_ENABLED=true` + `STRIPE_SECRET_KEY` (+ `STRIPE_PRICE_*`,
   `STRIPE_WEBHOOK_SECRET`); use Stripe **test mode** first. On real checkout the webhook sets the tenant's plan;
@@ -50,4 +52,5 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production matches commit `c158c5f` (worker fix); docs at `827637f`+.
+Production (VPS `/opt/exploringtoknow`, branch `main`) and local are in sync at `3d293c3` (Phase 25 feat);
+the docs commit on top is docs-only. Worker fix baseline `c158c5f` unchanged.

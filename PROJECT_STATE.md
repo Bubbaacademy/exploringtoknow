@@ -1,9 +1,11 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-19 — **Blueprint v2 Phase 24 (Landing Page enrichment + analytics): COMPLETE &
-> DEPLOYED & VERIFIED LIVE.** Production HEAD `b11d01d`, image `etk-web@sha256:97024fcf…` healthy; **migrations 20**
-> (phase24 landing enrich applied). Product/request picker + CTA prefill, structured sections, real view analytics —
-> all manual/tenant-scoped. Email + billing still **local-safe**. Prior: Phase 23 landing foundation, Phase 22 brand kit.
+> Current snapshot. Updated 2026-06-19 — **Blueprint v2 Phase 25 (Social Studio foundation): COMPLETE & DEPLOYED &
+> VERIFIED LIVE.** Production HEAD `3d293c3`, image `etk-web` (id `sha256:96918ee9…`) healthy; **migrations 21**
+> (phase25 social studio applied). New `/app/social-posts` Social Studio — manually author/review/organize/copy-export
+> social post drafts connected to products/requests/landing pages/Brand Kit. Manual + clipboard export ONLY: no
+> social/AI/scheduling/publishing/external calls. Distinct from the legacy `social-posts` AI pipeline (untouched).
+> Email + billing still **local-safe**. Prior: Phase 24 landing enrich+analytics, Phase 23 landing foundation, Phase 22 brand kit.
 
 ---
 
@@ -219,6 +221,55 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Blueprint v2 Phase 25 — Social Studio foundation: COMPLETE & DEPLOYED (migration 20 → 21)
+First workspace-scoped Social Studio: owner/admin/editor **manually** create, review, organize, and copy-export
+social post drafts connected to products / requests / landing pages / Brand Kit. **Additive** — one NEW collection +
+an additive/idempotent migration. **Manual authoring + clipboard export ONLY** — no social-network API/OAuth, no
+auto-posting, no scheduling execution, no AI generation, no email/billing/ad/image/video/external calls. Public
+magazine + platform/admin/dashboard gates + email & billing local-safe modes + Phase 23/24 landing behavior all unchanged.
+- **Design decision — NEW collection, legacy left intact:** the pre-existing `social-posts` collection is wired into
+  the AI/worker FB+IG **publish pipeline** (article-based, `platform`/`scheduledFor`/`publishedAt`). Phase 25 adds a
+  SEPARATE collection **`social-studio-posts`** for the manual marketing-OS studio, so the worker pipeline is never
+  touched. (`social_posts` table confirmed unchanged, 0 rows, post-deploy.)
+- **New scoped collection `social-studio-posts`:** internal `name`; `channel` (instagram / tiktok / youtube_shorts /
+  linkedin / facebook / x_twitter / pinterest / generic); `format` (text / image_post / carousel/short_video/story/
+  reel placeholders); `status` (draft / ready_for_review / approved_to_copy / archived); hook, caption, hashtags[]
+  (normalized), CTA label + URL (http(s) only), disclosure, platform notes, internal notes; relatedProduct/
+  relatedRequest/relatedLandingPage/relatedBrandProfile; approvedAt, copyCount/copiedAt; createdBy/updatedBy; tenant/
+  workspace. `scopedRead('deny')` + super-only native mutate + `stampTenantWorkspace`. **No binary upload** (references
+  only — consistent with Phase 22/23).
+- **Migration `20260619_010000_phase25_social_studio`:** create `social_studio_posts` (3 enums, indexes, product/
+  request/landing-page/brand-profile/user/tenant/workspace FKs, locked-doc rel). Additive + idempotent; `down()` drops
+  the table + 3 enums + locked-rel column safely. **Pre-validated in a rolled-back tx on prod** (26 columns + all FKs OK).
+- **APIs:** `/api/app/social-posts` (create) + `/api/app/social-posts/[id]` (PATCH update, POST status action /
+  `copied` counter, DELETE) — `canWrite` (owner/admin/editor); tenant/workspace + createdBy/updatedBy **server-derived**;
+  post ownership re-verified on every edit/action/delete; CTA URL validated (rejects `javascript:`/`data:`); related
+  refs accepted **only if they belong to the actor's workspace** (`relationInWorkspace` over products / requests /
+  landing-pages / brand-profiles — cross-tenant ids ignored). **Approve-to-copy is the furthest a post goes** — there is
+  NO publish/schedule/platform call anywhere. The `copied` action is a first-party usage counter (no external call),
+  allowed only once approved.
+- **Console UI `/app/social-posts`** (list / new / [id], premium style): status + channel/format badges, role-aware
+  controls (viewer read-only), **live preview/copy panel** (composes hook→caption→CTA→hashtags→disclosure; clipboard
+  export with non-browser fallback), per-channel honest helper copy, product/request/landing-page pickers (with manual
+  "Use link → CTA" prefill), Brand Kit helper (voice/audience/accent/disclosure) + "use brand disclosure", hashtag
+  normalizer. Sidebar **"Social Studio"** under Content.
+- **Create-from-landing-page (item 11, shipped):** landing-page detail gains a **"Create social post"** action →
+  `/app/social-posts/new?fromLanding=<id>` preselects the landing page + prefills the CTA from its (published) public
+  URL into a **draft**. No copy generated, no publish, no API.
+- **Rollback tag `pre-phase25-social → 588145a`; backup `pre-phase25_20260619_055625.sql.gz` (gzip-verified).**
+- **DEPLOYED & VERIFIED LIVE 2026-06-19** (on the VPS as `deploy` via sudo): prod HEAD `3d293c3`; image `etk-web`
+  (id `sha256:96918ee9…`) healthy; worker/postgres/caddy untouched. **payload_migrations 20 → 21** (phase25 applied,
+  18ms); `social_studio_posts` table + 26 columns + locked-rel confirmed via psql; legacy `social_posts` untouched.
+  Content unchanged (gen 5/art 5/media 45); 0 pending jobs. Routes: public magazine 200; `/app/social-posts`(+`/new`)/
+  `/app`/`/platform`/`/dashboard` → 307; `/admin` → 200. **Verified via temp owner (created→checked→deleted, zero
+  residue):** unauth create **401**; CTA `javascript:` → **422**; valid draft created; **cross-tenant `relatedProduct`
+  (ETK product) stored null**; **foreign `relatedLandingPage` stored null**; post **stamped to the temp tenant (not
+  ETK)** and **ETK had 0 social posts** (isolation); approve → `approved_to_copy` (approvedAt set); `copied` → copyCount
+  1 (copiedAt set); new-post page pickers **scoped** ("No products/requests yet" — no ETK leak), zero `/admin/collections`
+  links. Temp tenant/user/workspace/membership/post fully deleted (tenants/users back to baseline; gen 5/art 5/media 45
+  unchanged). No secrets printed/committed; no generation/approval/publish/email/billing/social/ad/image/video/external
+  side effects; affiliate logic unchanged.
 
 ### Blueprint v2 Phase 24 — Landing Page enrichment + analytics: COMPLETE & DEPLOYED (migration 19 → 20)
 Enriches Phase 23 landing pages: workspace product/request picker + CTA prefill, structured sections, Brand Kit
