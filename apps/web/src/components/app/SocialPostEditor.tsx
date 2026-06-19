@@ -2,11 +2,12 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  SS_CHANNEL_LABELS, SS_FORMAT_LABELS, SS_STATUS_LABELS, SS_CHANNEL_HELP,
+  SS_CHANNEL_LABELS, SS_FORMAT_LABELS, SS_STATUS_LABELS, SS_CHANNEL_HELP, SS_CHANNELS, SS_PRIORITY_LABELS,
   ssStatusVariant, isSafeHttpUrl, hashtagsToString, normalizeHashtags, composeSocialText,
 } from '@/lib/social-constants';
 
 type Opt = { id: string | number; label: string; url: string };
+type Member = { id: string | number; label: string };
 type Brand = { publicationName?: string; brandVoice?: string; targetAudience?: string; accentColor?: string; affiliateDisclosure?: string };
 type Post = {
   id?: string | number; name?: string; channel?: string; format?: string; status?: string;
@@ -14,10 +15,12 @@ type Post = {
   disclosureText?: string; platformNotes?: string; notes?: string;
   relatedProduct?: string | number | null; relatedRequest?: string | number | null;
   relatedLandingPage?: string | number | null; copyCount?: number;
+  plannedDate?: string; campaignLabel?: string; contentPillar?: string; priority?: string;
+  assignee?: string | number | null; calendarNotes?: string; duplicatedFrom?: string | number | null;
 };
 
-export function SocialPostEditor({ post, products = [], requests = [], landingPages = [], brand, brandProfileId }:
-  { post?: Post; products?: Opt[]; requests?: Opt[]; landingPages?: Opt[]; brand?: Brand | null; brandProfileId?: string | number | null }) {
+export function SocialPostEditor({ post, products = [], requests = [], landingPages = [], assignees = [], brand, brandProfileId }:
+  { post?: Post; products?: Opt[]; requests?: Opt[]; landingPages?: Opt[]; assignees?: Member[]; brand?: Brand | null; brandProfileId?: string | number | null }) {
   const router = useRouter();
   const editing = Boolean(post?.id);
   const [busy, setBusy] = useState(false);
@@ -35,6 +38,7 @@ export function SocialPostEditor({ post, products = [], requests = [], landingPa
   const [relatedProduct, setRelatedProduct] = useState(String(post?.relatedProduct ?? ''));
   const [relatedRequest, setRelatedRequest] = useState(String(post?.relatedRequest ?? ''));
   const [relatedLandingPage, setRelatedLandingPage] = useState(String(post?.relatedLandingPage ?? ''));
+  const [dupChannels, setDupChannels] = useState<Record<string, boolean>>({});
 
   const composed = useMemo(
     () => composeSocialText({ hook, caption, ctaLabel, ctaUrl, hashtags: normalizeHashtags(hashtags), disclosureText: disclosure }),
@@ -55,10 +59,24 @@ export function SocialPostEditor({ post, products = [], requests = [], landingPa
       hook, caption, hashtags: normalizeHashtags(hashtags),
       ctaLabel, ctaUrl, disclosureText: disclosure,
       platformNotes: get('platformNotes'), notes: get('notes'),
+      plannedDate: get('plannedDate'), campaignLabel: get('campaignLabel'), contentPillar: get('contentPillar'),
+      priority: get('priority'), assignee: get('assignee') || null, calendarNotes: get('calendarNotes'),
       relatedProduct: relatedProduct || null, relatedRequest: relatedRequest || null,
       relatedLandingPage: relatedLandingPage || null,
       relatedBrandProfile: brandProfileId ?? null,
     };
+  }
+
+  async function duplicate() {
+    const channels = Object.keys(dupChannels).filter((c) => dupChannels[c]);
+    if (!channels.length) { setErr('Pick at least one channel to duplicate into.'); return; }
+    setBusy(true); setErr(''); setMsg('');
+    try {
+      const r = await fetch(`/api/app/social-posts/${post!.id}/duplicate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channels }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.ok) setErr(j.error || 'Could not duplicate.');
+      else { setMsg(`Created ${j.created?.length || 0} draft${(j.created?.length || 0) === 1 ? '' : 's'}. Find them in your list.`); setDupChannels({}); router.refresh(); }
+    } catch { setErr('Network error.'); } finally { setBusy(false); }
   }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -136,6 +154,22 @@ export function SocialPostEditor({ post, products = [], requests = [], landingPa
             </span>
           </div>
           <p className="adm-note" style={{ marginTop: 8 }}>Manual authoring only — nothing is generated, scheduled, or posted to any network. “Approve to copy” just unlocks the copy-to-clipboard export.</p>
+          {post?.duplicatedFrom ? <p className="adm-note">Duplicated from another post in this workspace.</p> : null}
+        </div>
+      ) : null}
+
+      {editing ? (
+        <div className="adm-card" style={{ marginBottom: 16 }}>
+          <div className="adm-row" style={{ marginBottom: 8 }}><span className="t">Duplicate to other channels</span></div>
+          <p className="adm-note" style={{ marginBottom: 8 }}>Creates new <strong>drafts</strong> (copy is not rewritten or generated) you can adapt per channel. Nothing is posted.</p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+            {SS_CHANNELS.map((c) => (
+              <label key={c} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                <input type="checkbox" checked={!!dupChannels[c]} onChange={(e) => setDupChannels((s) => ({ ...s, [c]: e.target.checked }))} /> {SS_CHANNEL_LABELS[c]}
+              </label>
+            ))}
+          </div>
+          <button type="button" className="adm-btn ghost" disabled={busy} onClick={duplicate}>Duplicate to selected channels</button>
         </div>
       ) : null}
 
@@ -213,6 +247,27 @@ export function SocialPostEditor({ post, products = [], requests = [], landingPa
 
           <div className="field"><label htmlFor="platformNotes">Platform notes / constraints (manual)</label><textarea id="platformNotes" name="platformNotes" rows={2} defaultValue={post?.platformNotes || ''} maxLength={2000} placeholder="e.g. needs a 9:16 cover; link goes in bio, not caption." /></div>
           <div className="field"><label htmlFor="notes">Internal notes</label><textarea id="notes" name="notes" rows={2} defaultValue={post?.notes || ''} maxLength={4000} /></div>
+
+          <div className="adm-panel" style={{ marginBottom: 12 }}><strong>Planning</strong> — manual only. A planned date places the post on the calendar; nothing is scheduled to run.</div>
+          <div className="adm-cols-2">
+            <div className="field"><label htmlFor="plannedDate">Planned date</label><input id="plannedDate" name="plannedDate" type="date" defaultValue={post?.plannedDate || ''} /></div>
+            <div className="field"><label htmlFor="priority">Priority</label>
+              <select id="priority" name="priority" className="adm-select" defaultValue={post?.priority || 'normal'}>
+                {Object.entries(SS_PRIORITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="adm-cols-2">
+            <div className="field"><label htmlFor="campaignLabel">Campaign</label><input id="campaignLabel" name="campaignLabel" defaultValue={post?.campaignLabel || ''} maxLength={200} placeholder="Spring launch" /></div>
+            <div className="field"><label htmlFor="contentPillar">Content pillar</label><input id="contentPillar" name="contentPillar" defaultValue={post?.contentPillar || ''} maxLength={200} placeholder="Education / Product / Social proof" /></div>
+          </div>
+          <div className="field"><label htmlFor="assignee">Assignee</label>
+            <select id="assignee" name="assignee" className="adm-select" defaultValue={String(post?.assignee ?? '')}>
+              <option value="">— unassigned —</option>
+              {assignees.map((m) => <option key={m.id} value={String(m.id)}>{m.label}</option>)}
+            </select>
+          </div>
+          <div className="field"><label htmlFor="calendarNotes">Planning notes</label><textarea id="calendarNotes" name="calendarNotes" rows={2} defaultValue={post?.calendarNotes || ''} maxLength={2000} /></div>
 
           <button className="adm-btn" type="submit" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save changes' : 'Create draft'}</button>
           {editing ? <button className="adm-btn ghost" type="button" disabled={busy} onClick={del} style={{ marginLeft: 8 }}>Delete</button> : null}

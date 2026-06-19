@@ -41,7 +41,7 @@ export async function listLandingPageOptions(scope: WorkspaceScope, workspaceSlu
   });
 }
 
-type RelColl = 'products' | 'product-requests' | 'landing-pages' | 'brand-profiles';
+type RelColl = 'products' | 'product-requests' | 'landing-pages' | 'brand-profiles' | 'social-studio-posts';
 
 /** Is `id` a record in `collection` that belongs to the actor's workspace? */
 export async function relationInWorkspace(scope: WorkspaceScope, collection: RelColl, id: unknown): Promise<boolean> {
@@ -52,4 +52,69 @@ export async function relationInWorkspace(scope: WorkspaceScope, collection: Rel
     where: { and: [{ id: { equals: id as never } }, { tenant: { equals: scope.tenantId } }, { workspace: { equals: scope.workspaceId } }] },
   });
   return r.totalDocs > 0;
+}
+
+/** Is `userId` a member of the actor's workspace? (assignee verification) */
+export async function userIsWorkspaceMember(scope: WorkspaceScope, userId: unknown): Promise<boolean> {
+  if (userId == null || scope.workspaceId == null) return false;
+  const payload = await getPayload({ config });
+  const r = await payload.count({
+    collection: 'memberships',
+    where: { and: [{ user: { equals: userId as never } }, { workspace: { equals: scope.workspaceId } }] },
+    overrideAccess: true,
+  });
+  return r.totalDocs > 0;
+}
+
+/** Workspace members for the assignee picker (id + label). */
+export async function listAssigneeOptions(scope: WorkspaceScope): Promise<Array<{ id: string | number; label: string }>> {
+  const members = await wsList(scope, 'memberships', { sort: 'createdAt', limit: 200, depth: 1 });
+  const seen = new Set<string>();
+  const out: Array<{ id: string | number; label: string }> = [];
+  for (const m of members) {
+    const u = m.user;
+    if (!u || typeof u !== 'object') continue;
+    const id = (u as Doc).id as string | number;
+    const key = String(id);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ id, label: String((u as Doc).fullName || (u as Doc).email || `User ${id}`) });
+  }
+  return out;
+}
+
+/** Social posts by id that belong to the actor's workspace (for bulk export / duplication). */
+export async function getSocialPostsByIds(scope: WorkspaceScope, ids: Array<string | number>): Promise<Doc[]> {
+  if (!ids.length || scope.tenantId == null || scope.workspaceId == null) return [];
+  const payload = await getPayload({ config });
+  const r = await payload.find({
+    collection: 'social-studio-posts', limit: 500, depth: 1, pagination: false, overrideAccess: true,
+    where: { and: [{ id: { in: ids as never } }, { tenant: { equals: scope.tenantId } }, { workspace: { equals: scope.workspaceId } }] },
+  });
+  return r.docs as Doc[];
+}
+
+/** Social Studio overview counts (status buckets + planning + export totals), workspace-scoped. */
+export async function socialOverview(scope: WorkspaceScope): Promise<{
+  total: number; draft: number; ready: number; approved: number; archived: number;
+  plannedThisWeek: number; exported: number;
+}> {
+  const posts = await listWorkspaceSocialPosts(scope);
+  const today = new Date();
+  // UTC week window [today, today+7) using YYYY-MM-DD string comparison.
+  const start = today.toISOString().slice(0, 10);
+  const endDate = new Date(today.getTime() + 7 * 86400000);
+  const end = endDate.toISOString().slice(0, 10);
+  let draft = 0, ready = 0, approved = 0, archived = 0, plannedThisWeek = 0, exported = 0;
+  for (const p of posts) {
+    const s = String(p.status);
+    if (s === 'draft') draft++;
+    else if (s === 'ready_for_review') ready++;
+    else if (s === 'approved_to_copy') approved++;
+    else if (s === 'archived') archived++;
+    const pd = typeof p.plannedDate === 'string' ? p.plannedDate : '';
+    if (pd && pd >= start && pd < end) plannedThisWeek++;
+    if (Number(p.exportCount || 0) > 0) exported++;
+  }
+  return { total: posts.length, draft, ready, approved, archived, plannedThisWeek, exported };
 }

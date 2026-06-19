@@ -6,6 +6,7 @@ import { getBrandProfile } from '@/lib/brandkit';
 import { LP_STATUS_LABELS, LP_PAGE_TYPE_LABELS, lpStatusVariant } from '@/lib/landing-constants';
 import { TopBar, Card, WsLink } from '../../_ui';
 import { LandingPageEditor } from '@/components/app/LandingPageEditor';
+import { LandingSocialSet } from '@/components/app/LandingSocialSet';
 
 export const dynamic = 'force-dynamic';
 type Args = { params: Promise<{ id: string }> };
@@ -52,7 +53,10 @@ export default async function EditLandingPage({ params }: Args) {
       />
       <div className="adm-content">
         {editable ? (
-          <LandingPageEditor page={page} workspaceSlug={wsSlug} products={products} requests={requests} brand={brand} views={views} />
+          <>
+            <LandingPageEditor page={page} workspaceSlug={wsSlug} products={products} requests={requests} brand={brand} views={views} />
+            <LandingSocialSet landingPageId={d.id as string | number} />
+          </>
         ) : (
           <Card>
             <div className="adm-row"><span className="t">Status</span><span className={`adm-badge ${lpStatusVariant(page.status)}`}>{LP_STATUS_LABELS[page.status] || page.status}</span></div>

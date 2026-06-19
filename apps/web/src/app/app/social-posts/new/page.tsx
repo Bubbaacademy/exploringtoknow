@@ -1,7 +1,7 @@
 import { requireWorkspace } from '@/lib/workspace';
 import { canWrite } from '@/lib/roles';
 import { listProductOptions, listRequestOptions } from '@/lib/landing';
-import { listLandingPageOptions } from '@/lib/social';
+import { listLandingPageOptions, listAssigneeOptions } from '@/lib/social';
 import { getBrandProfile } from '@/lib/brandkit';
 import { TopBar } from '../../_ui';
 import { SocialPostEditor } from '@/components/app/SocialPostEditor';
@@ -21,8 +21,8 @@ export default async function NewSocialPost({ searchParams }: Args) {
   }
   const { fromLanding } = await searchParams;
   const wsSlug = (ws.workspace?.slug as string) || undefined;
-  const [products, requests, landingPages, brandDoc] = await Promise.all([
-    listProductOptions(ws.scope), listRequestOptions(ws.scope), listLandingPageOptions(ws.scope, wsSlug), getBrandProfile(ws.scope),
+  const [products, requests, landingPages, assignees, brandDoc] = await Promise.all([
+    listProductOptions(ws.scope), listRequestOptions(ws.scope), listLandingPageOptions(ws.scope, wsSlug), listAssigneeOptions(ws.scope), getBrandProfile(ws.scope),
   ]);
   const brand = brandDoc ? {
     publicationName: (brandDoc.publicationName as string) || '', brandVoice: (brandDoc.brandVoice as string) || '',
@@ -43,7 +43,7 @@ export default async function NewSocialPost({ searchParams }: Args) {
       <div className="adm-content">
         <SocialPostEditor
           post={initial}
-          products={products} requests={requests} landingPages={landingPages}
+          products={products} requests={requests} landingPages={landingPages} assignees={assignees}
           brand={brand} brandProfileId={brandDoc?.id ?? null}
         />
       </div>

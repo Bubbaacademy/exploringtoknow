@@ -3,8 +3,8 @@ import { getPayload } from 'payload';
 import config from '@payload-config';
 import { resolveWorkspace } from '@/lib/workspace';
 import { canWrite } from '@/lib/roles';
-import { relationInWorkspace } from '@/lib/social';
-import { SS_CHANNELS, SS_FORMATS, isSafeHttpUrl, normalizeHashtags } from '@/lib/social-constants';
+import { relationInWorkspace, userIsWorkspaceMember } from '@/lib/social';
+import { SS_CHANNELS, SS_FORMATS, SS_PRIORITIES, isSafeHttpUrl, normalizeHashtags, normalizePlannedDate } from '@/lib/social-constants';
 
 /**
  * Create a workspace Social Studio post (draft). canWrite (owner/admin/editor).
@@ -43,6 +43,11 @@ export async function POST(req: Request) {
   const relatedLandingPage = (await relationInWorkspace(ws.scope, 'landing-pages', body.relatedLandingPage)) ? body.relatedLandingPage : undefined;
   const relatedBrandProfile = (await relationInWorkspace(ws.scope, 'brand-profiles', body.relatedBrandProfile)) ? body.relatedBrandProfile : undefined;
 
+  // Planning fields (Phase 26) — all manual.
+  const priority = (SS_PRIORITIES as readonly string[]).includes(String(body.priority)) ? String(body.priority) : 'normal';
+  const plannedDate = normalizePlannedDate(body.plannedDate);
+  const assignee = (await userIsWorkspaceMember(ws.scope, body.assignee)) ? body.assignee : undefined;
+
   try {
     const payload = await getPayload({ config });
     const doc = await payload.create({
@@ -57,9 +62,15 @@ export async function POST(req: Request) {
         disclosureText: str(body.disclosureText, 2000) || undefined,
         platformNotes: str(body.platformNotes, 2000) || undefined,
         notes: str(body.notes, 4000) || undefined,
+        plannedDate: plannedDate || undefined,
+        campaignLabel: str(body.campaignLabel, 200) || undefined,
+        contentPillar: str(body.contentPillar, 200) || undefined,
+        priority,
+        assignee: assignee as never,
+        calendarNotes: str(body.calendarNotes, 2000) || undefined,
         relatedProduct: relatedProduct as never, relatedRequest: relatedRequest as never,
         relatedLandingPage: relatedLandingPage as never, relatedBrandProfile: relatedBrandProfile as never,
-        copyCount: 0,
+        copyCount: 0, exportCount: 0,
         createdBy: ws.ctx.user.id, updatedBy: ws.ctx.user.id,
         tenant: ws.scope.tenantId, workspace: ws.scope.workspaceId,
       } as never,

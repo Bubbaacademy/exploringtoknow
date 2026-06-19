@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { requireWorkspace } from '@/lib/workspace';
 import { canWrite } from '@/lib/roles';
-import { getWorkspaceSocialPost, listLandingPageOptions } from '@/lib/social';
+import { getWorkspaceSocialPost, listLandingPageOptions, listAssigneeOptions } from '@/lib/social';
 import { listProductOptions, listRequestOptions } from '@/lib/landing';
 import { getBrandProfile } from '@/lib/brandkit';
 import { SS_CHANNEL_LABELS, SS_FORMAT_LABELS, SS_STATUS_LABELS, ssStatusVariant } from '@/lib/social-constants';
@@ -21,8 +21,8 @@ export default async function EditSocialPost({ params }: Args) {
   const d = doc!;
   const editable = canWrite(ws.role);
   const wsSlug = (ws.workspace?.slug as string) || undefined;
-  const [products, requests, landingPages, brandDoc] = await Promise.all([
-    listProductOptions(ws.scope), listRequestOptions(ws.scope), listLandingPageOptions(ws.scope, wsSlug), getBrandProfile(ws.scope),
+  const [products, requests, landingPages, assignees, brandDoc] = await Promise.all([
+    listProductOptions(ws.scope), listRequestOptions(ws.scope), listLandingPageOptions(ws.scope, wsSlug), listAssigneeOptions(ws.scope), getBrandProfile(ws.scope),
   ]);
   const brand = brandDoc ? {
     publicationName: (brandDoc.publicationName as string) || '', brandVoice: (brandDoc.brandVoice as string) || '',
@@ -40,6 +40,9 @@ export default async function EditSocialPost({ params }: Args) {
     disclosureText: (d.disclosureText as string) || '', platformNotes: (d.platformNotes as string) || '', notes: (d.notes as string) || '',
     relatedProduct: refId(d.relatedProduct), relatedRequest: refId(d.relatedRequest), relatedLandingPage: refId(d.relatedLandingPage),
     copyCount: Number(d.copyCount || 0),
+    plannedDate: (d.plannedDate as string) || '', campaignLabel: (d.campaignLabel as string) || '',
+    contentPillar: (d.contentPillar as string) || '', priority: String(d.priority || 'normal'),
+    assignee: refId(d.assignee), calendarNotes: (d.calendarNotes as string) || '', duplicatedFrom: refId(d.duplicatedFrom),
   };
 
   return (
@@ -53,7 +56,7 @@ export default async function EditSocialPost({ params }: Args) {
         {editable ? (
           <SocialPostEditor
             post={post}
-            products={products} requests={requests} landingPages={landingPages}
+            products={products} requests={requests} landingPages={landingPages} assignees={assignees}
             brand={brand} brandProfileId={brandDoc?.id ?? null}
           />
         ) : (

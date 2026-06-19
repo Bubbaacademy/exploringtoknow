@@ -71,6 +71,23 @@ export const SocialStudioPosts: CollectionConfig = {
     { name: 'disclosureText', type: 'textarea', admin: { description: 'Affiliate / disclosure note (surfaced when the CTA points at an affiliate/landing destination).' } },
     { name: 'platformNotes', type: 'textarea', admin: { description: 'Platform-specific notes / constraints for whoever publishes later. Manual only.' } },
     { name: 'notes', type: 'textarea', admin: { description: 'Internal editorial guidance / notes.' } },
+    // ---- Planning fields (Phase 26). All manual — no scheduling/posting is executed. ----
+    { name: 'plannedDate', type: 'text', index: true, admin: { description: 'Planning date (YYYY-MM-DD). Used by the calendar — purely manual, nothing is posted on this date.' } },
+    { name: 'campaignLabel', type: 'text', index: true, admin: { description: 'Campaign name / label for grouping.' } },
+    { name: 'contentPillar', type: 'text', admin: { description: 'Content pillar / theme.' } },
+    {
+      name: 'priority', type: 'select', defaultValue: 'normal', index: true,
+      options: [
+        { label: 'Low', value: 'low' },
+        { label: 'Normal', value: 'normal' },
+        { label: 'High', value: 'high' },
+      ],
+    },
+    { name: 'assignee', type: 'relationship', relationTo: 'users', index: true, admin: { description: 'Workspace member responsible (verified server-side to be a member of this workspace).' } },
+    { name: 'calendarNotes', type: 'textarea', admin: { description: 'Planning / calendar notes.' } },
+    { name: 'duplicatedFrom', type: 'relationship', relationTo: 'social-studio-posts', index: true, admin: { readOnly: true, description: 'Source post this was duplicated from (same workspace only).' } },
+    { name: 'exportedAt', type: 'date', admin: { readOnly: true, description: 'Last manual copy/export time (first-party — no external call).' } },
+    { name: 'exportCount', type: 'number', defaultValue: 0, admin: { readOnly: true } },
     { name: 'relatedProduct', type: 'relationship', relationTo: 'products', index: true },
     { name: 'relatedRequest', type: 'relationship', relationTo: 'product-requests', index: true },
     { name: 'relatedLandingPage', type: 'relationship', relationTo: 'landing-pages', index: true },

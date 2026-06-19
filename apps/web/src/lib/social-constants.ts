@@ -19,6 +19,10 @@ export type SocialFormat = (typeof SS_FORMATS)[number];
 export const SS_STATUSES = ['draft', 'ready_for_review', 'approved_to_copy', 'archived'] as const;
 export type SocialStatus = (typeof SS_STATUSES)[number];
 
+export const SS_PRIORITIES = ['low', 'normal', 'high'] as const;
+export type SocialPriority = (typeof SS_PRIORITIES)[number];
+export const SS_PRIORITY_LABELS: Record<string, string> = { low: 'Low', normal: 'Normal', high: 'High' };
+
 export const SS_CHANNEL_LABELS: Record<string, string> = {
   instagram: 'Instagram', tiktok: 'TikTok', youtube_shorts: 'YouTube Shorts', linkedin: 'LinkedIn',
   facebook: 'Facebook', x_twitter: 'X / Twitter', pinterest: 'Pinterest', generic: 'Generic',
@@ -104,4 +108,69 @@ export function composeSocialText(p: {
   if (tags) lines.push(tags);
   if (p.disclosureText && p.disclosureText.trim()) lines.push(p.disclosureText.trim());
   return lines.join('\n\n');
+}
+
+/** A planning date must be YYYY-MM-DD (or empty). Pure — safe both sides. */
+export function isValidPlannedDate(s: unknown): boolean {
+  if (typeof s !== 'string') return false;
+  if (s === '') return true;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return false;
+  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return false;
+  return y >= 2000 && y <= 2100;
+}
+/** Normalize a planning date input to YYYY-MM-DD or '' (invalid → ''). */
+export function normalizePlannedDate(s: unknown): string {
+  return typeof s === 'string' && isValidPlannedDate(s) && s !== '' ? s : '';
+}
+
+// ---- Bulk export (Phase 26) — manual copy/export only, no posting ----
+export type ExportRow = {
+  name?: string; channel?: string; format?: string; status?: string; plannedDate?: string; campaignLabel?: string;
+  hook?: string; caption?: string; ctaLabel?: string; ctaUrl?: string; hashtags?: unknown; disclosureText?: string;
+  relatedLabel?: string;
+};
+
+const csvCell = (v: unknown): string => {
+  const s = v == null ? '' : String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+const CSV_COLUMNS: Array<[keyof ExportRow | 'hashtagsStr', string]> = [
+  ['name', 'Name'], ['channel', 'Channel'], ['format', 'Format'], ['status', 'Status'],
+  ['plannedDate', 'Planned date'], ['campaignLabel', 'Campaign'], ['hook', 'Hook'], ['caption', 'Caption'],
+  ['ctaLabel', 'CTA label'], ['ctaUrl', 'CTA URL'], ['hashtagsStr', 'Hashtags'], ['disclosureText', 'Disclosure'],
+  ['relatedLabel', 'Related'],
+];
+
+/** Build a CSV string from export rows (pure). RFC-4180-ish quoting. */
+export function rowsToCsv(rows: ExportRow[]): string {
+  const header = CSV_COLUMNS.map(([, label]) => csvCell(label)).join(',');
+  const body = rows.map((r) => CSV_COLUMNS.map(([key]) => {
+    const v = key === 'hashtagsStr' ? hashtagsToString(r.hashtags) : (r as Record<string, unknown>)[key];
+    return csvCell(v);
+  }).join(','));
+  return [header, ...body].join('\r\n');
+}
+
+/** Build a plain-text bulk export grouped by channel (pure). */
+export function rowsToText(rows: ExportRow[]): string {
+  const byChannel = new Map<string, ExportRow[]>();
+  for (const r of rows) {
+    const ch = r.channel || 'generic';
+    if (!byChannel.has(ch)) byChannel.set(ch, []);
+    byChannel.get(ch)!.push(r);
+  }
+  const blocks: string[] = [];
+  for (const [ch, list] of byChannel) {
+    blocks.push(`===== ${SS_CHANNEL_LABELS[ch] || ch} (${list.length}) =====`);
+    for (const r of list) {
+      const meta = [r.name, r.plannedDate ? `planned ${r.plannedDate}` : '', r.campaignLabel ? `campaign: ${r.campaignLabel}` : '']
+        .filter(Boolean).join(' · ');
+      const text = composeSocialText({ hook: r.hook, caption: r.caption, ctaLabel: r.ctaLabel, ctaUrl: r.ctaUrl, hashtags: r.hashtags, disclosureText: r.disclosureText });
+      blocks.push(`--- ${meta} ---\n${text}`);
+    }
+  }
+  return blocks.join('\n\n');
 }

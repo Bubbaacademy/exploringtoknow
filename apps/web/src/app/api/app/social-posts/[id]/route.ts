@@ -3,8 +3,8 @@ import { getPayload } from 'payload';
 import config from '@payload-config';
 import { resolveWorkspace } from '@/lib/workspace';
 import { canWrite } from '@/lib/roles';
-import { getWorkspaceSocialPost, relationInWorkspace } from '@/lib/social';
-import { SS_CHANNELS, SS_FORMATS, isSafeHttpUrl, normalizeHashtags } from '@/lib/social-constants';
+import { getWorkspaceSocialPost, relationInWorkspace, userIsWorkspaceMember } from '@/lib/social';
+import { SS_CHANNELS, SS_FORMATS, SS_PRIORITIES, isSafeHttpUrl, normalizeHashtags, normalizePlannedDate, isValidPlannedDate } from '@/lib/social-constants';
 
 /**
  * Update / status-transition / record-copy / delete a workspace Social Studio post.
@@ -42,10 +42,17 @@ export async function PATCH(req: Request, { params }: Ctx) {
     if (u && !isSafeHttpUrl(u)) return NextResponse.json({ ok: false, error: 'CTA URL must start with http:// or https://.' }, { status: 422 });
     data.ctaUrl = u || null;
   }
-  for (const [k, max] of [['hook', 1000], ['caption', 8000], ['ctaLabel', 120], ['disclosureText', 2000], ['platformNotes', 2000], ['notes', 4000]] as const) {
+  for (const [k, max] of [['hook', 1000], ['caption', 8000], ['ctaLabel', 120], ['disclosureText', 2000], ['platformNotes', 2000], ['notes', 4000], ['campaignLabel', 200], ['contentPillar', 200], ['calendarNotes', 2000]] as const) {
     if (typeof body[k] === 'string') data[k] = str(body[k], max) || null;
   }
   if ('hashtags' in body) { const h = normalizeHashtags(body.hashtags); data.hashtags = h.length ? h : null; }
+  if (typeof body.priority === 'string' && (SS_PRIORITIES as readonly string[]).includes(body.priority)) data.priority = body.priority;
+  if ('plannedDate' in body) {
+    const pd = typeof body.plannedDate === 'string' ? body.plannedDate.trim() : '';
+    if (pd && !isValidPlannedDate(pd)) return NextResponse.json({ ok: false, error: 'Planned date must be YYYY-MM-DD.' }, { status: 422 });
+    data.plannedDate = normalizePlannedDate(pd) || null;
+  }
+  if ('assignee' in body) data.assignee = (body.assignee && await userIsWorkspaceMember(ws!.scope, body.assignee)) ? body.assignee : null;
   // Related refs: accept null to clear, or a value that belongs to this workspace.
   if ('relatedProduct' in body) data.relatedProduct = (body.relatedProduct && await relationInWorkspace(ws!.scope, 'products', body.relatedProduct)) ? body.relatedProduct : null;
   if ('relatedRequest' in body) data.relatedRequest = (body.relatedRequest && await relationInWorkspace(ws!.scope, 'product-requests', body.relatedRequest)) ? body.relatedRequest : null;
