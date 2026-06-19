@@ -1,11 +1,12 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-19 — **Blueprint v2 Phase 25 (Social Studio foundation): COMPLETE & DEPLOYED &
-> VERIFIED LIVE.** Production HEAD `3d293c3`, image `etk-web` (id `sha256:96918ee9…`) healthy; **migrations 21**
-> (phase25 social studio applied). New `/app/social-posts` Social Studio — manually author/review/organize/copy-export
-> social post drafts connected to products/requests/landing pages/Brand Kit. Manual + clipboard export ONLY: no
-> social/AI/scheduling/publishing/external calls. Distinct from the legacy `social-posts` AI pipeline (untouched).
-> Email + billing still **local-safe**. Prior: Phase 24 landing enrich+analytics, Phase 23 landing foundation, Phase 22 brand kit.
+> Current snapshot. Updated 2026-06-19 — **Blueprint v2 Phase 26 (Social calendar + bulk export + duplication):
+> COMPLETE & DEPLOYED & VERIFIED LIVE.** Production HEAD `622fc59`, image `etk-web` (id `sha256:2d13fb8b…`) healthy;
+> **migrations 22** (phase26 social planning applied). Social Studio `/app/social-posts` now has planning fields
+> (planned date, campaign, pillar, priority, assignee, notes), **Board** + **Calendar** views, a Social overview strip,
+> **bulk copy/CSV export** of approved posts, **channel duplication** (drafts), and **content-set-from-landing**. Still
+> manual + pre-API: no OAuth/social/publish/schedule/AI/external calls. Email + billing still **local-safe**. Prior:
+> Phase 25 Social Studio foundation, Phase 24 landing enrich+analytics, Phase 23 landing foundation, Phase 22 brand kit.
 
 ---
 
@@ -221,6 +222,46 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Blueprint v2 Phase 26 — Social calendar + bulk export + duplication: COMPLETE & DEPLOYED (migration 21 → 22)
+Makes the Phase 25 Social Studio operationally useful for planning at scale. **Additive** — planning columns on the
+existing `social-studio-posts` table only. **Still fully manual + pre-API:** no OAuth, no social account connection,
+no publishing, no scheduling execution, no AI generation, no image/video, no email/billing/ad/external calls. Public
+magazine + Phase 22/23/24/25 behavior + all gates + local-safe modes unchanged.
+- **Planning fields (additive):** `plannedDate` (YYYY-MM-DD, validated), `campaignLabel`, `contentPillar`, `priority`
+  (enum low/normal/high, default normal), `assignee` (→users, **verified to be a member of the workspace** server-side),
+  `calendarNotes`, `duplicatedFrom` (self-FK), `exportedAt`/`exportCount`. Editor gains a Planning section.
+- **Views (new):** sub-nav **List · Board · Calendar · Export** + a **Social overview** strip (total / draft / ready /
+  approved / archived / planned-this-week / exported). **Board** groups by status (draft / ready_for_review /
+  approved_to_copy / archived); **Calendar** groups posts by planned date (chronological) + an Unscheduled bucket.
+- **Bulk export (`/api/app/social-posts/export`):** select `approved_to_copy` posts → returns **copy-friendly text
+  grouped by channel + a CSV** (RFC-4180 quoting; client Blob download). Optional **explicit** "Mark as exported"
+  first-party counter (`exportedAt`/`exportCount`) — **no posting, no external call**. Workspace-scoped (only the
+  actor's posts load).
+- **Duplication (`/api/app/social-posts/[id]/duplicate`):** copy a post into one or more channels → new **drafts**
+  (copy is **not** rewritten/generated), `duplicatedFrom` set, relations preserved. **Cross-tenant impossible** — the
+  source is re-verified in the actor's workspace and copies are stamped to it; a foreign source id → 404.
+- **Content set from landing page (`/api/app/social-posts/from-landing`, item 5 shipped):** creates N **blank** drafts
+  (one per chosen channel) with the landing page linked + its **published public URL prefilled as CTA**. Captions are
+  NOT generated, nothing is published/scheduled. `LandingSocialSet` widget on the landing detail; foreign landing id → 404.
+- **Migration `20260619_020000_phase26_social_planning`:** `ALTER social_studio_posts ADD` 9 columns + priority enum +
+  assignee/duplicatedFrom FKs + indexes (planned_date, campaign_label, priority, assignee, duplicated_from). Additive +
+  idempotent; existing rows get priority='normal'/export_count=0; `down()` drops the columns + enum safely.
+  **Pre-validated in a rolled-back tx on prod** (9 columns + FKs OK).
+- **Rollback tag `pre-phase26-social → cb020dc`; backup `pre-phase26_20260619_063137.sql.gz` (gzip-verified).**
+- **DEPLOYED & VERIFIED LIVE 2026-06-19** (on the VPS as `deploy` via sudo): prod HEAD `622fc59`; image `etk-web`
+  (id `sha256:2d13fb8b…`) healthy; worker/postgres/caddy untouched. **payload_migrations 21 → 22** (phase26 applied,
+  14ms); 9 planning columns + priority enum confirmed via psql. Content unchanged (gen 5/art 5/media 45); 0 jobs.
+  Routes: public 200; `/app/social-posts`(+`/board`,`/calendar`,`/export`,`/new`)/`/app/landing-pages` → 307; `/admin`
+  → 200. **Verified via temp owner (created→checked→deleted, zero residue):** planning fields saved (planned 2026-07-01
+  / campaign / pillar / priority high); **bad plannedDate → 422**; **foreign assignee + foreign relatedProduct stored
+  null**; approve → approved_to_copy; **duplicate → 2 new drafts with duplicatedFrom set** (bogus channel ignored);
+  **bulk export returned channel-grouped text + CSV, markExported set exportCount/exportedAt**; **from-landing created
+  drafts linked to the page with the public `…/lp/…` URL prefilled**; Board/Calendar/Export pages 200 (calendar showed
+  the planned date); **unauth duplicate → 401, foreign-post duplicate → 404, foreign landing → 404**; ETK had 0 social
+  posts (isolation); all temp posts on the temp tenant. Temp tenant/user/workspace/posts/landing fully deleted
+  (tenants/users back to 2/2; gen 5/art 5/media 45 unchanged). No secrets printed/committed; no generation/publish/
+  schedule/OAuth/email/billing/social/ad/image/video/external side effects; affiliate logic unchanged.
 
 ### Blueprint v2 Phase 25 — Social Studio foundation: COMPLETE & DEPLOYED (migration 20 → 21)
 First workspace-scoped Social Studio: owner/admin/editor **manually** create, review, organize, and copy-export

@@ -3,14 +3,16 @@
 _Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
 over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `3d293c3` (Blueprint v2 Phase 25 — Social Studio foundation).**
-App image `etk-web` (id `sha256:96918ee9…`) healthy; **payload_migrations 21** (phase25: `social_studio_posts` table,
-additive). New **Social Studio** at `/app/social-posts` — owner/admin/editor **manually** create, review, organize,
-and **copy-export** social post drafts (channel/format, hook/caption/hashtags, CTA, disclosure) connected to products /
-requests / landing pages / Brand Kit, with a live preview/copy panel. **Manual + clipboard export ONLY** — no
-social-network API/OAuth, no auto-posting, no scheduling execution, no AI generation. Deliberately a SEPARATE collection
-from the legacy `social-posts` AI/worker FB+IG pipeline (left untouched). Landing pages `/app/landing-pages` (Phase
-23/24) + Brand Kit `/app/brand` (Phase 22) unchanged. No binary upload yet. Email + billing still local-safe.
+**Production HEAD: `622fc59` (Blueprint v2 Phase 26 — Social calendar + bulk export + duplication).**
+App image `etk-web` (id `sha256:2d13fb8b…`) healthy; **payload_migrations 22** (phase26: planning columns on
+`social_studio_posts`, additive). **Social Studio** at `/app/social-posts` now adds **planning** (planned date,
+campaign, pillar, priority, assignee, notes), a **Board** view (by status) + **Calendar** view (by planned date), a
+Social overview strip, **bulk copy/CSV export** of approved posts, **channel duplication** (creates drafts), and
+**content-set-from-landing** (blank drafts from a landing page with public URL prefilled). **Still manual + pre-API** —
+no OAuth, no social account connection, no publishing, no scheduling execution, no AI/image/video, no external calls.
+Built on the Phase 25 Social Studio foundation (manual authoring + clipboard export); legacy `social-posts` AI/worker
+pipeline still untouched. Landing pages `/app/landing-pages` (Phase 23/24) + Brand Kit `/app/brand` (Phase 22)
+unchanged. No binary upload yet. Email + billing still local-safe.
 - **Billing layer: local-safe** — no Stripe/billing env → no real charges, checkout/portal return disabled,
   webhook inert. Stripe-ready: activates only with `BILLING_ENABLED=true` + `STRIPE_SECRET_KEY` (+ `STRIPE_PRICE_*`,
   `STRIPE_WEBHOOK_SECRET`); use Stripe **test mode** first. On real checkout the webhook sets the tenant's plan;
@@ -52,5 +54,5 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) and local are in sync at `3d293c3` (Phase 25 feat);
+Production (VPS `/opt/exploringtoknow`, branch `main`) and local are in sync at `622fc59` (Phase 26 feat);
 the docs commit on top is docs-only. Worker fix baseline `c158c5f` unchanged.

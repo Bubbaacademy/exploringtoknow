@@ -210,6 +210,18 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 37. Phase 26 — Social calendar + bulk export + duplication
+**VERIFIED LIVE 2026-06-19 — prod HEAD `622fc59`, image `etk-web` (id `sha256:2d13fb8b…`) healthy; migrations 21→22; content unchanged (gen 5/art 5/media 45). Temp-owner E2E (created→checked→deleted, zero residue): planning fields saved; bad plannedDate → 422; foreign assignee + relatedProduct nulled; duplicate → 2 drafts (duplicatedFrom set, bogus channel ignored); bulk export returned channel-grouped text + CSV (markExported bumped exportCount); from-landing drafts linked + public URL prefilled; unauth duplicate 401; foreign post/landing → 404; ETK isolation intact. Still manual + pre-API — no OAuth/social/publish/schedule/AI/external calls.**
+- [ ] Sub-nav (List · Board · Calendar · Export) present on all Social Studio pages; overview strip shows total/draft/ready/approved/archived/planned-7d/exported.
+- [ ] List shows planned date + campaign columns; Board groups by status (draft/ready/approved/archived) with channel/plannedDate/campaign/priority badges; Calendar groups by planned date (+ Unscheduled bucket). Empty states honest.
+- [ ] Editor Planning section: planned date (date input), priority, campaign, content pillar, assignee (workspace members only), planning notes. Bad planned date (not YYYY-MM-DD) → 422.
+- [ ] Assignee: only workspace members assignable; a non-member/foreign user id is rejected (stored null). Cross-tenant ID tampering fails.
+- [ ] Duplication: "Duplicate to selected channels" creates new DRAFTS (copy not generated), duplicatedFrom set, relations preserved; bogus channels ignored; cross-tenant impossible (foreign source → 404); unauth → 401.
+- [ ] Bulk export (`/app/social-posts/export`): select approved_to_copy posts → text grouped by channel + downloadable CSV; "Mark as exported" is explicit + manual (records exportCount/exportedAt, no posting); only the workspace's own posts load.
+- [ ] Content set from landing page: `/app/landing-pages/[id]` "Social content set" → choose channels → N blank drafts with the landing page linked + published public URL prefilled as CTA. No captions generated, no publish; foreign landing id → 404.
+- [ ] CTA URL validation still rejects javascript:/data:; related product/request/landing-page/brand refs verified in-workspace.
+- [ ] Safety: no OAuth/social-account-connection/publishing/scheduling-execution/AI/image/video/email/billing/ad/external calls; no fake metrics; legacy `social-posts` pipeline untouched; public magazine + landing pages + gates unchanged; migration additive (down() safe).
+
 ## 36. Phase 25 — Social Studio foundation
 **VERIFIED LIVE 2026-06-19 — prod HEAD `3d293c3`, image `etk-web` (id `sha256:96918ee9…`) healthy; migrations 20→21; content unchanged (gen 5/art 5/media 45); legacy `social_posts` untouched (0 rows). Temp-owner E2E (created→checked→deleted, zero residue): unauth create 401; CTA javascript: → 422; cross-tenant relatedProduct + foreign relatedLandingPage both stored null; post stamped to temp tenant (ETK had 0); approve → approved_to_copy; copied → copyCount 1; pickers scoped (no ETK leak). Manual + copy-export only — no social/AI/schedule/publish/external calls.**
 - [ ] `/app/social-posts` (owner/admin/editor): list + New; `/new` create form; `/[id]` edit with status actions (Mark ready / Approve to copy / Back to draft / Archive / Restore) + delete. Viewer → read-only.
