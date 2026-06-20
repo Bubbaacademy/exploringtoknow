@@ -1,13 +1,13 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-20 — **Blueprint v2 Phase 27 (Ads Studio v1 — manual campaign + creative drafts):
-> COMPLETE & DEPLOYED & VERIFIED LIVE.** Production HEAD `4997a44`, image `etk-web` (id `sha256:2dbea910…`) healthy;
-> **migrations 23** (phase27 ads studio applied). New `/app/ads` Ads Studio — manually plan ad **campaign drafts** +
-> **ad creative drafts** (headline/primary text/description/CTA), with a live **UTM tracking-URL builder**, related
-> product/request/landing-page/social-post/Brand-Kit pickers, and copy/CSV **export** for manual Ads-Manager setup.
-> Manual + pre-API ONLY: no ad accounts, no OAuth, no ad API, no launch, no budget spend, no AI/external calls. Email +
-> billing still **local-safe**. Prior: Phase 26 social calendar/export/duplication, Phase 25 Social Studio foundation,
-> Phase 24 landing enrich+analytics, Phase 23 landing foundation, Phase 22 brand kit.
+> Current snapshot. Updated 2026-06-20 — **Blueprint v2 Phase 28 (Manual performance import + measurement foundation):
+> COMPLETE & DEPLOYED & VERIFIED LIVE.** Production HEAD `1196db8`, image `etk-web` (id `sha256:92fbe151…`) healthy;
+> **migrations 24** (phase28 performance applied). New `/app/performance` — **manually** enter or **paste-CSV import**
+> performance data (impressions/clicks/spend/conversions/revenue/leads), with **calculated** CTR/CPC/CPM/CVR/CPA/ROAS
+> (safe zero-denominators), an overview (totals + averages + top campaigns/products), and internal landing-page views
+> kept **separate** from manual ad clicks. Manual-only: no OAuth, no ad/social account connection, no external API/sync,
+> no fake metrics, no AI. Email + billing still **local-safe**. Prior: Phase 27 Ads Studio v1, Phase 26 social
+> calendar/export/duplication, Phase 25 Social Studio foundation, Phase 24 landing enrich+analytics, Phase 23 landing, Phase 22 brand kit.
 
 ---
 
@@ -223,6 +223,50 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Blueprint v2 Phase 28 — Manual performance import + measurement foundation: COMPLETE & DEPLOYED (migration 23 → 24)
+First measurement layer: workspace-scoped **manual** performance tracking — the foundation for the metrics/attribution
+loop before any external ad/social API. **Additive** — one NEW collection. **Manual-only:** no OAuth, no ad/social
+account connection, no external API, no real-time sync, no fake metrics, no AI/optimization, no campaign launch/spend.
+Public magazine + Phase 22–27 behavior + all gates + local-safe modes unchanged; Phase-24 landing-page view tracking intact.
+- **New scoped collection `performance-entries`:** sourceType (manual_entry / csv_paste / internal_landing_page_views /
+  placeholder); platform (meta / google_search / google_display / youtube / tiktok / linkedin / pinterest / instagram /
+  facebook / x_twitter / generic / unknown); channelType (ad / social / landing_page / article / product /
+  email_placeholder / generic); status (draft / recorded / archived); entryDate (+ optional range end); campaign / ad-set
+  / creative names; **raw user numbers** impressions / clicks / spend / conversions / orders / revenue / leads /
+  addToCart; currency (USD default); notes; importBatchId; related ad-campaign / ad-creative / landing-page / social-post
+  / product / request / article. `scopedRead('deny')` + super-only native mutate + `stampTenantWorkspace`.
+- **Computed metrics (pure `computeMetrics`):** CTR, CPC, CPM, conversion rate, CPA, ROAS, revenue-per-click — all with
+  **safe zero-denominator handling** (returns null → shown as "—", never a fabricated 0). Raw vs calculated values kept
+  clearly separate; calculated metrics labelled "calculated from manually entered/imported data". **No invented numbers.**
+- **Paste-CSV import (`parseCsv`, pure):** robust quoted-field parser (no file upload, no platform auto-detect). Expected
+  columns date/platform/channel/campaign/ad_set/creative/impressions/clicks/spend/conversions/revenue/leads/
+  landing_page_slug|landing_page_url/notes. Preview (accepted/rejected + reasons + sample) then commit; rows grouped by a
+  server-generated `importBatchId`; `landing_page_slug`/`_url` mapped to a workspace landing page only if it matches.
+- **Migration `20260620_010000_phase28_performance`:** table, 4 enums, indexes (workspace/platform/date/channel/status/
+  related/batch), 11 FKs (ad-campaign/ad-creative/landing/social/product/request/article/user×2/tenant/workspace),
+  locked-doc rel. Additive + idempotent; `down()` drops table + 4 enums safely. **Pre-validated in a rolled-back tx on prod.**
+- **APIs:** `/api/app/performance` (create) + `/[id]` (PATCH / status action record·draft·archive / DELETE) + `/import`
+  (paste-CSV preview + commit). `canWrite`; tenant/workspace + createdBy server-derived; related refs verified
+  in-workspace (cross-tenant ids ignored); dates validated YYYY-MM-DD; numbers coerced non-negative.
+- **Console UI `/app/performance`** (overview / new / import / [id]): overview = totals + **calculated averages** + top
+  campaigns (by clicks) + landing pages (with **internal Phase-24 LP views shown separately** from manual ad clicks);
+  entry editor with **live computed-metrics panel**; CSV import with **Preview**. Sidebar **"Performance" under Growth**
+  (alongside Analytics). Honest copy: "Manual performance tracking", "No ad accounts are connected yet", "calculated from
+  manually entered or imported data", "nothing is synced automatically", "No campaigns are launched from here".
+- **Rollback tag `pre-phase28-perf → a02c922`; backup `pre-phase28_20260620_171851.sql.gz` (gzip-verified).**
+- **DEPLOYED & VERIFIED LIVE 2026-06-20** (on the VPS as `deploy` via sudo): prod HEAD `1196db8`; image `etk-web`
+  (id `sha256:92fbe151…`) healthy; worker/postgres/caddy untouched. **payload_migrations 23 → 24** (phase28 applied,
+  26ms); `performance_entries` table + 4 enums + locked-rel confirmed via psql; **`landing_page_views` intact**. Content
+  unchanged (gen 5/art 5/media 45); 0 jobs. Routes: public 200; `/app/performance`(+`/new`,`/import`,`/[id]`)/`/app/ads`/
+  `/app/social-posts` → 307; `/admin` → 200. **Verified via temp owner (created→checked→deleted, zero residue):** unauth
+  create **401**; bad date → **422**; manual entry created (stamped to temp tenant) with **foreign relatedProduct stored
+  null**; **CSV import preview → 2 accepted / 1 rejected (bad date, with reason) + sample**, commit created 2 rows under
+  one `importBatchId` (nonexistent landing slug → null); **overview computed CTR 2% / conv-rate 5% live**, and after
+  **archiving** the manual entry the totals correctly **excluded** it (12,000 impr, not 22,000); foreign-entry PATCH →
+  **404**; ETK and the other live tenant had **0 entries** (isolation). Temp tenant/user/workspace/entries fully deleted
+  (tenants back to baseline; gen 5/art 5/media 45 unchanged). No secrets printed/committed; no generation/publish/launch/
+  spend/OAuth/email/billing/social/ad/image/video/external side effects; affiliate logic unchanged.
 
 ### Blueprint v2 Phase 27 — Ads Studio v1 (manual campaign + creative drafts): COMPLETE & DEPLOYED (migration 22 → 23)
 First Ads Studio output layer: workspace-scoped manual ad planning. **Additive** — two NEW collections. **Manual +

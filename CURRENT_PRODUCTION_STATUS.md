@@ -3,15 +3,15 @@
 _Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
 over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `4997a44` (Blueprint v2 Phase 27 — Ads Studio v1: manual campaign + creative drafts).**
-App image `etk-web` (id `sha256:2dbea910…`) healthy; **payload_migrations 23** (phase27: `ad_campaigns` + `ad_creatives`
-tables, additive). New **Ads Studio** at `/app/ads` — owner/admin/editor **manually** plan ad **campaign drafts** +
-**creative drafts** (headline/primary text/description/CTA), with a live **UTM tracking-URL builder**, related
-product/request/landing-page/social-post/Brand-Kit pickers, and copy/CSV **export** for manual Ads-Manager setup.
-**Manual + pre-API ONLY** — no ad accounts, no OAuth, no ad API, no campaign launch, no budget spend (budget/schedule
-are planning notes), no AI/image/video, no external calls. Social Studio `/app/social-posts` (Phase 25/26), landing
-pages `/app/landing-pages` (Phase 23/24), Brand Kit `/app/brand` (Phase 22), and the legacy `social-posts` AI/worker
-pipeline all unchanged. No binary upload yet. Email + billing still local-safe.
+**Production HEAD: `1196db8` (Blueprint v2 Phase 28 — Manual performance import + measurement foundation).**
+App image `etk-web` (id `sha256:92fbe151…`) healthy; **payload_migrations 24** (phase28: `performance_entries` table,
+additive). New **Performance** area at `/app/performance` — owner/admin/editor **manually** enter or **paste-CSV import**
+performance data (impressions/clicks/spend/conversions/revenue/leads), with **calculated** CTR/CPC/CPM/CVR/CPA/ROAS
+(safe zero-denominators → "—", no fabricated numbers), an overview (totals + averages + top campaigns/products), and
+internal Phase-24 landing-page views shown **separately** from manual ad clicks. **Manual-only** — no OAuth, no ad/social
+account connection, no external API, no real-time sync, no fake metrics, no AI/optimization, no launch/spend. Ads Studio
+`/app/ads` (Phase 27), Social Studio `/app/social-posts` (Phase 25/26), landing pages `/app/landing-pages` (Phase 23/24),
+Brand Kit `/app/brand` (Phase 22) all unchanged. No binary upload yet. Email + billing still local-safe.
 - **Billing layer: local-safe** — no Stripe/billing env → no real charges, checkout/portal return disabled,
   webhook inert. Stripe-ready: activates only with `BILLING_ENABLED=true` + `STRIPE_SECRET_KEY` (+ `STRIPE_PRICE_*`,
   `STRIPE_WEBHOOK_SECRET`); use Stripe **test mode** first. On real checkout the webhook sets the tenant's plan;
@@ -53,6 +53,6 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) and local are in sync at `4997a44` (Phase 27 feat + build
-fixes); the docs commit on top is docs-only. Worker fix baseline `c158c5f` unchanged. (Prod also has 1 retained
+Production (VPS `/opt/exploringtoknow`, branch `main`) and local are in sync at `1196db8` (Phase 28 feat);
+the docs commit on top is docs-only. Worker fix baseline `c158c5f` unchanged. (Prod also has 1 retained
 test workspace + 1 organic customer workspace alongside ETK — 3 tenants total; ETK content unchanged.)
