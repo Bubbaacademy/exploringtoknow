@@ -3,13 +3,16 @@
 _Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
 over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `95ef624` (Blueprint v2 Phase 30 — Provider Connections Foundation / OAuth Vault).**
-App image `etk-web` (id `sha256:7e8736ac…`) healthy; **payload_migrations 25** (phase30: `provider_connections` +
-`provider_sync_runs` tables, additive). New **Connections** area at `/app/provider-connections` — tenant/workspace-scoped
-**OAuth/token vault foundation** for future ad/social provider integrations (provider cards, status, capabilities,
-required env NAMES, owner/admin connect/disconnect). **FOUNDATION ONLY** — no provider API calls, no live token exchange,
-no sync, no campaigns/launch/spend; tokens AES-256-GCM-encrypted at rest and never exposed (verified). With no provider
-env (prod), everything is **not configured**. Next: **Google Ads read sync (Phase 31)**.
+**Production HEAD: `0cb27f5` (Blueprint v2 Phase 31 — Google Ads Read Sync v1). IMPLEMENTATION DEPLOYED & VERIFIED
+(env-gated); LIVE GOOGLE ADS OAUTH/SYNC BLOCKED BY MISSING OPERATOR CREDENTIALS.**
+App image `etk-web` (id `sha256:d0a7b156…`) healthy; **payload_migrations 26** (phase31: `provider_accounts` +
+`synced_performance_daily` tables, additive). The full **read-only** Google Ads path is deployed — OAuth start/callback,
+accessible-account discovery, GAQL campaign-daily sync into normalized `api_synced` rows, and a source-labeled Google
+Ads section in `/app/performance`. **READ-ONLY** (no mutate/launch/spend). **All live behavior is env-gated** behind
+`GOOGLE_ADS_*` + `PROVIDER_TOKEN_ENCRYPTION_KEY`; **production has none → everything is `not_configured`, OAuth start +
+sync return 422, and NO external Google API call occurs** (verified). To activate, the operator must set the Google Ads
+env (see PROVIDER_API_AUDIT.md / Phase 30 operator prerequisites). Manual performance (Phase 28) remains the **fallback**.
+**Connections** area at `/app/provider-connections` (Phase 30 OAuth/token vault) — tokens AES-256-GCM-encrypted, never exposed.
 **Strategic direction is API-first** for ad/social/performance measurement (see `PROVIDER_API_AUDIT.md`):
 the **Performance** area at `/app/performance` is the **manual fallback / onboarding / formula-validation / CSV layer**,
 **not** the long-term source of truth — API-synced provider data (Google Ads first, then Meta/TikTok/LinkedIn/Pinterest)
@@ -61,6 +64,6 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `95ef624` (Phase 30 feat); the docs commit on
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `0cb27f5` (Phase 31 feat); the docs commit on
 top is docs-only. Local + server in sync. Worker fix baseline `c158c5f` unchanged. (Prod also has 1 retained test
 workspace + 1 organic customer workspace alongside ETK — 3 tenants total; ETK content unchanged.)

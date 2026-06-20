@@ -1,15 +1,15 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-20 — **Phase 30 (Provider Connections Foundation / OAuth Vault): COMPLETE &
-> DEPLOYED & VERIFIED LIVE.** Production HEAD `95ef624`, image `etk-web` (id `sha256:7e8736ac…`) healthy; **migrations
-> 25** (phase30 provider connections applied). New `/app/provider-connections` — tenant/workspace-scoped **OAuth/token
-> vault foundation** (provider cards, status, capabilities, required env NAMES, owner/admin connect/disconnect) for
-> future ad/social provider integrations. **FOUNDATION ONLY:** no provider API calls, no live token exchange, no sync,
-> no campaigns/launch/spend. Tokens are AES-256-GCM-encrypted at rest and **never** returned to clients (verified: an
-> injected ciphertext never surfaced in API/UI). With no provider env (prod), everything stays **not configured**.
-> Product is **API-FIRST**: manual performance (Phase 28) remains the **fallback** layer; **Google Ads read sync is
-> next (Phase 31)**. Email + billing still **local-safe**. Prior: Phase 29 provider API audit/blueprint correction,
-> Phase 28 manual performance, Phase 27 Ads Studio v1, Phase 26 social calendar, Phase 25 Social Studio, Phase 24 landing analytics.
+> Current snapshot. Updated 2026-06-20 — **Phase 31 (Google Ads Read Sync v1): IMPLEMENTATION DEPLOYED & VERIFIED LIVE
+> (env-gated). LIVE GOOGLE ADS OAUTH/SYNC BLOCKED BY MISSING OPERATOR CREDENTIALS.** Production HEAD `0cb27f5`, image
+> `etk-web` (id `sha256:d0a7b156…`) healthy; **migrations 26** (phase31 google ads sync applied). New `provider-accounts`
+> + `synced-performance-daily` tables + the full **read-only** Google Ads path: OAuth start/callback (live consent +
+> token exchange), accessible-account discovery, GAQL campaign-daily read sync into normalized `api_synced` rows, and a
+> source-labeled Google Ads section in `/app/performance`. **READ-ONLY** — no mutate/launch/spend. **All live behavior is
+> env-gated** (`GOOGLE_ADS_*` + `PROVIDER_TOKEN_ENCRYPTION_KEY`); **prod has none → everything stays `not_configured`,
+> start/sync return 422, and NO external call occurs** (verified). Manual performance (Phase 28) remains the **fallback**.
+> Email + billing still **local-safe**. Prior: Phase 30 OAuth vault, Phase 29 audit/correction, Phase 28 manual performance,
+> Phase 27 Ads Studio, Phase 26 social calendar, Phase 25 Social Studio, Phase 24 landing analytics.
 
 ---
 
@@ -257,6 +257,51 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Phase 31 — Google Ads Read Sync v1: IMPLEMENTATION DEPLOYED & VERIFIED (env-gated; live blocked by missing credentials) (migration 25 → 26)
+First real provider read-sync path. **Additive** — two NEW collections. **READ-ONLY:** GAQL reporting only; **no
+mutate / campaign create / launch / budget change**. **All live behavior is env-gated** behind `GOOGLE_ADS_*` +
+`PROVIDER_TOKEN_ENCRYPTION_KEY`; **production has none, so live OAuth/sync is NOT verified** — code is deployed and
+safe (no external call can occur without env). Manual performance (Phase 28) untouched and reclassified fallback.
+Public magazine + Phase 22–30 behavior + gates + local-safe modes unchanged.
+- **New scoped collections:** `provider-accounts` (ad accounts discovered under a connection — read-only identity,
+  `selected` flag for the synced account, **no tokens**) and `synced-performance-daily` (normalized **`api_synced`**
+  daily metrics: campaign [+ ad group/ad] grain; raw impressions/clicks/cost_micros/conversions/conversion_value +
+  derived `cost`; **kept separate** from manual `performance-entries` and internal landing-page views). +`windowStart`/
+  `windowEnd` on `provider-sync-runs`. `scopedRead('deny')` + super-only native mutate + stamp.
+- **Google Ads client lib (server-only, direct REST — no SDK):** `google-ads-auth.ts` (consent URL, code exchange,
+  refresh; reads env), `google-ads-queries.ts` (campaign-daily GAQL), `google-ads-normalize.ts` (cost_micros→cost, no
+  invented numbers), `google-ads.ts` (`listAccessibleCustomers` + `searchStream` — **read-only**), `google-ads-sync.ts`
+  (vault token refresh + persist; idempotent date-window write). Tokens decrypted only in-memory via the Phase 30
+  AES-256-GCM vault; **never logged/returned**. API **v20** (env-overridable `GOOGLE_ADS_API_VERSION`); scope `…/auth/adwords`.
+- **Live OAuth (env-gated):** `/oauth/google_ads/start` (owner/admin) returns the Google consent URL with **signed,
+  workspace-bound state** when configured; **422 `not_configured`** (env NAMES only) otherwise. `/oauth/google_ads/callback`
+  validates state + workspace, exchanges the code, stores **encrypted** access/refresh tokens, marks `connected`, and
+  fetches accessible customers → `provider-accounts`; on failure sets `error` without exposing secrets.
+- **Sync (env-gated):** `/api/app/provider-connections/[id]/sync` (owner/admin) creates a `provider-sync-run`, refreshes
+  the token if expired, runs campaign-daily GAQL, and writes normalized rows (default last 30d, **max 90d**, idempotent
+  window replace); records counts + status. `/[id]/select-account` chooses the synced account. Env-missing/not-connected
+  → safe 422; cross-tenant id → 404; unauth → 401.
+- **UI:** `GoogleAdsSyncPanel` on the provider detail (account select, date window, **read-only** "Sync last 30 days",
+  last sync/error, honest copy "Read-only · nothing changes in Google Ads · no campaigns launched · no budgets changed").
+  `/app/performance` gains a **source-labeled** "Google Ads — API-synced (read-only)" section (totals + top campaigns,
+  separate from manual/internal) and a sources legend; honest empty-state + "Connect Google Ads" prompt when no synced data.
+- **Migration `20260620_030000_phase31_google_ads_sync`:** 2 tables, 4 enums, indexes (workspace/provider/account/date,
+  campaign/date, syncRun, source, connection), FKs, locked-doc rels, + window cols on sync runs. Additive + idempotent;
+  `down()` safe. **Pre-validated in a rolled-back tx on prod.**
+- **Rollback tag `pre-phase31-googleads → ddd3a2f`; backup `pre-phase31_20260620_230905.sql.gz` (gzip-verified).**
+- **DEPLOYED & VERIFIED LIVE 2026-06-20** (on the VPS as `deploy` via sudo): prod HEAD `0cb27f5`; image `etk-web`
+  (id `sha256:d0a7b156…`) healthy; worker/postgres/caddy untouched. **payload_migrations 25 → 26** (phase31 applied,
+  32ms); `provider_accounts` + `synced_performance_daily` tables, 4 enums, window cols, 2 locked-rels confirmed via psql.
+  **Google Ads env ABSENT → live OAuth/sync NOT exercised; no external Google API call occurred** (every live path
+  returned 422 before any fetch). Content unchanged (gen 5/art 5/media 45). Routes: public 200; `/app/provider-connections`
+  (+`/google_ads`)/`/app/performance` → 307; `/admin` → 200. **Verified via temp owner (created→checked→deleted, zero
+  residue):** google_ads detail + performance pages render (source legend + "Connect Google Ads" prompt, **no api-synced
+  section** at 0 rows); **start → 422 `not_configured` with env NAMES only (no consent redirect)**; callback (no state,
+  vault absent) → 422; create connection → `not_configured`; **sync → 422 `not_configured` (no external call)**; unauth
+  sync → 401; cross-tenant sync/select → 404; **0 synced rows / provider_accounts / sync_runs created** (sync refused
+  pre-run); ETK had 0 connections (isolation). No secrets printed/committed; tokens never exposed; no mutate/launch/
+  spend/generation/publish/email/billing/external side effects.
 
 ### Phase 30 — Provider Connections Foundation / OAuth Vault: COMPLETE & DEPLOYED (migration 24 → 25)
 Secure tenant/workspace-scoped foundation for future ad/social provider integrations. **Additive** — two NEW

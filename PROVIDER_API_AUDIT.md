@@ -254,8 +254,12 @@ say where a number came from.
   Shipped `provider-connections` + `provider-sync-runs` collections, AES-256-GCM token vault
   (`PROVIDER_TOKEN_ENCRYPTION_KEY`; disabled when absent), provider registry, owner/admin connect/disconnect, and the
   `/app/provider-connections` status page — all tenant/workspace-scoped, foundation-only (no sync, no token exchange).
-- **Phase 31 — Google Ads Read Sync v1.** Connect Google Ads; pull account/campaign/ad **metrics**; normalize into
-  `synced_*` / `synced_performance_daily`. **No campaign write.**
+- **Phase 31 — Google Ads Read Sync v1. ✅ IMPLEMENTED & DEPLOYED (2026-06-20, prod HEAD `0cb27f5`, migrations 26;
+  live blocked by missing operator credentials).** Shipped `provider-accounts` + `synced-performance-daily`, the
+  read-only Google Ads path (live OAuth start/callback, `listAccessibleCustomers`, GAQL campaign-daily `searchStream`
+  v20, normalized `api_synced` rows), owner/admin manual sync (default 30d/max 90d), and a source-labeled Performance
+  section. **READ-ONLY — no campaign write.** Env-gated (`GOOGLE_ADS_*` + vault key); not yet activated in prod.
+  Operator must set the Google Ads OAuth client + developer token + redirect URI + vault key to go live.
 - **Phase 32 — Meta Ads Read Sync v1.** Connect Meta (if App Review + Business Verification allow); pull ad
   account/campaign/ad-set/ad **insights**; normalize.
 - **Phase 33 — Unified Metrics Warehouse.** Unify Google + Meta + manual + internal landing analytics into one
