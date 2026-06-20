@@ -3,10 +3,14 @@
 _Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
 over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `1196db8` (code unchanged since Phase 28). Phase 29 (Provider API Audit + Blueprint Correction) is
-docs/architecture-only — no code/deploy/migration/API calls.**
-App image `etk-web` (id `sha256:92fbe151…`) healthy; **payload_migrations 24** (phase28: `performance_entries` table,
-additive). **Strategic direction is now API-first** for ad/social/performance measurement (see `PROVIDER_API_AUDIT.md`):
+**Production HEAD: `95ef624` (Blueprint v2 Phase 30 — Provider Connections Foundation / OAuth Vault).**
+App image `etk-web` (id `sha256:7e8736ac…`) healthy; **payload_migrations 25** (phase30: `provider_connections` +
+`provider_sync_runs` tables, additive). New **Connections** area at `/app/provider-connections` — tenant/workspace-scoped
+**OAuth/token vault foundation** for future ad/social provider integrations (provider cards, status, capabilities,
+required env NAMES, owner/admin connect/disconnect). **FOUNDATION ONLY** — no provider API calls, no live token exchange,
+no sync, no campaigns/launch/spend; tokens AES-256-GCM-encrypted at rest and never exposed (verified). With no provider
+env (prod), everything is **not configured**. Next: **Google Ads read sync (Phase 31)**.
+**Strategic direction is API-first** for ad/social/performance measurement (see `PROVIDER_API_AUDIT.md`):
 the **Performance** area at `/app/performance` is the **manual fallback / onboarding / formula-validation / CSV layer**,
 **not** the long-term source of truth — API-synced provider data (Google Ads first, then Meta/TikTok/LinkedIn/Pinterest)
 will be primary, with every number **source-labeled** (internal / api-synced / manual / calculated). Today it remains
@@ -57,7 +61,6 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) **app code** is at `1196db8` (Phase 28 feat) — Phase 29 added
-**docs only** (`PROVIDER_API_AUDIT.md` + doc updates), no app/source/migration change. Local + server in sync after the
-Phase 29 docs commit. Worker fix baseline `c158c5f` unchanged. (Prod also has 1 retained test workspace + 1 organic
-customer workspace alongside ETK — 3 tenants total; ETK content unchanged.)
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `95ef624` (Phase 30 feat); the docs commit on
+top is docs-only. Local + server in sync. Worker fix baseline `c158c5f` unchanged. (Prod also has 1 retained test
+workspace + 1 organic customer workspace alongside ETK — 3 tenants total; ETK content unchanged.)

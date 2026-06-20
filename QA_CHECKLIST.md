@@ -210,6 +210,17 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 41. Phase 30 — Provider Connections Foundation / OAuth Vault
+**VERIFIED LIVE 2026-06-20 — prod HEAD `95ef624`, image `etk-web` (id `sha256:7e8736ac…`) healthy; migrations 24→25; content unchanged (gen 5/art 5/media 45); provider env absent → vault missing, all cards not_configured. Temp-owner E2E (created→checked→deleted, zero residue): page cards render; unauth create 401; owner create record (no token fields, only hasStoredToken); unknown + coming-soon provider 422; start (env absent) → 422 not_configured with env NAMES only; callback missing state → 400; TOKEN-LEAK TEST — injected DB ciphertext never surfaced in API/UI (0 leaks); disconnect cleared tokens; DELETE removed record; cross-tenant foreign id → 404; ETK + other tenant 0 connections. FOUNDATION ONLY — no provider API/OAuth-exchange/sync/launch/spend.**
+- [ ] `/app/provider-connections` (any member can view; owner/admin manage): provider cards with status badge (Not configured / Ready / Connected / Error / Coming soon), capabilities (read metrics / create campaigns / social publish / conversions), required env NAMES, last-sync placeholder, planned phase. `[provider]` detail shows vault status + scopes + env names. Sidebar "Connections" under Growth.
+- [ ] Honest copy present: "foundation for API-synced metrics", "No provider data is synced yet", "No campaigns launch from this page", "Manual performance import remains available as fallback".
+- [ ] Env-missing safety: connect button disabled until configured; `start` returns `not_configured` with **missing env NAMES only** (never values); no token stored when vault key absent/invalid.
+- [ ] Token vault: tokens AES-256-GCM-encrypted at rest; **never** returned via API, shown in UI, or logged (status API + page expose only `hasStoredToken` boolean — verified an injected ciphertext does not leak). Disconnect clears tokens.
+- [ ] Role/access: owner/admin can create/disconnect/remove (canManageConnections); editor/viewer view status only; unauth write → 401. Platform super-admin not a workspace role.
+- [ ] Tenant isolation: connections + sync runs strictly workspace-scoped; cross-tenant foreign id (status/disconnect/delete) → 404; no ETK/other-tenant connection leakage.
+- [ ] OAuth route foundation: `start`/`callback` perform **no provider API call and no token exchange** in this phase; callback rejects missing/invalid/forged or cross-workspace state (signed state).
+- [ ] Safety: no provider API/OAuth-exchange/sync/campaign/launch/spend/AI/image/video/email/billing/external calls; no fake metrics; public magazine + landing pages + Social Studio + Ads Studio + Performance + gates unchanged; migration additive (down() safe).
+
 ## 40. Phase 29 — Provider API Audit + Blueprint Correction (docs/architecture only)
 **NO production change — research + documentation phase. Migrations stay 24; prod app code unchanged at `1196db8`; no code/OAuth/migration/deploy/external-API/secret. New doc `PROVIDER_API_AUDIT.md`; doc updates to PROJECT_STATE/CURRENT_PRODUCTION_STATUS/QA_CHECKLIST.**
 - [ ] Strategic correction documented: product is **API-first** for ad/social/performance measurement; manual performance (Phase 28) is reclassified as **fallback / onboarding / formula-validation / CSV-support** (retained, not removed).

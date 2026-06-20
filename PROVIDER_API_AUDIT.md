@@ -250,9 +250,10 @@ say where a number came from.
 
 > Numbering may be adjusted, but the **strategic direction is API-first**. Optimization comes **after** real API data.
 
-- **Phase 30 — Provider Connections Foundation / OAuth Vault.** `provider_connections` model + **encrypted token
-  storage** design/impl; **owner-only** connect/disconnect; provider **status page**. *No sync yet* (or, only if
-  explicitly approved, a minimal safe **account-identity** fetch).
+- **Phase 30 — Provider Connections Foundation / OAuth Vault. ✅ DONE (2026-06-20, prod HEAD `95ef624`, migrations 25).**
+  Shipped `provider-connections` + `provider-sync-runs` collections, AES-256-GCM token vault
+  (`PROVIDER_TOKEN_ENCRYPTION_KEY`; disabled when absent), provider registry, owner/admin connect/disconnect, and the
+  `/app/provider-connections` status page — all tenant/workspace-scoped, foundation-only (no sync, no token exchange).
 - **Phase 31 — Google Ads Read Sync v1.** Connect Google Ads; pull account/campaign/ad **metrics**; normalize into
   `synced_*` / `synced_performance_daily`. **No campaign write.**
 - **Phase 32 — Meta Ads Read Sync v1.** Connect Meta (if App Review + Business Verification allow); pull ad

@@ -1,14 +1,15 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-20 — **Phase 29 (Provider API Access Audit + Blueprint Correction): COMPLETE
-> (docs/architecture only — no code/deploy/migration/API calls).** Production unchanged at HEAD `1196db8`, image
-> `etk-web` (id `sha256:92fbe151…`) healthy, **migrations 24**. **Strategic correction: the product is now API-FIRST**
-> for ad/social/performance measurement — the Phase 28 manual performance import is reclassified as a **fallback /
-> onboarding / formula-validation / CSV-support layer**, NOT the long-term source of truth. API-synced provider data
-> (Google Ads, Meta, TikTok, LinkedIn, Pinterest…) is the primary long-term measurement source. Full provider audit +
-> normalized connection architecture + corrected API-first roadmap (Phase 30+) live in **`PROVIDER_API_AUDIT.md`**.
-> Email + billing still **local-safe**. Prior: Phase 28 manual performance, Phase 27 Ads Studio v1, Phase 26 social
-> calendar/export/duplication, Phase 25 Social Studio, Phase 24 landing enrich+analytics, Phase 23 landing, Phase 22 brand kit.
+> Current snapshot. Updated 2026-06-20 — **Phase 30 (Provider Connections Foundation / OAuth Vault): COMPLETE &
+> DEPLOYED & VERIFIED LIVE.** Production HEAD `95ef624`, image `etk-web` (id `sha256:7e8736ac…`) healthy; **migrations
+> 25** (phase30 provider connections applied). New `/app/provider-connections` — tenant/workspace-scoped **OAuth/token
+> vault foundation** (provider cards, status, capabilities, required env NAMES, owner/admin connect/disconnect) for
+> future ad/social provider integrations. **FOUNDATION ONLY:** no provider API calls, no live token exchange, no sync,
+> no campaigns/launch/spend. Tokens are AES-256-GCM-encrypted at rest and **never** returned to clients (verified: an
+> injected ciphertext never surfaced in API/UI). With no provider env (prod), everything stays **not configured**.
+> Product is **API-FIRST**: manual performance (Phase 28) remains the **fallback** layer; **Google Ads read sync is
+> next (Phase 31)**. Email + billing still **local-safe**. Prior: Phase 29 provider API audit/blueprint correction,
+> Phase 28 manual performance, Phase 27 Ads Studio v1, Phase 26 social calendar, Phase 25 Social Studio, Phase 24 landing analytics.
 
 ---
 
@@ -256,6 +257,56 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Phase 30 — Provider Connections Foundation / OAuth Vault: COMPLETE & DEPLOYED (migration 24 → 25)
+Secure tenant/workspace-scoped foundation for future ad/social provider integrations. **Additive** — two NEW
+collections. **FOUNDATION ONLY:** no provider API calls, no live token exchange, no sync, no campaigns, no launch,
+no budget spend. With no provider env in prod, everything stays **not configured / local-safe**. Public magazine +
+Phase 22–29 behavior + all gates + local-safe modes unchanged.
+- **New scoped collections:** `provider-connections` (the encrypted token vault — provider, connectionType, status
+  [not_configured/ready_to_connect/connected/expired/disconnected/error/disabled], account ids/currency/timezone,
+  scopes, **AES-256-GCM-encrypted access/refresh tokens**, expiry/last-connected/last-sync placeholders, connectedBy/
+  disconnectedBy, notes) and `provider-sync-runs` (audit foundation — provider, connection, syncType, status, counts,
+  error, source; **no sync occurs yet**). Both `scopedRead('deny')` + super-only native mutate + `stampTenantWorkspace`.
+- **Token vault (`lib/provider-crypto.ts`, server-only):** AES-256-GCM keyed by env `PROVIDER_TOKEN_ENCRYPTION_KEY`
+  (32 bytes hex/base64); auth-tag tamper detection; HMAC-signed OAuth `state`. **Vault DISABLED (no token storage) when
+  the key is missing/invalid.** Tokens are **never** logged, returned to clients, or committed — the data layer
+  `sanitizeConnection` strips ciphertext and exposes only a `hasStoredToken` boolean. (Crypto round-trip + tamper +
+  state-forgery rejection validated.)
+- **Provider registry (`lib/provider-constants.ts`, pure):** 9 providers (google_ads, meta_ads, tiktok_ads,
+  linkedin_ads, pinterest_ads, microsoft_ads, amazon_ads, x_ads, snapchat_ads) with capabilities, **required env NAMES
+  only**, scopes, and planned phase. **Google Ads = first read-sync provider (Phase 31).** `lib/providers.ts` evaluates
+  env PRESENCE (names only) for setup status + scoped data layer.
+- **Migration `20260620_020000_phase30_provider_connections`:** 2 tables, 7 enums, indexes (provider/connection_type/
+  status/tenant/workspace/created), user/connection/tenant/workspace FKs, locked-doc rels. Additive + idempotent;
+  `down()` drops both tables + 7 enums safely. **Pre-validated in a rolled-back tx on prod.**
+- **APIs (owner/admin via `canManageConnections`):** `/api/app/provider-connections` (create record — no tokens) +
+  `/[id]` (DELETE, cascades its sync runs) + `/[id]/disconnect` (clears tokens, status disconnected) + `/[id]/status`
+  (sanitized — no ciphertext); `/oauth/[provider]/start` (env-missing → 422 `not_configured` + missing env **names**;
+  configured → readiness only, **no token exchange**) + `/oauth/[provider]/callback` (HMAC signed-state validation +
+  workspace match; **no token exchange** — live connect deferred to Phase 31). Editors/viewers read status only;
+  unauth → 401. (A static `oauth/` segment disambiguates the `[id]` vs `[provider]` dynamic routes.)
+- **Console UI `/app/provider-connections`** (cards: provider, status badge, capabilities [read metrics / create
+  campaigns / social publish / conversions], required env names, **connect disabled until configured**, disconnect/
+  remove, last-sync placeholder, planned phase) + `[provider]` detail (vault status, scopes, env names) +
+  `ProviderConnectionControls`. Sidebar **"Connections" under Growth**. Honest copy ("Provider connections are the
+  foundation for API-synced metrics", "No provider data is synced yet", "No campaigns launch from this page", "Manual
+  performance import remains available as fallback"). `.env.example` gains Phase 30 env **NAMES only**.
+- **Rollback tag `pre-phase30-providers → ebf783d`; backup `pre-phase30_20260620_223008.sql.gz` (gzip-verified).**
+- **DEPLOYED & VERIFIED LIVE 2026-06-20** (on the VPS as `deploy` via sudo): prod HEAD `95ef624`; image `etk-web`
+  (id `sha256:7e8736ac…`) healthy; worker/postgres/caddy untouched. **payload_migrations 24 → 25** (phase30 applied,
+  30ms); `provider_connections` + `provider_sync_runs` tables, 7 enums, 2 locked-rel columns confirmed via psql.
+  **Provider env absent → vault `missing`, all cards `not_configured`.** Content unchanged (gen 5/art 5/media 45).
+  Routes: public 200; `/app/provider-connections`(+`/[provider]`)/`/app/ads`/`/app/performance` → 307; `/admin` → 200.
+  **Verified via temp owner (created→checked→deleted, zero residue):** page renders cards with "Not configured" + env
+  names; unauth create **401**; owner create record (stamped to temp tenant; **no token fields** in response, only
+  `hasStoredToken`); unknown provider **422**; coming-soon provider create **422**; `start` (env absent) → **422
+  not_configured** with **missing env NAMES only** (no values); `callback` missing state → **400**; **TOKEN-LEAK TEST:
+  a fake ciphertext injected directly into the DB never surfaced in the status API or detail page (0 leaks)**;
+  disconnect **cleared the injected tokens** (access+refresh null, disconnected_at set); DELETE removed the record;
+  cross-tenant foreign id (status/disconnect/delete) → **404**; ETK + the other live tenant had **0 connections**
+  (isolation); no `provider_sync_runs` created. No secrets printed/committed; no provider API/OAuth-exchange/sync/
+  generation/publish/launch/spend/email/billing/external side effects.
 
 ### Phase 29 — Provider API Access Audit + Blueprint Correction: COMPLETE (docs/architecture only — NO code/deploy/migration)
 Strategy + research + documentation phase. **No production behavior change**: no integration code, no OAuth, no
