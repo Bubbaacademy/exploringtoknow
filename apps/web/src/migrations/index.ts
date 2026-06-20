@@ -20,6 +20,7 @@ import * as migration_20260618_020000_phase23_landing_pages from './20260618_020
 import * as migration_20260618_030000_phase24_landing_enrich from './20260618_030000_phase24_landing_enrich';
 import * as migration_20260619_010000_phase25_social_studio from './20260619_010000_phase25_social_studio';
 import * as migration_20260619_020000_phase26_social_planning from './20260619_020000_phase26_social_planning';
+import * as migration_20260619_030000_phase27_ads_studio from './20260619_030000_phase27_ads_studio';
 
 export const migrations = [
   {
@@ -131,5 +132,10 @@ export const migrations = [
     up: migration_20260619_020000_phase26_social_planning.up,
     down: migration_20260619_020000_phase26_social_planning.down,
     name: '20260619_020000_phase26_social_planning',
+  },
+  {
+    up: migration_20260619_030000_phase27_ads_studio.up,
+    down: migration_20260619_030000_phase27_ads_studio.down,
+    name: '20260619_030000_phase27_ads_studio',
   },
 ];
