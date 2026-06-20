@@ -3,13 +3,17 @@
 _Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
 over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `1196db8` (Blueprint v2 Phase 28 — Manual performance import + measurement foundation).**
+**Production HEAD: `1196db8` (code unchanged since Phase 28). Phase 29 (Provider API Audit + Blueprint Correction) is
+docs/architecture-only — no code/deploy/migration/API calls.**
 App image `etk-web` (id `sha256:92fbe151…`) healthy; **payload_migrations 24** (phase28: `performance_entries` table,
-additive). New **Performance** area at `/app/performance` — owner/admin/editor **manually** enter or **paste-CSV import**
-performance data (impressions/clicks/spend/conversions/revenue/leads), with **calculated** CTR/CPC/CPM/CVR/CPA/ROAS
-(safe zero-denominators → "—", no fabricated numbers), an overview (totals + averages + top campaigns/products), and
-internal Phase-24 landing-page views shown **separately** from manual ad clicks. **Manual-only** — no OAuth, no ad/social
-account connection, no external API, no real-time sync, no fake metrics, no AI/optimization, no launch/spend. Ads Studio
+additive). **Strategic direction is now API-first** for ad/social/performance measurement (see `PROVIDER_API_AUDIT.md`):
+the **Performance** area at `/app/performance` is the **manual fallback / onboarding / formula-validation / CSV layer**,
+**not** the long-term source of truth — API-synced provider data (Google Ads first, then Meta/TikTok/LinkedIn/Pinterest)
+will be primary, with every number **source-labeled** (internal / api-synced / manual / calculated). Today it remains
+owner/admin/editor **manual** entry or **paste-CSV import** of performance data, with **calculated** CTR/CPC/CPM/CVR/CPA/
+ROAS (safe zero-denominators → "—", no fabricated numbers), an overview, and internal Phase-24 landing-page views shown
+**separately** from manual ad clicks. **Manual-only today** — no OAuth, no ad/social account connection, no external API,
+no real-time sync, no fake metrics, no AI/optimization, no launch/spend. Ads Studio
 `/app/ads` (Phase 27), Social Studio `/app/social-posts` (Phase 25/26), landing pages `/app/landing-pages` (Phase 23/24),
 Brand Kit `/app/brand` (Phase 22) all unchanged. No binary upload yet. Email + billing still local-safe.
 - **Billing layer: local-safe** — no Stripe/billing env → no real charges, checkout/portal return disabled,
@@ -53,6 +57,7 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) and local are in sync at `1196db8` (Phase 28 feat);
-the docs commit on top is docs-only. Worker fix baseline `c158c5f` unchanged. (Prod also has 1 retained
-test workspace + 1 organic customer workspace alongside ETK — 3 tenants total; ETK content unchanged.)
+Production (VPS `/opt/exploringtoknow`, branch `main`) **app code** is at `1196db8` (Phase 28 feat) — Phase 29 added
+**docs only** (`PROVIDER_API_AUDIT.md` + doc updates), no app/source/migration change. Local + server in sync after the
+Phase 29 docs commit. Worker fix baseline `c158c5f` unchanged. (Prod also has 1 retained test workspace + 1 organic
+customer workspace alongside ETK — 3 tenants total; ETK content unchanged.)

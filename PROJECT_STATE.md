@@ -1,17 +1,50 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-20 — **Blueprint v2 Phase 28 (Manual performance import + measurement foundation):
-> COMPLETE & DEPLOYED & VERIFIED LIVE.** Production HEAD `1196db8`, image `etk-web` (id `sha256:92fbe151…`) healthy;
-> **migrations 24** (phase28 performance applied). New `/app/performance` — **manually** enter or **paste-CSV import**
-> performance data (impressions/clicks/spend/conversions/revenue/leads), with **calculated** CTR/CPC/CPM/CVR/CPA/ROAS
-> (safe zero-denominators), an overview (totals + averages + top campaigns/products), and internal landing-page views
-> kept **separate** from manual ad clicks. Manual-only: no OAuth, no ad/social account connection, no external API/sync,
-> no fake metrics, no AI. Email + billing still **local-safe**. Prior: Phase 27 Ads Studio v1, Phase 26 social
-> calendar/export/duplication, Phase 25 Social Studio foundation, Phase 24 landing enrich+analytics, Phase 23 landing, Phase 22 brand kit.
+> Current snapshot. Updated 2026-06-20 — **Phase 29 (Provider API Access Audit + Blueprint Correction): COMPLETE
+> (docs/architecture only — no code/deploy/migration/API calls).** Production unchanged at HEAD `1196db8`, image
+> `etk-web` (id `sha256:92fbe151…`) healthy, **migrations 24**. **Strategic correction: the product is now API-FIRST**
+> for ad/social/performance measurement — the Phase 28 manual performance import is reclassified as a **fallback /
+> onboarding / formula-validation / CSV-support layer**, NOT the long-term source of truth. API-synced provider data
+> (Google Ads, Meta, TikTok, LinkedIn, Pinterest…) is the primary long-term measurement source. Full provider audit +
+> normalized connection architecture + corrected API-first roadmap (Phase 30+) live in **`PROVIDER_API_AUDIT.md`**.
+> Email + billing still **local-safe**. Prior: Phase 28 manual performance, Phase 27 Ads Studio v1, Phase 26 social
+> calendar/export/duplication, Phase 25 Social Studio, Phase 24 landing enrich+analytics, Phase 23 landing, Phase 22 brand kit.
 
 ---
 
-# 🧭 MASTER BLUEPRINT v2 — Strategic Pivot (official)
+# 🧭 STRATEGIC CORRECTION (Phase 29, official) — API-FIRST measurement & advertising
+
+> This block **corrects** the roadmap below. ExploringToKnow is a **multi-tenant Owned Media + Social + Ads + Landing
+> Page AI OS** — not a magazine builder. Magazine/articles are **one** output layer alongside landing pages, social
+> posts/calendar, ad campaigns/creatives, performance measurement, optimization insights, **API-based provider
+> integrations**, and later **controlled publishing/launching through provider APIs**.
+
+**Measurement strategy (corrected):**
+- Manual performance entry/import (Phase 28) = **fallback / pre-API onboarding / formula-validation / CSV-support** layer — **not** the main source of truth.
+- **API-synced provider data is the primary long-term measurement source** for ad/social performance.
+- Internal landing-page analytics (Phase 24) remain **first-party web analytics** (real, but distinct from platform ad metrics).
+- **Every dashboard number is labeled by source:** `internal` · `api-synced` (provider+account) · `manual`/`imported` · `calculated`.
+
+**Corrected API-first roadmap (replaces the old Phase 29 "Optimization Engine"; see `PROVIDER_API_AUDIT.md` for detail):**
+- **Phase 30** — Provider Connections Foundation / OAuth Vault (encrypted token storage, owner-only connect/disconnect, status page; no sync yet).
+- **Phase 31** — Google Ads **Read Sync v1** (recommended first provider — cleanest: test accounts, single `adwords` scope, GAQL reporting; read-only, no write).
+- **Phase 32** — Meta Ads Read Sync v1 (gated by App Review + Business Verification).
+- **Phase 33** — Unified Metrics Warehouse (Google + Meta + manual + internal, source-labeled).
+- **Phase 34** — API-Based Performance Dashboard.
+- **Phase 35** — Rule-Based Optimization Engine (recommend-only; primarily on API data; manual labeled fallback).
+- **Phase 36** — Controlled Campaign Publishing v1 (draft/paused only, explicit approval, budget guardrails, kill switch, audit log).
+- **Phase 37** — Social Account Connections / Publishing Foundation (OAuth identity only; no auto-publish).
+- **Phase 38** — Controlled Social Publishing v1 (approved posts only, audit logs).
+- TikTok / LinkedIn / Pinterest read-sync slot in after Google + Meta, provider-by-provider, each behind its own approval.
+
+**Hard safety rules for all future API work (full list in `PROVIDER_API_AUDIT.md` §7):** no secrets printed/committed ·
+OAuth tokens encrypted at rest · owner/admin-only connections · tenant/workspace-scoped · **read sync before write/launch** ·
+write starts **draft/paused only** · no launch/spend without explicit confirmation · no auto-optimization yet · data
+always source-labeled · all sync runs logged with failure handling · kill switch + audit log before any publishing.
+
+---
+
+# 🧭 MASTER BLUEPRINT v2 — Strategic Pivot (original; measurement section superseded by the API-FIRST correction above)
 
 > Numbering note: the Blueprint v2 phase numbers below are the **forward strategic plan**. Several early items
 > already have a **shipped foundation** from prior implementation phases (multi-tenant, signup/trial, workspace
@@ -223,6 +256,34 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Phase 29 — Provider API Access Audit + Blueprint Correction: COMPLETE (docs/architecture only — NO code/deploy/migration)
+Strategy + research + documentation phase. **No production behavior change**: no integration code, no OAuth, no
+migrations, no deploy, no external API calls, no app/account creation, no tokens/secrets, no email/billing. Migrations
+stay at 24; prod HEAD code unchanged at `1196db8`.
+- **Strategic correction:** product is **API-first** for ad/social/performance measurement. Manual performance
+  (Phase 28) is reclassified as **fallback / onboarding / formula-validation / CSV-support** — retained, not removed.
+  API-synced provider data is the primary long-term measurement source. See the **STRATEGIC CORRECTION** block at the
+  top of this file and **`PROVIDER_API_AUDIT.md`**.
+- **Provider API audit (official docs only, with source URLs):** Google Ads (incl. YouTube), Meta Marketing API,
+  TikTok Marketing API, LinkedIn Marketing API, Pinterest v5; plus "later" notes on Microsoft/Amazon/X/Snapchat. Each
+  with OAuth/scope, review/verification gates, dev-token/account model, sandbox availability, read/write capability,
+  complexity, and a priority order. Granular unconfirmed items flagged `⚠ CONFIRM`.
+- **Recommended first provider: Google Ads (read sync)** — immediate test-account dev access, single `adwords` scope,
+  comprehensive GAQL reporting matching our existing metric model, covers YouTube; production needs Basic Access (brand
+  verification) later.
+- **Normalized provider-connection architecture designed (NOT implemented):** `provider_connections`,
+  `provider_accounts`, `provider_sync_runs`, `synced_campaigns`, `synced_ad_groups`, `synced_ads`/`synced_creatives`,
+  `synced_performance_daily`, `provider_errors`/`provider_audit_logs` — all tenant/workspace-scoped, encrypted tokens,
+  source-labeled, mapping to internal Ads Studio / Social Studio / Landing Pages / Products.
+- **Corrected API-first roadmap Phase 30→38** (OAuth vault → Google read sync → Meta read sync → unified warehouse →
+  API dashboard → rule-based optimization → controlled campaign publishing → social connect → controlled social
+  publishing) with **hard safety rules** (read-before-write, draft/paused-only writes, explicit approval for
+  launch/spend, encrypted tokens, owner-only, source labels, audit logs, kill switch).
+- **Files:** new `PROVIDER_API_AUDIT.md`; doc updates to `PROJECT_STATE.md`, `QA_CHECKLIST.md`,
+  `CURRENT_PRODUCTION_STATUS.md`. No app/source/migration files touched.
+- **Limitation noted:** WebSearch was available in the main session (subagents were denied web access); a few granular
+  provider details are flagged `⚠ CONFIRM` to re-verify against the cited official pages at implementation time.
 
 ### Blueprint v2 Phase 28 — Manual performance import + measurement foundation: COMPLETE & DEPLOYED (migration 23 → 24)
 First measurement layer: workspace-scoped **manual** performance tracking — the foundation for the metrics/attribution
