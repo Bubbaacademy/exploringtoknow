@@ -14,7 +14,7 @@ const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
   { group: 'Overview', items: [['Dashboard', '/app']] },
   { group: 'Content', items: [['Articles', '/app/articles'], ['Products', '/app/products'], ['Categories', '/app/categories'], ['Media', '/app/media'], ['Brand Kit', '/app/brand'], ['Landing Pages', '/app/landing-pages'], ['Social Studio', '/app/social-posts']] },
   { group: 'Workflow', items: [['Product Requests', '/app/product-requests'], ['Editorial Console', '/app/editorial']] },
-  { group: 'Growth', items: [['Ads Studio', '/app/ads'], ['Analytics', '/app/analytics'], ['Newsletter', '/app/newsletter'], ['Contact Inbox', '/app/contact']] },
+  { group: 'Growth', items: [['Ads Studio', '/app/ads'], ['Performance', '/app/performance'], ['Analytics', '/app/analytics'], ['Newsletter', '/app/newsletter'], ['Contact Inbox', '/app/contact']] },
   { group: 'Workspace', items: [['Team', '/app/team'], ['Settings', '/app/settings']] },
 ];
 
