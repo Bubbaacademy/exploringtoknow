@@ -33,6 +33,8 @@ import { AdCreatives } from './collections/AdCreatives';
 import { PerformanceEntries } from './collections/PerformanceEntries';
 import { ProviderConnections } from './collections/ProviderConnections';
 import { ProviderSyncRuns } from './collections/ProviderSyncRuns';
+import { ProviderAccounts } from './collections/ProviderAccounts';
+import { SyncedPerformanceDaily } from './collections/SyncedPerformanceDaily';
 import { BrandProfileGlobal } from './globals/BrandProfile';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -54,7 +56,7 @@ export default buildConfig({
   collections: [
     Tenants, Workspaces, Memberships, WorkspaceInvitations,
     BrandProfiles, BrandAssets, LandingPages, LandingPageViews, SocialStudioPosts, AdCampaigns, AdCreatives, PerformanceEntries,
-    ProviderConnections, ProviderSyncRuns,
+    ProviderConnections, ProviderSyncRuns, ProviderAccounts, SyncedPerformanceDaily,
     Users, Media, Brands, Categories, Authors,
     Products, ProductIntelligence, ContentBriefs, Articles, SocialPosts, GenerationRuns,
     ProductRequests, NewsletterSubscribers, ContactMessages, ArticleViews,

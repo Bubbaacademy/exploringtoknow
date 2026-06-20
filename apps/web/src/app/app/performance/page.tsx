@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { requireWorkspace } from '@/lib/workspace';
 import { canWrite } from '@/lib/roles';
 import { listWorkspaceEntries, performanceOverview } from '@/lib/performance';
+import { syncedGoogleAdsOverview } from '@/lib/providers';
 import { PERF_PLATFORM_LABELS, PERF_CHANNEL_LABELS, PERF_STATUS_LABELS, perfStatusVariant, fmtPct, fmtMoney, fmtNum, fmtX } from '@/lib/performance-constants';
+import { computeMetrics } from '@/lib/performance-constants';
 import { TopBar, Section, Card, Empty, DataTable, WsLink, fmtDate } from '../_ui';
 import { PerfNav, PerfDisclaimer } from './_nav';
 
@@ -11,8 +13,9 @@ export const dynamic = 'force-dynamic';
 export default async function PerformanceOverview() {
   const ws = await requireWorkspace();
   const editable = canWrite(ws.role);
-  const [entries, o] = await Promise.all([listWorkspaceEntries(ws.scope), performanceOverview(ws.scope)]);
+  const [entries, o, gads] = await Promise.all([listWorkspaceEntries(ws.scope), performanceOverview(ws.scope), syncedGoogleAdsOverview(ws.scope)]);
   const t = o.totals, a = o.averages;
+  const gAvg = computeMetrics({ impressions: gads.totals.impressions, clicks: gads.totals.clicks, spend: gads.totals.cost, conversions: gads.totals.conversions, revenue: gads.totals.conversionValue });
 
   const stat = (label: string, value: string) => (
     <span key={label} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -32,7 +35,35 @@ export default async function PerformanceOverview() {
         <PerfNav active="/app/performance" />
         <PerfDisclaimer />
 
-        <Section title="Totals (entered/imported)">
+        <div className="adm-panel" style={{ marginBottom: 16 }}>
+          <strong>Data sources are labeled and kept separate:</strong> <code>manual / imported</code> (your entries, unverified) ·
+          <code>api-synced</code> (from a connected provider, e.g. Google Ads) · <code>internal</code> (first-party landing-page views).
+          {gads.rowCount ? null : <> Connect Google Ads in <a href="/app/provider-connections/google_ads">Connections</a> to add API-synced metrics (read-only).</>}
+        </div>
+
+        {gads.rowCount ? (
+          <Section title="Google Ads — API-synced (read-only)">
+            <Card>
+              <p className="adm-note" style={{ marginBottom: 8 }}>Synced from the Google Ads API (<code>api_synced</code>) — kept separate from manual entries and from internal landing-page views. Nothing in Google Ads is changed.</p>
+              <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap', marginBottom: 8 }}>
+                {stat('Impressions', fmtNum(gads.totals.impressions))}
+                {stat('Clicks', fmtNum(gads.totals.clicks))}
+                {stat('Cost', fmtMoney(gads.totals.cost, gads.currency || 'USD'))}
+                {stat('Conversions', fmtNum(gads.totals.conversions))}
+                {stat('Conv. value', fmtMoney(gads.totals.conversionValue, gads.currency || 'USD'))}
+                {stat('CTR', fmtPct(gAvg.ctr))}
+                {stat('CPC', fmtMoney(gAvg.cpc, gads.currency || 'USD'))}
+                {stat('ROAS', fmtX(gAvg.roas))}
+              </div>
+              {gads.topCampaigns.length ? (
+                <DataTable head={['Campaign', 'Clicks', 'Cost', 'Conv.', 'Conv. value', 'ROAS']}
+                  rows={gads.topCampaigns.map((c) => [c.name, fmtNum(c.clicks), fmtMoney(c.cost, gads.currency || 'USD'), fmtNum(c.conversions), fmtMoney(c.conversionValue, gads.currency || 'USD'), fmtX(c.roas)])} empty="No campaigns." />
+              ) : null}
+            </Card>
+          </Section>
+        ) : null}
+
+        <Section title="Manual / imported — totals">
           <Card>
             <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap' }}>
               {stat('Impressions', fmtNum(t.impressions))}

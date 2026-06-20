@@ -3,12 +3,15 @@ import { resolveWorkspace } from '@/lib/workspace';
 import { canManageConnections } from '@/lib/roles';
 import { providerSetup } from '@/lib/providers';
 import { PROVIDER_BY_ID, isProviderId } from '@/lib/provider-constants';
+import { signState } from '@/lib/provider-crypto';
+import { buildConsentUrl } from '@/lib/providers/google-ads-auth';
 
 /**
- * OAuth START foundation (Phase 30). Owner/admin only. Evaluates env readiness (names
- * only) and returns a SAFE readiness response. It performs NO provider API call, NO
- * token exchange, and NO redirect — live connect is deliberately deferred to Phase 31
- * (Google Ads read sync first). If env is missing the response is `not_configured`.
+ * OAuth START (Phase 30 foundation + Phase 31 Google Ads live). Owner/admin only.
+ * Env-missing → 422 `not_configured` (NAMES only). For google_ads when fully configured,
+ * returns the Google consent `authorizeUrl` (signed, workspace-bound state) for the
+ * client to redirect to — NO provider API is called here. Other configured providers
+ * remain foundation-only (connect deferred). Performs no token exchange.
  */
 type Ctx = { params: Promise<{ provider: string }> };
 
@@ -26,9 +29,17 @@ export async function POST(_req: Request, { params }: Ctx) {
     return NextResponse.json({ ok: false, code: 'not_configured', missingEnv: setup.missingEnv, vaultStatus: setup.vaultStatus,
       error: 'This provider is not configured. Set the required environment variables to enable connecting.' }, { status: 422 });
   }
-  // Configured, but Phase 30 is foundation-only — the live OAuth handshake is enabled in Phase 31.
-  return NextResponse.json({
-    ok: true, ready: true, connectEnabled: false, provider: def.id, scopes: def.scopes,
-    message: 'Environment is configured and the token vault is ready. The live OAuth connect is enabled in the provider read-sync phase (Google Ads first, Phase 31). No provider API is called yet.',
-  });
+
+  if (provider === 'google_ads') {
+    // Live consent URL with signed, workspace-bound state. No provider call here.
+    const nonce = crypto.randomUUID();
+    const state = signState({ workspaceId: String(ws.scope.workspaceId), provider: 'google_ads', nonce });
+    const authorizeUrl = buildConsentUrl(state);
+    return NextResponse.json({ ok: true, ready: true, connectEnabled: true, provider, authorizeUrl,
+      message: 'Redirecting to Google for read-only authorization. Nothing in Google Ads is changed.' });
+  }
+
+  // Other configured providers: foundation-only (live connect enabled in a later phase).
+  return NextResponse.json({ ok: true, ready: true, connectEnabled: false, provider, scopes: def.scopes,
+    message: 'Environment is configured and the token vault is ready. Live connect for this provider is enabled in a later phase. No provider API is called yet.' });
 }

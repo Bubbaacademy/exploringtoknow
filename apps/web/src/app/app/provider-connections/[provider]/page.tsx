@@ -1,16 +1,18 @@
 import { notFound } from 'next/navigation';
 import { requireWorkspace } from '@/lib/workspace';
 import { canManageConnections } from '@/lib/roles';
-import { providerSetup, connectionForProvider, sanitizeConnection } from '@/lib/providers';
+import { providerSetup, connectionForProvider, sanitizeConnection, listProviderAccounts } from '@/lib/providers';
 import { PROVIDER_BY_ID, isProviderId, CONNECTION_STATUS_LABELS, connStatusVariant } from '@/lib/provider-constants';
 import { TopBar, Card, WsLink } from '../../_ui';
 import { ProviderConnectionControls } from '@/components/app/ProviderConnectionControls';
+import { GoogleAdsSyncPanel } from '@/components/app/GoogleAdsSyncPanel';
 
 export const dynamic = 'force-dynamic';
-type Args = { params: Promise<{ provider: string }> };
+type Args = { params: Promise<{ provider: string }>; searchParams: Promise<{ connected?: string; error?: string }> };
 
-export default async function ProviderDetail({ params }: Args) {
+export default async function ProviderDetail({ params, searchParams }: Args) {
   const { provider } = await params;
+  const { connected, error } = await searchParams;
   if (!isProviderId(provider)) notFound();
   const def = PROVIDER_BY_ID[provider]!;
   const ws = await requireWorkspace();
@@ -20,6 +22,9 @@ export default async function ProviderDetail({ params }: Args) {
   const connection = raw ? sanitizeConnection(raw) : null;
   const recordStatus = connection ? String(connection.status) : null;
   const effectiveStatus = recordStatus && recordStatus !== 'not_configured' ? recordStatus : setup.setupStatus;
+  const isConnected = recordStatus === 'connected';
+  const accountsRaw = (def.id === 'google_ads' && connection) ? await listProviderAccounts(ws.scope, connection.id as never) : [];
+  const accounts = accountsRaw.map((a) => ({ id: a.id as string | number, providerAccountId: String(a.providerAccountId ?? ''), providerAccountName: String(a.providerAccountName ?? ''), selected: Boolean(a.selected) }));
 
   return (
     <>
@@ -29,6 +34,8 @@ export default async function ProviderDetail({ params }: Args) {
         actions={<WsLink href="/app/provider-connections">Back to connections</WsLink>}
       />
       <div className="adm-content">
+        {connected ? <div className="adm-panel ok" style={{ marginBottom: 12 }}>Connected. Read-only access only — nothing in Google Ads is changed.</div> : null}
+        {error ? <div className="adm-panel warn" style={{ marginBottom: 12 }}>Authorization didn’t complete ({String(error).slice(0, 40)}). You can try connecting again.</div> : null}
         <div className="adm-panel" style={{ marginBottom: 16 }}>
           <strong>Foundation only.</strong> No provider data is synced yet · no campaigns launch from this page · no budget is spent.
           Tokens (when connected in a later phase) are encrypted at rest and never shown. Manual performance import remains a fallback.
@@ -55,6 +62,17 @@ export default async function ProviderDetail({ params }: Args) {
             connectionStatus={recordStatus}
             missingEnv={setup.missingEnv}
           />
+
+          {def.id === 'google_ads' ? (
+            <GoogleAdsSyncPanel
+              connectionId={(connection?.id as string | number) ?? ''}
+              connected={isConnected}
+              canManage={canManage}
+              accounts={accounts}
+              lastSync={(connection?.lastSyncAt as string) ?? null}
+              lastError={(connection?.lastErrorMessage as string) ?? null}
+            />
+          ) : null}
         </Card>
       </div>
     </>

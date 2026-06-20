@@ -33,6 +33,8 @@ export const ProviderSyncRuns: CollectionConfig = {
     },
     { name: 'startedAt', type: 'date', admin: { readOnly: true } },
     { name: 'finishedAt', type: 'date', admin: { readOnly: true } },
+    { name: 'windowStart', type: 'text', admin: { description: 'Sync date-range start (YYYY-MM-DD).' } },
+    { name: 'windowEnd', type: 'text', admin: { description: 'Sync date-range end (YYYY-MM-DD).' } },
     { name: 'recordsRead', type: 'number', defaultValue: 0 },
     { name: 'recordsWritten', type: 'number', defaultValue: 0 },
     { name: 'errorCode', type: 'text', admin: { readOnly: true } },

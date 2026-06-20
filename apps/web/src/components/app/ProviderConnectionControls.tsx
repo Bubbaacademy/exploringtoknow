@@ -32,7 +32,10 @@ export function ProviderConnectionControls({ provider, canManage, configured, co
     try {
       const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: method === 'GET' ? undefined : JSON.stringify({ provider }) });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok || j.ok === false) setErr(j.error || `Request failed (${r.status}).`);
+      if (!r.ok || j.ok === false) {
+        setErr(j.error || `Request failed (${r.status}).`);
+        if (Array.isArray(j.missingEnv) && j.missingEnv.length) setErr(`Not configured. Set: ${j.missingEnv.join(', ')}`);
+      } else if (j.authorizeUrl) { window.location.href = j.authorizeUrl; return j; } // live OAuth redirect
       else { setMsg(j.message || 'Done.'); router.refresh(); }
       return j;
     } catch { setErr('Network error.'); return null; }

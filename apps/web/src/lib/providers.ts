@@ -83,4 +83,48 @@ export async function providerCards(scope: WorkspaceScope): Promise<ProviderCard
   });
 }
 
+// ---- Phase 31: provider accounts + synced performance reads (workspace-scoped) ----
+
+export async function listProviderAccounts(scope: WorkspaceScope, connectionId?: string | number): Promise<Doc[]> {
+  const extra = connectionId != null ? { providerConnection: { equals: connectionId as never } } : undefined;
+  return wsList(scope, 'provider-accounts', { sort: '-selected', limit: 100, depth: 0, extra });
+}
+
+export async function getSelectedAccount(scope: WorkspaceScope, connectionId: string | number): Promise<Doc | null> {
+  const accounts = await listProviderAccounts(scope, connectionId);
+  return accounts.find((a) => a.selected) ?? accounts[0] ?? null;
+}
+
+export async function listSyncRuns(scope: WorkspaceScope, connectionId: string | number, limit = 10): Promise<Doc[]> {
+  return wsList(scope, 'provider-sync-runs', { sort: '-createdAt', limit, depth: 0, extra: { connection: { equals: connectionId as never } } });
+}
+
+/** Synced daily rows for the workspace (optionally filtered by provider). */
+export async function listSyncedDaily(scope: WorkspaceScope, provider?: string): Promise<Doc[]> {
+  const extra = provider ? { provider: { equals: provider } } : undefined;
+  return wsList(scope, 'synced-performance-daily', { sort: '-metricDate', limit: 5000, depth: 0, extra });
+}
+
+/** Aggregate api-synced totals + top campaigns for the Performance dashboard (Google Ads). */
+export async function syncedGoogleAdsOverview(scope: WorkspaceScope) {
+  const rows = await listSyncedDaily(scope, 'google_ads');
+  const totals = { impressions: 0, clicks: 0, cost: 0, conversions: 0, conversionValue: 0 };
+  let currency = '';
+  const byCampaign = new Map<string, { name: string; impressions: number; clicks: number; cost: number; conversions: number; conversionValue: number }>();
+  for (const r of rows) {
+    totals.impressions += Number(r.impressions || 0); totals.clicks += Number(r.clicks || 0); totals.cost += Number(r.cost || 0);
+    totals.conversions += Number(r.conversions || 0); totals.conversionValue += Number(r.conversionValue || 0);
+    if (!currency && r.currencyCode) currency = String(r.currencyCode);
+    const key = String(r.campaignId || r.campaignName || '—');
+    const cur = byCampaign.get(key) || { name: String(r.campaignName || r.campaignId || '—'), impressions: 0, clicks: 0, cost: 0, conversions: 0, conversionValue: 0 };
+    cur.impressions += Number(r.impressions || 0); cur.clicks += Number(r.clicks || 0); cur.cost += Number(r.cost || 0);
+    cur.conversions += Number(r.conversions || 0); cur.conversionValue += Number(r.conversionValue || 0);
+    byCampaign.set(key, cur);
+  }
+  const topCampaigns = [...byCampaign.values()]
+    .map((c) => ({ ...c, roas: c.cost > 0 ? c.conversionValue / c.cost : null }))
+    .sort((a, b) => b.clicks - a.clicks).slice(0, 10);
+  return { rowCount: rows.length, totals, currency, topCampaigns };
+}
+
 export { PROVIDERS, PROVIDER_BY_ID };
