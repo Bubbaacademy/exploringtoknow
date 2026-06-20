@@ -24,8 +24,8 @@ export async function POST(req: Request) {
   const name = str(body.name, 200);
   if (!name) return NextResponse.json({ ok: false, error: 'Give the campaign a name.' }, { status: 422 });
 
-  const destinationURL = str(body.destinationURL, 1000);
-  if (destinationURL && !isSafeHttpUrl(destinationURL)) return NextResponse.json({ ok: false, error: 'Destination URL must start with http:// or https://.' }, { status: 422 });
+  const destinationUrl = str(body.destinationUrl, 1000);
+  if (destinationUrl && !isSafeHttpUrl(destinationUrl)) return NextResponse.json({ ok: false, error: 'Destination URL must start with http:// or https://.' }, { status: 422 });
 
   const platform = (AD_PLATFORMS as readonly string[]).includes(String(body.platform)) ? String(body.platform) : 'generic';
   const objective = (AD_OBJECTIVES as readonly string[]).includes(String(body.objective)) ? String(body.objective) : 'generic';
@@ -49,8 +49,8 @@ export async function POST(req: Request) {
         placementNotes: str(body.placementNotes, 2000) || undefined,
         budgetNotes: str(body.budgetNotes, 2000) || undefined,
         scheduleNotes: str(body.scheduleNotes, 2000) || undefined,
-        primaryCTA: str(body.primaryCTA, 120) || undefined,
-        destinationURL: destinationURL || undefined,
+        primaryCta: str(body.primaryCta, 120) || undefined,
+        destinationUrl: destinationUrl || undefined,
         utmSource: str(body.utmSource, 200) || undefined, utmMedium: str(body.utmMedium, 200) || undefined,
         utmCampaign: str(body.utmCampaign, 200) || undefined, utmContent: str(body.utmContent, 200) || undefined,
         utmTerm: str(body.utmTerm, 200) || undefined,

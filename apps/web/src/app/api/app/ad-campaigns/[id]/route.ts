@@ -36,12 +36,12 @@ export async function PATCH(req: Request, { params }: Ctx) {
   if (typeof body.name === 'string') { const n = str(body.name, 200); if (!n) return NextResponse.json({ ok: false, error: 'Name cannot be empty.' }, { status: 422 }); data.name = n; }
   if (typeof body.platform === 'string' && (AD_PLATFORMS as readonly string[]).includes(body.platform)) data.platform = body.platform;
   if (typeof body.objective === 'string' && (AD_OBJECTIVES as readonly string[]).includes(body.objective)) data.objective = body.objective;
-  if (typeof body.destinationURL === 'string') {
-    const u = str(body.destinationURL, 1000);
+  if (typeof body.destinationUrl === 'string') {
+    const u = str(body.destinationUrl, 1000);
     if (u && !isSafeHttpUrl(u)) return NextResponse.json({ ok: false, error: 'Destination URL must start with http:// or https://.' }, { status: 422 });
-    data.destinationURL = u || null;
+    data.destinationUrl = u || null;
   }
-  for (const [k, max] of [['audienceName', 200], ['audienceNotes', 4000], ['geographyNotes', 2000], ['languageNotes', 500], ['placementNotes', 2000], ['budgetNotes', 2000], ['scheduleNotes', 2000], ['primaryCTA', 120], ['utmSource', 200], ['utmMedium', 200], ['utmCampaign', 200], ['utmContent', 200], ['utmTerm', 200], ['disclosureText', 2000], ['notes', 4000]] as const) {
+  for (const [k, max] of [['audienceName', 200], ['audienceNotes', 4000], ['geographyNotes', 2000], ['languageNotes', 500], ['placementNotes', 2000], ['budgetNotes', 2000], ['scheduleNotes', 2000], ['primaryCta', 120], ['utmSource', 200], ['utmMedium', 200], ['utmCampaign', 200], ['utmContent', 200], ['utmTerm', 200], ['disclosureText', 2000], ['notes', 4000]] as const) {
     if (typeof body[k] === 'string') data[k] = str(body[k], max) || null;
   }
   if ('relatedProduct' in body) data.relatedProduct = (body.relatedProduct && await relationInWorkspace(ws!.scope, 'products', body.relatedProduct)) ? body.relatedProduct : null;

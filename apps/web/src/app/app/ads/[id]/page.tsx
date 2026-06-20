@@ -38,7 +38,7 @@ export default async function EditCampaign({ params }: Args) {
     id: d.id as string | number, name: str('name'), platform: String(d.platform || 'generic'), objective: String(d.objective || 'generic'),
     status: String(d.status || 'draft'), audienceName: str('audienceName'), audienceNotes: str('audienceNotes'),
     geographyNotes: str('geographyNotes'), languageNotes: str('languageNotes'), placementNotes: str('placementNotes'),
-    budgetNotes: str('budgetNotes'), scheduleNotes: str('scheduleNotes'), primaryCTA: str('primaryCTA'), destinationURL: str('destinationURL'),
+    budgetNotes: str('budgetNotes'), scheduleNotes: str('scheduleNotes'), primaryCta: str('primaryCta'), destinationUrl: str('destinationUrl'),
     utmSource: str('utmSource'), utmMedium: str('utmMedium'), utmCampaign: str('utmCampaign'), utmContent: str('utmContent'), utmTerm: str('utmTerm'),
     disclosureText: str('disclosureText'), notes: str('notes'), exportCount: Number(d.exportCount || 0),
     relatedProduct: refId(d.relatedProduct), relatedRequest: refId(d.relatedRequest),

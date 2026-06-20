@@ -12,7 +12,7 @@ type Brand = { publicationName?: string; brandVoice?: string; targetAudience?: s
 type Campaign = {
   id?: string | number; name?: string; platform?: string; objective?: string; status?: string;
   audienceName?: string; audienceNotes?: string; geographyNotes?: string; languageNotes?: string; placementNotes?: string;
-  budgetNotes?: string; scheduleNotes?: string; primaryCTA?: string; destinationURL?: string;
+  budgetNotes?: string; scheduleNotes?: string; primaryCta?: string; destinationUrl?: string;
   utmSource?: string; utmMedium?: string; utmCampaign?: string; utmContent?: string; utmTerm?: string;
   disclosureText?: string; notes?: string; exportCount?: number;
   relatedProduct?: string | number | null; relatedRequest?: string | number | null;
@@ -29,7 +29,7 @@ export function AdCampaignEditor({ campaign, products = [], requests = [], landi
   const status = campaign?.status || 'draft';
 
   const [platform, setPlatform] = useState(campaign?.platform || 'generic');
-  const [destinationURL, setDestinationURL] = useState(campaign?.destinationURL || '');
+  const [destinationURL, setDestinationURL] = useState(campaign?.destinationUrl || '');
   const [utmSource, setUtmSource] = useState(campaign?.utmSource || '');
   const [utmMedium, setUtmMedium] = useState(campaign?.utmMedium || '');
   const [utmCampaign, setUtmCampaign] = useState(campaign?.utmCampaign || '');
@@ -59,8 +59,8 @@ export function AdCampaignEditor({ campaign, products = [], requests = [], landi
       name: get('name'), platform, objective: get('objective'),
       audienceName: get('audienceName'), audienceNotes: get('audienceNotes'), geographyNotes: get('geographyNotes'),
       languageNotes: get('languageNotes'), placementNotes: get('placementNotes'),
-      budgetNotes: get('budgetNotes'), scheduleNotes: get('scheduleNotes'), primaryCTA: get('primaryCTA'),
-      destinationURL, utmSource, utmMedium, utmCampaign, utmContent, utmTerm,
+      budgetNotes: get('budgetNotes'), scheduleNotes: get('scheduleNotes'), primaryCta: get('primaryCta'),
+      destinationUrl: destinationURL, utmSource, utmMedium, utmCampaign, utmContent, utmTerm,
       disclosureText: get('disclosureText'), notes: get('notes'),
       relatedProduct: relatedProduct || null, relatedRequest: relatedRequest || null,
       relatedLandingPage: relatedLandingPage || null, relatedSocialPost: relatedSocialPost || null,
@@ -72,7 +72,7 @@ export function AdCampaignEditor({ campaign, products = [], requests = [], landi
     e.preventDefault();
     setBusy(true); setErr(''); setMsg('');
     const data = collect(e.currentTarget);
-    if (data.destinationURL && !isSafeHttpUrl(data.destinationURL)) { setErr('Destination URL must start with http:// or https://.'); setBusy(false); return; }
+    if (data.destinationUrl && !isSafeHttpUrl(data.destinationUrl)) { setErr('Destination URL must start with http:// or https://.'); setBusy(false); return; }
     try {
       if (editing) {
         const r = await fetch(`/api/app/ad-campaigns/${campaign!.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
@@ -236,7 +236,7 @@ export function AdCampaignEditor({ campaign, products = [], requests = [], landi
         </div>
 
         <div className="adm-panel" style={{ marginBottom: 12 }}><strong>Destination &amp; UTM builder</strong> — composes a tracking URL. No links are shortened, tracked, or called.</div>
-        <div className="field"><label htmlFor="primaryCTA">Primary CTA</label><input id="primaryCTA" name="primaryCTA" defaultValue={campaign?.primaryCTA || ''} maxLength={120} placeholder="Shop now" /></div>
+        <div className="field"><label htmlFor="primaryCta">Primary CTA</label><input id="primaryCta" name="primaryCta" defaultValue={campaign?.primaryCta || ''} maxLength={120} placeholder="Shop now" /></div>
         <div className="field"><label htmlFor="destinationURL">Destination URL (http/https only)</label><input id="destinationURL" value={destinationURL} onChange={(e) => setDestinationURL(e.target.value)} maxLength={1000} placeholder="https://…" /></div>
         <div className="adm-cols-2">
           <div className="field"><label htmlFor="utmSource">utm_source</label><input id="utmSource" value={utmSource} onChange={(e) => setUtmSource(e.target.value)} maxLength={200} placeholder="meta" /></div>

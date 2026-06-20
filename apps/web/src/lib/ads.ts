@@ -88,7 +88,7 @@ export async function buildCampaignExport(scope: WorkspaceScope, campaign: Doc):
     ctaLabel: String(cr.ctaLabel ?? ''), ctaUrl: String(cr.ctaUrl ?? ''), displayPath: String(cr.displayPath ?? ''),
     keywords: String(cr.keywords ?? ''), disclosureText: String(cr.disclosureText ?? ''),
   }));
-  const trackingURL = buildTrackingUrl(campaign.destinationURL, {
+  const trackingURL = buildTrackingUrl(campaign.destinationUrl, {
     source: campaign.utmSource as string, medium: campaign.utmMedium as string, campaign: campaign.utmCampaign as string,
     content: campaign.utmContent as string, term: campaign.utmTerm as string,
   });
@@ -97,7 +97,7 @@ export async function buildCampaignExport(scope: WorkspaceScope, campaign: Doc):
     audienceName: String(campaign.audienceName ?? ''), audienceNotes: String(campaign.audienceNotes ?? ''), geographyNotes: String(campaign.geographyNotes ?? ''),
     languageNotes: String(campaign.languageNotes ?? ''), placementNotes: String(campaign.placementNotes ?? ''),
     budgetNotes: String(campaign.budgetNotes ?? ''), scheduleNotes: String(campaign.scheduleNotes ?? ''),
-    primaryCTA: String(campaign.primaryCTA ?? ''), destinationURL: String(campaign.destinationURL ?? ''), trackingURL,
+    primaryCTA: String(campaign.primaryCta ?? ''), destinationURL: String(campaign.destinationUrl ?? ''), trackingURL,
     disclosureText: String(campaign.disclosureText ?? ''), relatedLabel: relLabel(campaign), creatives,
   };
 }
