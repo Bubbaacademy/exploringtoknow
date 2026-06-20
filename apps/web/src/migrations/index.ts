@@ -22,6 +22,7 @@ import * as migration_20260619_010000_phase25_social_studio from './20260619_010
 import * as migration_20260619_020000_phase26_social_planning from './20260619_020000_phase26_social_planning';
 import * as migration_20260619_030000_phase27_ads_studio from './20260619_030000_phase27_ads_studio';
 import * as migration_20260620_010000_phase28_performance from './20260620_010000_phase28_performance';
+import * as migration_20260620_020000_phase30_provider_connections from './20260620_020000_phase30_provider_connections';
 
 export const migrations = [
   {
@@ -143,5 +144,10 @@ export const migrations = [
     up: migration_20260620_010000_phase28_performance.up,
     down: migration_20260620_010000_phase28_performance.down,
     name: '20260620_010000_phase28_performance',
+  },
+  {
+    up: migration_20260620_020000_phase30_provider_connections.up,
+    down: migration_20260620_020000_phase30_provider_connections.down,
+    name: '20260620_020000_phase30_provider_connections',
   },
 ];

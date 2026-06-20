@@ -22,6 +22,10 @@ export const canManageSettings = (r: Role | null | undefined): boolean => r === 
 export const canManageBrand = (r: Role | null | undefined): boolean =>
   r === 'workspace_owner' || r === 'workspace_admin';
 
+/** Connect/disconnect provider connections (OAuth vault). Owner or workspace admin. */
+export const canManageConnections = (r: Role | null | undefined): boolean =>
+  r === 'workspace_owner' || r === 'workspace_admin';
+
 /** Roles an owner may assign to a teammate (never owner/super-admin). */
 export const INVITABLE_ROLES: ReadonlyArray<Exclude<Role, 'workspace_owner' | 'platform_super_admin'>> = [
   'workspace_admin', 'editor', 'viewer',
