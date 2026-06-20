@@ -3,16 +3,15 @@
 _Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
 over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `622fc59` (Blueprint v2 Phase 26 — Social calendar + bulk export + duplication).**
-App image `etk-web` (id `sha256:2d13fb8b…`) healthy; **payload_migrations 22** (phase26: planning columns on
-`social_studio_posts`, additive). **Social Studio** at `/app/social-posts` now adds **planning** (planned date,
-campaign, pillar, priority, assignee, notes), a **Board** view (by status) + **Calendar** view (by planned date), a
-Social overview strip, **bulk copy/CSV export** of approved posts, **channel duplication** (creates drafts), and
-**content-set-from-landing** (blank drafts from a landing page with public URL prefilled). **Still manual + pre-API** —
-no OAuth, no social account connection, no publishing, no scheduling execution, no AI/image/video, no external calls.
-Built on the Phase 25 Social Studio foundation (manual authoring + clipboard export); legacy `social-posts` AI/worker
-pipeline still untouched. Landing pages `/app/landing-pages` (Phase 23/24) + Brand Kit `/app/brand` (Phase 22)
-unchanged. No binary upload yet. Email + billing still local-safe.
+**Production HEAD: `4997a44` (Blueprint v2 Phase 27 — Ads Studio v1: manual campaign + creative drafts).**
+App image `etk-web` (id `sha256:2dbea910…`) healthy; **payload_migrations 23** (phase27: `ad_campaigns` + `ad_creatives`
+tables, additive). New **Ads Studio** at `/app/ads` — owner/admin/editor **manually** plan ad **campaign drafts** +
+**creative drafts** (headline/primary text/description/CTA), with a live **UTM tracking-URL builder**, related
+product/request/landing-page/social-post/Brand-Kit pickers, and copy/CSV **export** for manual Ads-Manager setup.
+**Manual + pre-API ONLY** — no ad accounts, no OAuth, no ad API, no campaign launch, no budget spend (budget/schedule
+are planning notes), no AI/image/video, no external calls. Social Studio `/app/social-posts` (Phase 25/26), landing
+pages `/app/landing-pages` (Phase 23/24), Brand Kit `/app/brand` (Phase 22), and the legacy `social-posts` AI/worker
+pipeline all unchanged. No binary upload yet. Email + billing still local-safe.
 - **Billing layer: local-safe** — no Stripe/billing env → no real charges, checkout/portal return disabled,
   webhook inert. Stripe-ready: activates only with `BILLING_ENABLED=true` + `STRIPE_SECRET_KEY` (+ `STRIPE_PRICE_*`,
   `STRIPE_WEBHOOK_SECRET`); use Stripe **test mode** first. On real checkout the webhook sets the tenant's plan;
@@ -54,5 +53,6 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) and local are in sync at `622fc59` (Phase 26 feat);
-the docs commit on top is docs-only. Worker fix baseline `c158c5f` unchanged.
+Production (VPS `/opt/exploringtoknow`, branch `main`) and local are in sync at `4997a44` (Phase 27 feat + build
+fixes); the docs commit on top is docs-only. Worker fix baseline `c158c5f` unchanged. (Prod also has 1 retained
+test workspace + 1 organic customer workspace alongside ETK — 3 tenants total; ETK content unchanged.)

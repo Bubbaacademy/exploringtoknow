@@ -1,12 +1,13 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-19 — **Blueprint v2 Phase 26 (Social calendar + bulk export + duplication):
-> COMPLETE & DEPLOYED & VERIFIED LIVE.** Production HEAD `622fc59`, image `etk-web` (id `sha256:2d13fb8b…`) healthy;
-> **migrations 22** (phase26 social planning applied). Social Studio `/app/social-posts` now has planning fields
-> (planned date, campaign, pillar, priority, assignee, notes), **Board** + **Calendar** views, a Social overview strip,
-> **bulk copy/CSV export** of approved posts, **channel duplication** (drafts), and **content-set-from-landing**. Still
-> manual + pre-API: no OAuth/social/publish/schedule/AI/external calls. Email + billing still **local-safe**. Prior:
-> Phase 25 Social Studio foundation, Phase 24 landing enrich+analytics, Phase 23 landing foundation, Phase 22 brand kit.
+> Current snapshot. Updated 2026-06-20 — **Blueprint v2 Phase 27 (Ads Studio v1 — manual campaign + creative drafts):
+> COMPLETE & DEPLOYED & VERIFIED LIVE.** Production HEAD `4997a44`, image `etk-web` (id `sha256:2dbea910…`) healthy;
+> **migrations 23** (phase27 ads studio applied). New `/app/ads` Ads Studio — manually plan ad **campaign drafts** +
+> **ad creative drafts** (headline/primary text/description/CTA), with a live **UTM tracking-URL builder**, related
+> product/request/landing-page/social-post/Brand-Kit pickers, and copy/CSV **export** for manual Ads-Manager setup.
+> Manual + pre-API ONLY: no ad accounts, no OAuth, no ad API, no launch, no budget spend, no AI/external calls. Email +
+> billing still **local-safe**. Prior: Phase 26 social calendar/export/duplication, Phase 25 Social Studio foundation,
+> Phase 24 landing enrich+analytics, Phase 23 landing foundation, Phase 22 brand kit.
 
 ---
 
@@ -222,6 +223,55 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Blueprint v2 Phase 27 — Ads Studio v1 (manual campaign + creative drafts): COMPLETE & DEPLOYED (migration 22 → 23)
+First Ads Studio output layer: workspace-scoped manual ad planning. **Additive** — two NEW collections. **Manual +
+pre-API ONLY:** no ad accounts, no OAuth, no ad API, no campaign launch, no budget spend, no AI generation, no
+image/video, no email/billing/external calls — budget/schedule fields are planning NOTES. Public magazine + Phase
+22–26 behavior + all gates + local-safe modes unchanged.
+- **New scoped collection `ad-campaigns`:** name; status (draft / ready_for_review / approved_to_export / archived);
+  platform (meta / google_search / google_display / youtube / tiktok / linkedin / pinterest / generic); objective
+  (awareness / traffic / leads / sales / engagement / retargeting_placeholder / generic); audience name/notes,
+  geography/language/placement notes, budget/schedule **planning notes**, primary CTA, **destination URL** (http(s)),
+  **utm_source/medium/campaign/content/term**, related product/request/landing-page/social-post/brand-profile,
+  disclosure, notes, exportedAt/exportCount. `scopedRead('deny')` + super-only native mutate + `stampTenantWorkspace`.
+- **New scoped collection `ad-creatives`:** belongs to a campaign (same workspace); name, status, platform, format
+  (text_ad / search_ad / image/carousel/short_video/display placeholders / generic); headline variants, primary text,
+  description, CTA label + URL (http(s)), display path, keywords, creative notes, related social-post/landing-page.
+- **UTM builder (`buildTrackingUrl`, pure):** composes a tracking URL from a valid http(s) destination using
+  URL/URLSearchParams (safe encoding); **does not shorten, track, pixel, or call anything**. Live preview in the editor.
+- **Migration `20260619_030000_phase27_ads_studio`:** 2 tables, 6 enums, indexes (status/platform/objective/related/
+  tenant/workspace/createdAt), product/request/landing/social/brand/campaign/user/tenant/workspace FKs, locked-doc
+  rels. Additive + idempotent; `down()` drops both tables + 6 enums safely. **Pre-validated in a rolled-back tx on prod.**
+- **APIs:** `/api/app/ad-campaigns` (create) + `/[id]` (PATCH / status action / DELETE — delete cascades the campaign's
+  creatives) + `/export` (bulk text + CSV, optional explicit mark-exported); `/api/app/ad-creatives` (create — parent
+  campaign verified in-workspace) + `/[id]` (PATCH / status / DELETE). `canWrite`; tenant/workspace + createdBy
+  server-derived; related refs verified in-workspace (cross-tenant ids ignored); CTA/destination http(s)-only.
+  Approve-to-export is the furthest a record goes.
+- **Console UI `/app/ads`** (list / new / [id], premium style): AdCampaignEditor (platform help copy, related pickers
+  with manual "Use link →" prefill, Brand Kit helper, **live UTM tracking-URL preview + copy**, per-campaign export
+  text/CSV with copy + CSV download + optional mark-exported, status controls); inline **AdCreativeManager** (add /
+  edit / status / delete creatives + **import copy from a social post** — copied, not generated). Sidebar **"Ads Studio"
+  under Growth**. Honest copy throughout ("Manual ad planning only", "Nothing launches automatically", "No ad accounts
+  are connected yet", "Budget notes are planning notes only, not real spend").
+- **Rollback tag `pre-phase27-ads → 9c1104b`; backup `pre-phase27_20260620_001812.sql.gz` (gzip-verified).**
+- **DEPLOYED & VERIFIED LIVE 2026-06-20** (on the VPS as `deploy` via sudo): prod HEAD `4997a44`; image `etk-web`
+  (id `sha256:2dbea910…`) healthy; worker/postgres/caddy untouched. **payload_migrations 22 → 23** (phase27 applied,
+  33ms); `ad_campaigns` + `ad_creatives` tables, 6 enums, 2 locked-rel columns confirmed via psql. Content unchanged
+  (gen 5/art 5/media 45); 0 jobs. Routes: public 200; `/app/ads`(+`/new`,`/[id]`)/`/app/social-posts`/`/app/landing-
+  pages` → 307 (200 when authed); `/admin` → 200. **Verified via temp owner (created→checked→deleted, zero residue):**
+  unauth create **401**; destination `data:`/`javascript:` → **422**; campaign created (stamped to temp tenant);
+  **foreign relatedProduct + relatedSocialPost stored null**; creative created under the campaign; **creative with a
+  foreign campaign id → 422**, bad CTA → 422; approve → approved_to_export; **export returned campaign+creative text +
+  CSV with the UTM tracking URL (`utm_campaign=spring+sale`), mark-exported set exportCount 1**; foreign-campaign PATCH
+  → **404**; **campaign DELETE cascaded its creative** (both gone); list/new/[id] pages 200; **ETK and the other live
+  tenant had 0 campaigns** (isolation). Temp tenant/user/workspace/campaign/creative fully deleted (tenants back to
+  baseline; gen 5/art 5/media 45 unchanged). No secrets printed/committed; no generation/publish/launch/spend/OAuth/
+  email/billing/social/ad/image/video/external side effects; affiliate logic unchanged.
+  _(Two build/runtime issues found-and-fixed during deploy, prod never at risk — deploy aborts before migrate on build
+  failure: (1) a strict `noUncheckedIndexedAccess` form-state type in AdCreativeManager; (2) Payload snake-cases
+  all-caps acronyms per letter, so fields `primaryCTA`/`destinationURL` were renamed to `primaryCta`/`destinationUrl`
+  to match the migration's `primary_cta`/`destination_url` columns. No migration change needed.)_
 
 ### Blueprint v2 Phase 26 — Social calendar + bulk export + duplication: COMPLETE & DEPLOYED (migration 21 → 22)
 Makes the Phase 25 Social Studio operationally useful for planning at scale. **Additive** — planning columns on the
