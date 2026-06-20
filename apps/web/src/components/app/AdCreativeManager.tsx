@@ -12,7 +12,12 @@ type Creative = {
   relatedSocialPost?: string | number | null; relatedLandingPage?: string | number | null;
 };
 
-const BLANK = {
+type CForm = {
+  name: string; platform: string; format: string; headline: string; primaryText: string; description: string;
+  ctaLabel: string; ctaUrl: string; displayPath: string; keywords: string; creativeNotes: string; disclosureText: string;
+  relatedSocialPost: string; relatedLandingPage: string;
+};
+const BLANK: CForm = {
   name: '', platform: 'generic', format: 'text_ad', headline: '', primaryText: '', description: '',
   ctaLabel: '', ctaUrl: '', displayPath: '', keywords: '', creativeNotes: '', disclosureText: '',
   relatedSocialPost: '', relatedLandingPage: '',
@@ -23,11 +28,11 @@ export function AdCreativeManager({ campaignId, creatives = [], socialPosts = []
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | number | null>(null);
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState<Record<string, string>>({ ...BLANK });
+  const [f, setF] = useState<CForm>({ ...BLANK });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
-  const set = (k: string, v: string) => setF((s) => ({ ...s, [k]: v }));
+  const set = (k: keyof CForm, v: string) => setF((s) => ({ ...s, [k]: v }));
 
   function startNew() { setEditingId(null); setF({ ...BLANK }); setOpen(true); setErr(''); setMsg(''); }
   function startEdit(c: Creative) {
