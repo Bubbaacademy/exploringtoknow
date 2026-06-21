@@ -21,9 +21,10 @@ export default async function ProviderConnectionsPage() {
       <TopBar title="Connections" sub="Provider connections are the foundation for API-synced metrics. No provider data is synced yet." />
       <div className="adm-content">
         <div className="adm-panel" style={{ marginBottom: 16 }}>
-          <strong>Connection foundation only.</strong> No provider data is synced yet · no campaigns launch from this page ·
-          manual performance import remains available as a fallback. Tokens are encrypted at rest and never shown. API-synced
-          provider data will become the primary source of truth, starting with <strong>Google Ads (Phase 31)</strong>.
+          <strong>Connect your own ad &amp; social accounts.</strong> Each workspace stores its <strong>own</strong> encrypted
+          connection — your tokens are never shared across workspaces or shown to anyone. ExploringToKnow configures each
+          provider’s API once; then you connect your account here with one click (read-only to start). No campaigns launch
+          from this page and no budget is spent. Manual performance import remains available as a fallback.
         </div>
 
         <Section title="Ad &amp; social providers">
@@ -43,7 +44,7 @@ export default async function ProviderConnectionsPage() {
                 <p className="adm-note" style={{ marginBottom: 4 }}>Planned: {def.plannedPhase}</p>
                 <p className="adm-note" style={{ marginBottom: 4 }}>Last sync: <strong>—</strong> (no sync yet)</p>
                 {!setup.configured && !def.comingSoon ? (
-                  <p className="adm-note">Setup needs: <code>{setup.missingEnv.join(', ')}</code></p>
+                  <p className="adm-note">Setup pending — ExploringToKnow is finishing this provider’s API setup. You’ll connect your own account here once it’s ready.</p>
                 ) : null}
                 <div style={{ marginTop: 8 }}>
                   <Link href={`/app/provider-connections/${def.id}`} className="adm-btn ghost">{canManage ? 'Manage' : 'View'}</Link>

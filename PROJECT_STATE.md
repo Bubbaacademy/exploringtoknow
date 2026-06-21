@@ -7,9 +7,13 @@
 > token exchange), accessible-account discovery, GAQL campaign-daily read sync into normalized `api_synced` rows, and a
 > source-labeled Google Ads section in `/app/performance`. **READ-ONLY** — no mutate/launch/spend. **All live behavior is
 > env-gated** (`GOOGLE_ADS_*` + `PROVIDER_TOKEN_ENCRYPTION_KEY`); **prod has none → everything stays `not_configured`,
-> start/sync return 422, and NO external call occurs** (verified). Manual performance (Phase 28) remains the **fallback**.
-> Email + billing still **local-safe**. Prior: Phase 30 OAuth vault, Phase 29 audit/correction, Phase 28 manual performance,
-> Phase 27 Ads Studio, Phase 26 social calendar, Phase 25 Social Studio, Phase 24 landing analytics.
+> start/sync return 422, and NO external call occurs** (verified). **Phase 31A (2026-06-20): confirmed the connection
+> model is true multi-tenant customer OAuth** — platform-level Google Ads API credentials set ONCE by the operator (env
+> only); each **workspace owner connects their OWN Google Ads account** via OAuth in-app; per-workspace encrypted tokens;
+> customers never provide API keys. UI/docs copy corrected to match (no "set these env vars" to customers; "setup pending"
+> instead). The vault key `PROVIDER_TOKEN_ENCRYPTION_KEY` is now **placed in prod env**; the 4 Google API values remain to
+> be set by the operator before customers can connect. Manual performance (Phase 28) remains the **fallback**. Email +
+> billing still **local-safe**. Prior: Phase 30 OAuth vault, Phase 29 audit/correction, Phase 28 manual performance, Phase 27 Ads Studio.
 
 ---
 
@@ -257,6 +261,27 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Phase 31A — Google Ads go-live activation support + multi-tenant OAuth model confirmation: COMPLETE (copy/docs only)
+Framing correction + activation prep. **No architecture change required** — an audit confirmed the Phase 31 code
+ALREADY implements the correct **multi-tenant SaaS customer-OAuth** model: platform-level Google Ads API credentials
+live in **env only** (operator-set, never customer-facing, never committed); each **workspace owner connects their own
+Google Ads account** via OAuth; the start route reads **platform env only** (no customer-supplied credentials anywhere);
+OAuth `state` is **workspace-scoped**; the callback stores **per-workspace encrypted tokens**; account discovery + sync
+are workspace-scoped; cross-tenant access 404s; **no collection has any customer client-id/secret/developer-token field**.
+- **Copy fixes (no behavior change):** customer-facing UI no longer says "set these environment variables" — it now says
+  **"setup pending — ExploringToKnow is finishing the provider's API setup"** and frames the flow as "connect your own
+  account, your tokens are workspace-scoped and never shared." Removed env-var-name lists from the customer cards/detail;
+  reframed start/sync `not_configured` messages. `ProviderConnectionControls`, the connections list + detail pages updated.
+- **Docs fixes:** `PROVIDER_API_AUDIT.md` gains an authoritative **"Multi-tenant OAuth model"** section; `.env.example`
+  clarifies the Google Ads vars are **platform-level SaaS credentials (operator-set once; customers never provide them)**.
+- **Vault key placed in prod env** (`PROVIDER_TOKEN_ENCRYPTION_KEY`, 32-byte hex, generated server-side, never printed).
+- **Operator prerequisite to go live (one-time, platform-level):** create the ExploringToKnow **Google Cloud OAuth Web
+  client** (redirect URI `https://exploringtoknow.com/api/app/provider-connections/oauth/google_ads/callback`), obtain a
+  **Google Ads developer token** (MCC API Center), set `GOOGLE_ADS_CLIENT_ID/_SECRET/_DEVELOPER_TOKEN/_REDIRECT_URI` in
+  prod env, recreate the app. **After that, every workspace owner connects their own account** — no per-customer setup.
+- **Status:** live customer OAuth/sync still **blocked by the 4 platform Google API values** (not yet set). Copy/docs
+  deployed; no migration; production behavior otherwise unchanged.
 
 ### Phase 31 — Google Ads Read Sync v1: IMPLEMENTATION DEPLOYED & VERIFIED (env-gated; live blocked by missing credentials) (migration 25 → 26)
 First real provider read-sync path. **Additive** — two NEW collections. **READ-ONLY:** GAQL reporting only; **no

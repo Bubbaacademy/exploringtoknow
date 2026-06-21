@@ -27,7 +27,7 @@ export async function POST(req: Request, { params }: Ctx) {
   if (String(connection.provider) !== 'google_ads') return NextResponse.json({ ok: false, error: 'Sync is only available for Google Ads in this phase.' }, { status: 422 });
 
   const e = googleAdsEnv();
-  if (!e.configured) return NextResponse.json({ ok: false, code: 'not_configured', missingEnv: e.missingEnv, error: 'Google Ads is not configured.' }, { status: 422 });
+  if (!e.configured) return NextResponse.json({ ok: false, code: 'not_configured', missingEnv: e.missingEnv, error: 'Google Ads isn’t available yet — ExploringToKnow is finishing Google Ads API setup.' }, { status: 422 });
   if (connection.status !== 'connected' || !connection.accessTokenEncrypted) return NextResponse.json({ ok: false, code: 'not_connected', error: 'Connect Google Ads before syncing.' }, { status: 422 });
 
   const account = await getSelectedAccount(ws.scope, id);

@@ -210,6 +210,23 @@ and later **controlled publishing/launching through provider APIs**.
 
 ---
 
+## 4b. Multi-tenant OAuth model (authoritative — how connections actually work)
+
+ExploringToKnow is a **SaaS provider**, not a single-account tool. The connection model is:
+- **Platform-level credentials, set ONCE by the ExploringToKnow operator** (env only, never customer-facing, never
+  committed): the platform's **own** Google Cloud OAuth Web-app client (`GOOGLE_ADS_CLIENT_ID`/`_SECRET`/`_REDIRECT_URI`),
+  the platform's **Google Ads developer token** (`GOOGLE_ADS_DEVELOPER_TOKEN`), and `PROVIDER_TOKEN_ENCRYPTION_KEY`. These
+  are app/provider credentials for the whole SaaS — **not** tenant-specific and **never** shown to customers.
+- **Per-workspace customer OAuth:** each workspace owner/admin clicks **Connect** in
+  `/app/provider-connections/google_ads`, completes Google consent in **their own browser**, and the callback stores
+  **that workspace's** encrypted access/refresh tokens in `provider-connections` (tenant/workspace-scoped). The customer
+  then picks which of their accessible Google Ads accounts to sync. Sync runs **only** for that workspace/account.
+- **Customers never** provide a Google client id/secret/developer token, never edit VPS env, and never share a single
+  global account. Tokens never leak across tenants. If the platform credentials aren't set, customers simply see
+  **"setup pending"** (not "set these env vars"). *(Verified in code: start route reads platform env only; OAuth state is
+  workspace-scoped; callback stores per-workspace encrypted tokens; account discovery + sync are workspace-scoped; no
+  customer-credential fields exist on any collection.)*
+
 ## 5. Normalized provider connection architecture (DESIGN ONLY — not implemented)
 
 > These models are a **future design** to be implemented only in later, separately-approved phases. **No code, no

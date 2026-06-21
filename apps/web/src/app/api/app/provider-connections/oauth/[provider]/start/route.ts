@@ -27,7 +27,7 @@ export async function POST(_req: Request, { params }: Ctx) {
   const setup = providerSetup(def);
   if (!setup.configured) {
     return NextResponse.json({ ok: false, code: 'not_configured', missingEnv: setup.missingEnv, vaultStatus: setup.vaultStatus,
-      error: 'This provider is not configured. Set the required environment variables to enable connecting.' }, { status: 422 });
+      error: 'This provider isn’t available to connect yet — ExploringToKnow is finishing the provider’s API setup.' }, { status: 422 });
   }
 
   if (provider === 'google_ads') {

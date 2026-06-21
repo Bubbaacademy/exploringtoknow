@@ -37,20 +37,21 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
         {connected ? <div className="adm-panel ok" style={{ marginBottom: 12 }}>Connected. Read-only access only — nothing in Google Ads is changed.</div> : null}
         {error ? <div className="adm-panel warn" style={{ marginBottom: 12 }}>Authorization didn’t complete ({String(error).slice(0, 40)}). You can try connecting again.</div> : null}
         <div className="adm-panel" style={{ marginBottom: 16 }}>
-          <strong>Foundation only.</strong> No provider data is synced yet · no campaigns launch from this page · no budget is spent.
-          Tokens (when connected in a later phase) are encrypted at rest and never shown. Manual performance import remains a fallback.
+          <strong>Connect your own {def.displayName} account.</strong> This workspace stores its <strong>own</strong> encrypted
+          connection — never shared across workspaces or shown to anyone. To start it’s <strong>read-only</strong>: no campaigns
+          launch and no budget is spent. You don’t need any Google API keys — ExploringToKnow configures the API once; you just
+          authorize your account. Manual performance import remains a fallback.
         </div>
 
         <Card>
           <div className="adm-row"><span className="t">Status</span><span className={`adm-badge ${connStatusVariant(effectiveStatus)}`}>{def.comingSoon ? 'Coming soon' : (CONNECTION_STATUS_LABELS[effectiveStatus] || effectiveStatus)}</span></div>
-          <div className="adm-row"><span className="t">Token vault</span><strong>{setup.vaultStatus === 'ready' ? 'ready' : setup.vaultStatus === 'invalid' ? 'invalid key' : 'not configured'}</strong></div>
-          <div className="adm-row"><span className="t">OAuth scopes</span><span className="adm-note">{def.scopes.length ? def.scopes.join('  ·  ') : '—'}</span></div>
+          <div className="adm-row"><span className="t">Platform setup</span><strong>{setup.configured ? 'Ready — configured by ExploringToKnow' : 'Pending — ExploringToKnow is finishing this provider’s API setup'}</strong></div>
+          <div className="adm-row"><span className="t">Access</span><span className="adm-note">{def.scopes.length ? `${def.scopes.join('  ·  ')} (read-only to start)` : '—'}</span></div>
           <div className="adm-row"><span className="t">Capabilities</span><span className="adm-note">
-            {[def.capabilities.readMetrics && 'Read metrics', def.capabilities.createCampaigns && 'Create campaigns', def.capabilities.socialPublish && 'Social publish', def.capabilities.conversionTracking && 'Conversion tracking'].filter(Boolean).join('  ·  ')}
+            {[def.capabilities.readMetrics && 'Read metrics', def.capabilities.createCampaigns && 'Create campaigns (future)', def.capabilities.socialPublish && 'Social publish (future)', def.capabilities.conversionTracking && 'Conversion tracking'].filter(Boolean).join('  ·  ')}
           </span></div>
-          <div className="adm-row"><span className="t">Required env (names only)</span><span className="adm-note"><code>{def.requiredEnv.join(', ')}</code></span></div>
-          {def.optionalEnv.length ? <div className="adm-row"><span className="t">Optional env</span><span className="adm-note"><code>{def.optionalEnv.join(', ')}</code></span></div> : null}
-          <div className="adm-row"><span className="t">Last sync</span><strong>—</strong></div>
+          <div className="adm-row"><span className="t">Your token storage</span><strong>encrypted at rest · never shown</strong></div>
+          <div className="adm-row"><span className="t">Last sync</span><strong>{(connection?.lastSyncAt as string) ? new Date(String(connection!.lastSyncAt)).toISOString().slice(0, 16).replace('T', ' ') : '—'}</strong></div>
           {def.notes ? <p className="adm-note" style={{ marginTop: 8 }}>{def.notes}</p> : null}
 
           <ProviderConnectionControls

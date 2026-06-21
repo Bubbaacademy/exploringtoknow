@@ -18,7 +18,7 @@ type Props = {
  * provider API is called and NO token is exchanged here — "Connect" returns a readiness
  * result (live connect is enabled in Phase 31). Editors/viewers see status only.
  */
-export function ProviderConnectionControls({ provider, canManage, configured, comingSoon, connectionId, connectionStatus, missingEnv }: Props) {
+export function ProviderConnectionControls({ provider, canManage, configured, comingSoon, connectionId, connectionStatus }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -33,8 +33,8 @@ export function ProviderConnectionControls({ provider, canManage, configured, co
       const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: method === 'GET' ? undefined : JSON.stringify({ provider }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok || j.ok === false) {
-        setErr(j.error || `Request failed (${r.status}).`);
-        if (Array.isArray(j.missingEnv) && j.missingEnv.length) setErr(`Not configured. Set: ${j.missingEnv.join(', ')}`);
+        if (j.code === 'not_configured') setErr('Google Ads isn’t available to connect yet — ExploringToKnow is finishing Google Ads API setup.');
+        else setErr(j.error || `Request failed (${r.status}).`);
       } else if (j.authorizeUrl) { window.location.href = j.authorizeUrl; return j; } // live OAuth redirect
       else { setMsg(j.message || 'Done.'); router.refresh(); }
       return j;
@@ -49,15 +49,15 @@ export function ProviderConnectionControls({ provider, canManage, configured, co
 
       {!configured ? (
         <p className="adm-note" style={{ marginBottom: 8 }}>
-          <strong>Not configured.</strong> Set these environment variables to enable connecting:{' '}
-          <code>{missingEnv.join(', ') || '—'}</code>. No tokens are stored until configured.
+          <strong>Not available yet.</strong> ExploringToKnow is finishing Google Ads API setup. Once that’s done you’ll be
+          able to connect your own Google Ads account here with one click. Manual performance import remains available as a fallback.
         </p>
       ) : null}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button type="button" className="adm-btn" disabled={busy || !configured}
           onClick={() => call(`/api/app/provider-connections/oauth/${provider}/start`, 'POST')}>
-          {configured ? 'Connect (check readiness)' : 'Connect (disabled)'}
+          {configured ? 'Connect your account' : 'Connect (setup pending)'}
         </button>
 
         {!connectionId ? (
