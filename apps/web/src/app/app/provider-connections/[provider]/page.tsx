@@ -61,7 +61,6 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
             comingSoon={def.comingSoon}
             connectionId={(connection?.id as string | number) ?? null}
             connectionStatus={recordStatus}
-            missingEnv={setup.missingEnv}
           />
 
           {def.id === 'google_ads' ? (

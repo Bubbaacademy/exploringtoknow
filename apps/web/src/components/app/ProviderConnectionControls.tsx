@@ -9,7 +9,6 @@ type Props = {
   comingSoon: boolean;
   connectionId: string | number | null;
   connectionStatus: string | null;
-  missingEnv: string[];
 };
 
 /**
