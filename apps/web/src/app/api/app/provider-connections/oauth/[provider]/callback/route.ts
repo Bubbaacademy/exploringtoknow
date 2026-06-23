@@ -7,6 +7,8 @@ import { encryptionReady, verifyState, encryptToken } from '@/lib/provider-crypt
 import { connectionForProvider } from '@/lib/providers';
 import { googleAdsEnv, exchangeCodeForTokens } from '@/lib/providers/google-ads-auth';
 import { listAccessibleCustomers } from '@/lib/providers/google-ads';
+import { metaAdsEnv, exchangeCodeForToken, exchangeForLongLivedToken } from '@/lib/providers/meta-ads-auth';
+import { listAdAccounts } from '@/lib/providers/meta-ads';
 
 /**
  * OAuth CALLBACK (Phase 30 foundation + Phase 31 Google Ads live). Validates the
@@ -21,6 +23,12 @@ type Ctx = { params: Promise<{ provider: string }> };
 function detailRedirect(suffix: string): NextResponse {
   const base = (process.env.PAYLOAD_PUBLIC_SERVER_URL || '').replace(/\/+$/, '');
   return NextResponse.redirect(`${base}/app/provider-connections/google_ads${suffix}`);
+}
+
+/** Provider-aware redirect back to the connection detail page (used by non-Google providers). */
+function providerRedirect(provider: string, suffix: string): NextResponse {
+  const base = (process.env.PAYLOAD_PUBLIC_SERVER_URL || '').replace(/\/+$/, '');
+  return NextResponse.redirect(`${base}/app/provider-connections/${provider}${suffix}`);
 }
 
 export async function GET(req: Request, { params }: Ctx) {
@@ -95,6 +103,66 @@ export async function GET(req: Request, { params }: Ctx) {
     } catch {
       if (existing) await payload.update({ collection: 'provider-connections', id: existing.id as never, overrideAccess: true, data: { status: 'error', lastErrorCode: 'token_exchange_failed', lastErrorMessage: 'Authorization failed. Please try connecting again.' } as never }).catch(() => {});
       return detailRedirect('?error=token_exchange_failed');
+    }
+  }
+
+  // ---- Meta Ads live path (only when configured) ----
+  if (provider === 'meta_ads') {
+    const e = metaAdsEnv();
+    if (!e.configured) return NextResponse.json({ ok: false, code: 'not_configured', missingEnv: e.missingEnv, error: 'Meta Ads is not configured.' }, { status: 422 });
+    if (providerError) return providerRedirect('meta_ads', '?error=authorization_denied');
+    if (!code) return NextResponse.json({ ok: false, code: 'missing_code', error: 'Missing authorization code.' }, { status: 400 });
+
+    const payload = await getPayload({ config });
+    const existing = await connectionForProvider(ws.scope, 'meta_ads');
+    try {
+      // Short-lived user token → upgrade to a long-lived (~60-day) token. Meta has no refresh token.
+      const shortLived = await exchangeCodeForToken(code);
+      const longLived = await exchangeForLongLivedToken(shortLived.accessToken);
+      const expiresAt = new Date(Date.now() + longLived.expiresInSec * 1000).toISOString();
+      const data: Record<string, unknown> = {
+        provider: 'meta_ads', connectionType: 'oauth', status: 'connected',
+        displayName: existing?.displayName || PROVIDER_BY_ID.meta_ads!.displayName,
+        scopes: ['ads_read'], tokenType: 'Bearer',
+        accessTokenEncrypted: encryptToken(longLived.accessToken),
+        refreshTokenEncrypted: undefined, // Meta issues no refresh token
+        tokenExpiresAt: expiresAt, lastConnectedAt: new Date().toISOString(), connectedBy: ws.ctx.user.id,
+        lastErrorCode: null, lastErrorMessage: null,
+        tenant: ws.scope.tenantId, workspace: ws.scope.workspaceId,
+      };
+      let connId: string | number;
+      if (existing) { await payload.update({ collection: 'provider-connections', id: existing.id as never, overrideAccess: true, data: data as never }); connId = existing.id as string | number; }
+      else { const c = await payload.create({ collection: 'provider-connections', overrideAccess: true, data: data as never }); connId = c.id as string | number; }
+
+      // Read-only ad-account discovery.
+      try {
+        const accounts = await listAdAccounts(longLived.accessToken);
+        const acctR = await payload.find({ collection: 'provider-accounts', overrideAccess: true, limit: 200, depth: 0, where: { and: [{ provider: { equals: 'meta_ads' } }, { providerConnection: { equals: connId as never } }, { workspace: { equals: ws.scope.workspaceId } }] } });
+        const haveSelected = (acctR.docs as Array<Record<string, unknown>>).some((a) => a.selected);
+        const existingIds = new Set((acctR.docs as Array<Record<string, unknown>>).map((a) => String(a.providerAccountId)));
+        let first = true;
+        for (const acct of accounts) {
+          if (existingIds.has(acct.accountId)) { first = false; continue; }
+          const selectThis = !haveSelected && first;
+          await payload.create({ collection: 'provider-accounts', overrideAccess: true, data: {
+            provider: 'meta_ads', providerConnection: connId, providerAccountId: acct.accountId,
+            providerAccountName: acct.name || undefined, currencyCode: acct.currency || undefined, timeZone: acct.timeZone || undefined,
+            status: 'active', selected: selectThis, lastFetchedAt: new Date().toISOString(),
+            tenant: ws.scope.tenantId, workspace: ws.scope.workspaceId,
+          } as never });
+          if (selectThis) await payload.update({ collection: 'provider-connections', id: connId as never, overrideAccess: true, data: { providerAccountId: acct.accountId } as never });
+          first = false;
+        }
+      } catch (discErr) {
+        const m = (discErr instanceof Error ? discErr.message : 'account_discovery_failed').slice(0, 280);
+        console.warn('[meta-ads callback] account discovery failed:', m);
+        try { await payload.update({ collection: 'provider-connections', id: connId as never, overrideAccess: true, data: { lastErrorCode: 'account_discovery_failed', lastErrorMessage: m } as never }); } catch { /* ignore */ }
+      }
+
+      return providerRedirect('meta_ads', '?connected=1');
+    } catch {
+      if (existing) await payload.update({ collection: 'provider-connections', id: existing.id as never, overrideAccess: true, data: { status: 'error', lastErrorCode: 'token_exchange_failed', lastErrorMessage: 'Authorization failed. Please try connecting again.' } as never }).catch(() => {});
+      return providerRedirect('meta_ads', '?error=token_exchange_failed');
     }
   }
 

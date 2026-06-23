@@ -5,6 +5,7 @@ import { providerSetup } from '@/lib/providers';
 import { PROVIDER_BY_ID, isProviderId } from '@/lib/provider-constants';
 import { signState } from '@/lib/provider-crypto';
 import { buildConsentUrl } from '@/lib/providers/google-ads-auth';
+import { buildConsentUrl as buildMetaConsentUrl } from '@/lib/providers/meta-ads-auth';
 
 /**
  * OAuth START (Phase 30 foundation + Phase 31 Google Ads live). Owner/admin only.
@@ -37,6 +38,15 @@ export async function POST(_req: Request, { params }: Ctx) {
     const authorizeUrl = buildConsentUrl(state);
     return NextResponse.json({ ok: true, ready: true, connectEnabled: true, provider, authorizeUrl,
       message: 'Redirecting to Google for read-only authorization. Nothing in Google Ads is changed.' });
+  }
+
+  if (provider === 'meta_ads') {
+    // Live Meta consent URL (read-only ads_read) with signed, workspace-bound state. No provider call here.
+    const nonce = crypto.randomUUID();
+    const state = signState({ workspaceId: String(ws.scope.workspaceId), provider: 'meta_ads', nonce });
+    const authorizeUrl = buildMetaConsentUrl(state);
+    return NextResponse.json({ ok: true, ready: true, connectEnabled: true, provider, authorizeUrl,
+      message: 'Redirecting to Meta for read-only authorization. Nothing in your Meta ad account is changed.' });
   }
 
   // Other configured providers: foundation-only (live connect enabled in a later phase).

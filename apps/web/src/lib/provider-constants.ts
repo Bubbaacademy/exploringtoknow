@@ -48,10 +48,10 @@ export const PROVIDERS: ProviderDef[] = [
     id: 'meta_ads', displayName: 'Meta Ads (Facebook/Instagram)', type: 'ads', priority: 2,
     oauthSupported: true, readSyncPlanned: true, writePublishPlanned: true, comingSoon: false,
     requiredEnv: ['META_APP_ID', 'META_APP_SECRET', 'META_REDIRECT_URI', TOKEN_KEY],
-    optionalEnv: [],
-    scopes: ['ads_read', 'ads_management'],
+    optionalEnv: ['META_API_VERSION'],
+    scopes: ['ads_read'],
     capabilities: { readMetrics: true, createCampaigns: true, socialPublish: true, conversionTracking: true },
-    plannedPhase: 'Phase 32 (read sync)', notes: 'Requires Meta App Review + Business Verification for Advanced Access.',
+    plannedPhase: 'Phase 32 (read sync)', notes: 'Read-only ads_read (Ads Insights). Real ad accounts require Meta App Review (Advanced Access) + Business Verification; test users work before review.',
   },
   {
     id: 'tiktok_ads', displayName: 'TikTok Ads', type: 'ads', priority: 3,

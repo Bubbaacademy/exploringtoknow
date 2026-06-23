@@ -6,6 +6,7 @@ import { PROVIDER_BY_ID, isProviderId, CONNECTION_STATUS_LABELS, connStatusVaria
 import { TopBar, Card, WsLink } from '../../_ui';
 import { ProviderConnectionControls } from '@/components/app/ProviderConnectionControls';
 import { GoogleAdsSyncPanel } from '@/components/app/GoogleAdsSyncPanel';
+import { MetaAdsSyncPanel } from '@/components/app/MetaAdsSyncPanel';
 
 export const dynamic = 'force-dynamic';
 type Args = { params: Promise<{ provider: string }>; searchParams: Promise<{ connected?: string; error?: string }> };
@@ -23,7 +24,8 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
   const recordStatus = connection ? String(connection.status) : null;
   const effectiveStatus = recordStatus && recordStatus !== 'not_configured' ? recordStatus : setup.setupStatus;
   const isConnected = recordStatus === 'connected';
-  const accountsRaw = (def.id === 'google_ads' && connection) ? await listProviderAccounts(ws.scope, connection.id as never) : [];
+  const hasSyncPanel = (def.id === 'google_ads' || def.id === 'meta_ads');
+  const accountsRaw = (hasSyncPanel && connection) ? await listProviderAccounts(ws.scope, connection.id as never) : [];
   const accounts = accountsRaw.map((a) => ({ id: a.id as string | number, providerAccountId: String(a.providerAccountId ?? ''), providerAccountName: String(a.providerAccountName ?? ''), manager: Boolean(a.managerCustomerId), selected: Boolean(a.selected) }));
 
   return (
@@ -34,7 +36,7 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
         actions={<WsLink href="/app/provider-connections">Back to connections</WsLink>}
       />
       <div className="adm-content">
-        {connected ? <div className="adm-panel ok" style={{ marginBottom: 12 }}>Connected. Read-only access only — nothing in Google Ads is changed.</div> : null}
+        {connected ? <div className="adm-panel ok" style={{ marginBottom: 12 }}>Connected. Read-only access only — nothing in {def.displayName} is changed.</div> : null}
         {error ? <div className="adm-panel warn" style={{ marginBottom: 12 }}>Authorization didn’t complete ({String(error).slice(0, 40)}). You can try connecting again.</div> : null}
         <div className="adm-panel" style={{ marginBottom: 16 }}>
           <strong>Connect your own {def.displayName} account.</strong> This workspace stores its <strong>own</strong> encrypted
@@ -65,6 +67,17 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
 
           {def.id === 'google_ads' ? (
             <GoogleAdsSyncPanel
+              connectionId={(connection?.id as string | number) ?? ''}
+              connected={isConnected}
+              canManage={canManage}
+              accounts={accounts}
+              lastSync={(connection?.lastSyncAt as string) ?? null}
+              connectedAt={(connection?.lastConnectedAt as string) ?? null}
+              lastError={(connection?.lastErrorMessage as string) ?? null}
+            />
+          ) : null}
+          {def.id === 'meta_ads' ? (
+            <MetaAdsSyncPanel
               connectionId={(connection?.id as string | number) ?? ''}
               connected={isConnected}
               canManage={canManage}
