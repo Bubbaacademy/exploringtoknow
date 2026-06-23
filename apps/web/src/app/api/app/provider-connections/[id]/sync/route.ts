@@ -60,11 +60,12 @@ export async function POST(req: Request, { params }: Ctx) {
       data: { lastSyncAt: new Date().toISOString(), lastErrorCode: null, lastErrorMessage: null } as never });
     return NextResponse.json({ ok: true, syncRunId: run.id, recordsRead: result.read, recordsWritten: result.written, windowStart: startDate, windowEnd: endDate });
   } catch (err) {
-    const code = (err instanceof Error ? err.message : 'sync_failed').slice(0, 80);
+    const detail = (err instanceof Error ? err.message : 'sync_failed').slice(0, 280);
+    console.warn('[google-ads sync] failed:', detail);
     await payload.update({ collection: 'provider-sync-runs', id: run.id as never, overrideAccess: true,
-      data: { status: 'failed', finishedAt: new Date().toISOString(), errorCode: code, errorMessage: 'Sync failed. Check the connection and try again.' } as never }).catch(() => {});
+      data: { status: 'failed', finishedAt: new Date().toISOString(), errorCode: detail.slice(0, 80), errorMessage: detail } as never }).catch(() => {});
     await payload.update({ collection: 'provider-connections', id: connection.id as never, overrideAccess: true,
-      data: { lastErrorCode: code, lastErrorMessage: 'Last sync failed.' } as never }).catch(() => {});
-    return NextResponse.json({ ok: false, code: 'sync_failed', syncRunId: run.id, error: 'Sync failed. Please try again.' }, { status: 502 });
+      data: { lastErrorCode: 'sync_failed', lastErrorMessage: detail } as never }).catch(() => {});
+    return NextResponse.json({ ok: false, code: 'sync_failed', syncRunId: run.id, error: 'Sync failed.', detail }, { status: 502 });
   }
 }

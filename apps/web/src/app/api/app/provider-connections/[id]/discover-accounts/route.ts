@@ -67,7 +67,13 @@ export async function POST(_req: Request, { params }: Ctx) {
     }
     return NextResponse.json({ ok: true, discovered: customers.length });
   } catch (err) {
-    const code = (err instanceof Error ? err.message : 'discover_failed').slice(0, 80);
-    return NextResponse.json({ ok: false, code: 'discover_failed', error: 'Could not discover accounts. If your developer token is at Test access, connect a Google Ads test account; a real account needs Basic access.', detail: code }, { status: 502 });
+    // Sanitized (no tokens/headers): log it + record to the connection + return it so the operator sees the real reason.
+    const detail = (err instanceof Error ? err.message : 'discover_failed').slice(0, 280);
+    console.warn('[google-ads discover] failed:', detail);
+    try {
+      const payload = await getPayload({ config });
+      await payload.update({ collection: 'provider-connections', id: connection.id as never, overrideAccess: true, data: { lastErrorCode: 'discover_failed', lastErrorMessage: detail } as never });
+    } catch { /* ignore */ }
+    return NextResponse.json({ ok: false, code: 'discover_failed', error: 'Could not discover accounts. If your developer token is at Test access, connect a Google Ads test account; a real account needs Basic access.', detail }, { status: 502 });
   }
 }

@@ -8,6 +8,33 @@ import { googleAdsEnv } from './google-ads-auth';
 
 const apiBase = (version: string) => `https://googleads.googleapis.com/${version}`;
 
+/**
+ * Build a SANITIZED error from a failed Google response: HTTP status + Google's
+ * error.status/code/message (+ first Google Ads errorCode from details). Reads the
+ * body, never the request headers — so no access token / developer token is ever
+ * included. Truncated. This is safe to log and surface to operators.
+ */
+async function googleError(res: Response, prefix: string): Promise<Error> {
+  let body = '';
+  try { body = await res.text(); } catch { /* ignore */ }
+  let j: Record<string, any> | undefined;
+  try { j = JSON.parse(body); } catch { /* non-JSON */ }
+  const er = (j && j.error) || {};
+  let detailCode = '';
+  try {
+    for (const d of (er.details || [])) {
+      for (const e2 of (d.errors || [])) {
+        const ec = e2.errorCode && typeof e2.errorCode === 'object' ? Object.values(e2.errorCode)[0] : '';
+        if (ec) { detailCode = String(ec); break; }
+      }
+      if (detailCode) break;
+    }
+  } catch { /* ignore */ }
+  const status = er.status || er.code || '';
+  const msg = String(er.message || body || '').replace(/\s+/g, ' ').slice(0, 280);
+  return new Error(`${prefix} http=${res.status} status=${status}${detailCode ? ` code=${detailCode}` : ''} msg=${msg}`);
+}
+
 /** GET customers:listAccessibleCustomers → array of customer ids (digits). Read-only. */
 export async function listAccessibleCustomers(accessToken: string): Promise<string[]> {
   const e = googleAdsEnv();
@@ -15,7 +42,7 @@ export async function listAccessibleCustomers(accessToken: string): Promise<stri
     method: 'GET',
     headers: { Authorization: `Bearer ${accessToken}`, 'developer-token': e.developerToken },
   });
-  if (!res.ok) throw new Error(`list_customers_failed_${res.status}`);
+  if (!res.ok) throw await googleError(res, 'list_customers_failed');
   const j = (await res.json()) as { resourceNames?: string[] };
   return (j.resourceNames || []).map((r) => String(r).replace(/^customers\//, '').replace(/[^0-9]/g, '')).filter(Boolean);
 }
@@ -35,7 +62,7 @@ export async function searchStream(customerId: string, query: string, accessToke
   const res = await fetch(`${apiBase(e.apiVersion)}/customers/${cid}/googleAds:searchStream`, {
     method: 'POST', headers, body: JSON.stringify({ query }),
   });
-  if (!res.ok) throw new Error(`search_failed_${res.status}`);
+  if (!res.ok) throw await googleError(res, 'search_failed');
   const j = await res.json();
   // searchStream returns an array of response batches, each with `.results`.
   const batches: Array<{ results?: Array<Record<string, any>> }> = Array.isArray(j) ? j : [j];

@@ -83,7 +83,13 @@ export async function GET(req: Request, { params }: Ctx) {
           if (!haveSelected && first) await payload.update({ collection: 'provider-connections', id: connId as never, overrideAccess: true, data: { providerAccountId: customerId } as never });
           first = false;
         }
-      } catch { /* account fetch is best-effort; connection still counts as connected */ }
+      } catch (discErr) {
+        // Best-effort: connection still counts as connected, but record the SANITIZED reason
+        // (no tokens/headers) so the UI shows it and the operator can retry "Discover accounts".
+        const m = (discErr instanceof Error ? discErr.message : 'account_discovery_failed').slice(0, 280);
+        console.warn('[google-ads callback] account discovery failed:', m);
+        try { await payload.update({ collection: 'provider-connections', id: connId as never, overrideAccess: true, data: { lastErrorCode: 'account_discovery_failed', lastErrorMessage: m } as never }); } catch { /* ignore */ }
+      }
 
       return detailRedirect('?connected=1');
     } catch {

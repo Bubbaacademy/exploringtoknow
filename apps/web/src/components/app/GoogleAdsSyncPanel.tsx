@@ -40,7 +40,7 @@ export function GoogleAdsSyncPanel({ connectionId, connected, canManage, account
       if (url.endsWith('/sync')) { if (start) body.startDate = start; if (end) body.endDate = end; }
       const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j.ok) { setErr(j.error || 'Request failed.'); return j; }
+      if (!r.ok || !j.ok) { setErr((j.error || 'Request failed.') + (j.detail ? `  [${j.detail}]` : '')); return j; }
       return j;
     } catch { setErr('Network error.'); return null; } finally { setBusy(false); }
   }
