@@ -1,16 +1,17 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-23 — **Phase 31 Google Ads Read Sync is LIVE-ACTIVATED & VALIDATED END-TO-END; the
-> only remaining blocker is a Google-side developer-token approval (Basic Access request SUBMITTED, pending).** Production
-> HEAD `42ef955`, image `etk-web` (id `sha256:b8912f73…`) healthy; **migrations 26**. Platform Google Ads API credentials
-> are set in prod env; **multi-tenant customer OAuth proven**: a `workspace_owner` (workspace "testing", tenant 22)
-> connected their OWN Google Ads account via OAuth → encrypted per-workspace tokens stored → **v24 account discovery
-> succeeded** (customer `2315570544` discovered + selected) → "Sync last 30 days" invoked. The report query then returns
-> a clean **`DEVELOPER_TOKEN_NOT_APPROVED`** (HTTP 403): the platform developer token is at **Test access**, which cannot
-> query real accounts — so 0 `api_synced` rows yet. **This is a Google account-approval gate, NOT a code issue** — the
-> whole pipeline (OAuth, vault, discovery, selection, sync, error capture) works. API default bumped **v20→v24** (sunset);
-> errors are captured **sanitized** (no tokens/headers). **READ-ONLY** throughout — no mutate/launch/spend. Manual
-> performance (Phase 28) remains the **fallback**. Email + billing still **local-safe**. Prior: Phase 30 OAuth vault, Phase 29 audit, Phase 28 manual performance.
+> Current snapshot. Updated 2026-06-23 — **Phase 32 Meta Ads provider connection + read-sync FOUNDATION is DEPLOYED
+> (env-gated / "platform setup pending").** Production HEAD `709e3fc`, image `etk-web` (id `sha256:dba3e20f…`) healthy;
+> **migrations 26 (no new migration — the Phase 30/31 data model already includes `meta_ads`).** Meta mirrors the Google
+> architecture, READ-ONLY: platform-owned ONE Meta app (env only) + per-workspace customer OAuth (`ads_read` scope only) →
+> AES-256-GCM-encrypted per-workspace tokens → `me/adaccounts` discovery → campaign-daily Insights read into
+> `synced_performance_daily` (`api_synced`). Meta issues no refresh token → long-lived ~60-day user token via
+> `fb_exchange_token`; default Graph API `v25.0`. **No `META_*` env set in prod → Meta shows "setup pending": no OAuth, no
+> sync, no external call** (0 meta_ads connection rows). Operator must create the Meta app + credentials next (see
+> `META_OPERATOR_SETUP.md`). **Google Ads (Phase 31/31A) untouched** — connection id 8 (tenant 22) still `connected`
+> (customer `2315570544`), still awaiting Google **Basic Access** approval of the developer token (`DEVELOPER_TOKEN_NOT_APPROVED`,
+> SUBMITTED/pending). **READ-ONLY** throughout — no mutate/launch/spend. Manual performance (Phase 28) remains the
+> **fallback**. Email + billing still **local-safe**. Prior: Phase 31/31A Google Ads live, Phase 30 OAuth vault, Phase 29 audit.
 
 ---
 
@@ -258,6 +259,31 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Phase 32 — Meta Ads provider connection + read-sync FOUNDATION: DEPLOYED (env-gated; live blocked by missing credentials) (no migration)
+Mirrors the Google Ads (Phase 31) architecture for **Meta Ads (Facebook/Instagram)**, **READ-ONLY first**. HEAD `709e3fc`,
+image `sha256:dba3e20f…`, migrations **26 (unchanged)** — the Phase 30/31 schema already enumerates `meta_ads`, so no
+migration was needed. Multi-tenant SaaS model identical to Google: platform owns ONE Meta app (`META_APP_ID`/`META_APP_SECRET`/
+`META_REDIRECT_URI`, env only); each workspace owner connects their OWN Meta ad account via OAuth; per-workspace tokens are
+AES-256-GCM-encrypted in `provider-connections`; customers never supply API credentials.
+- **Scope:** read-only `ads_read` only (no `ads_management`). Consent `facebook.com/{v}/dialog/oauth`; token
+  `graph.facebook.com/{v}/oauth/access_token`; Meta has **no refresh token** → long-lived ~60-day user token via
+  `grant_type=fb_exchange_token` (opportunistically re-extended <7d before expiry). Default Graph API **v25.0** (override
+  `META_API_VERSION`). Account discovery `me/adaccounts`; reporting `act_{id}/insights` (campaign + daily). Graph errors
+  captured **sanitized** (type/code/subcode/message — never the token/app secret).
+- **New files:** `lib/providers/meta-ads-auth.ts`, `meta-ads.ts`, `meta-ads-normalize.ts`, `meta-ads-sync.ts`;
+  `components/app/MetaAdsSyncPanel.tsx`. **Edited:** oauth `start`/`callback` (Meta branch added; Google branch behavior
+  unchanged), `discover-accounts`/`sync` routes (now dispatch by `connection.provider`), provider detail page (renders Meta
+  panel + provider-aware copy), `provider-constants.ts` (Meta scope narrowed to `ads_read`, `optionalEnv` += `META_API_VERSION`),
+  `.env.example` (Meta guidance + `META_API_VERSION`). `select-account`/`disconnect`/remove routes already provider-agnostic.
+- **Env-gated:** no `META_*` in prod → Meta shows "platform setup pending"; **no OAuth, no sync, no external call** (0
+  meta_ads connection rows, 0 meta_ads synced rows). Insights→synced normalization is honest: impressions/clicks/spend exact;
+  `conversions` = purchase actions only (`omni_purchase`/`purchase`), 0 otherwise until objective-aware mapping (later phase).
+- **Tenant isolation + role gates reused unchanged:** owner/admin/super may connect; viewer/editor read-only; cross-tenant 404.
+- **Operator next step:** create the Meta app + credentials per `META_OPERATOR_SETUP.md`, then the same connect→discover→sync
+  loop proven for Google works for Meta. **Surfacing Meta data on `/app/performance` is a follow-up** (the Google overview is
+  not yet generalized).
+- **Google Ads untouched:** connection id 8 (tenant 22) still `connected`, still awaiting Basic Access approval.
 
 ### Phase 31A — Google Ads GO-LIVE ACTIVATION: LIVE-VALIDATED END-TO-END; blocked on developer-token Basic Access (Google review pending)
 Platform Google Ads API credentials were set in prod env by the operator and the app recreated. The live customer-OAuth

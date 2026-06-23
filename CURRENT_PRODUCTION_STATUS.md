@@ -1,10 +1,19 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
-over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-06-23 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `42ef955` (Phase 31 Google Ads Read Sync — LIVE-ACTIVATED & VALIDATED END-TO-END; blocked only on a
-Google-side developer-token Basic Access approval, SUBMITTED/pending).**
+**Production HEAD: `709e3fc` (Phase 32 Meta Ads provider connection + read-sync FOUNDATION — DEPLOYED, env-gated /
+"platform setup pending"; Phase 31/31A Google Ads remains LIVE-VALIDATED, blocked only on a Google-side developer-token
+Basic Access approval, SUBMITTED/pending).**
+App image `etk-web` (id `sha256:dba3e20f…`) healthy; **payload_migrations 26 (NO new migration — the Phase 30/31 schema
+already enumerates `meta_ads`).** **Phase 32 Meta:** mirrors the Google architecture, READ-ONLY (`ads_read` only); platform
+owns ONE Meta app (env only), each workspace owner connects their OWN Meta ad account via OAuth (per-workspace AES-256-GCM
+tokens; Meta long-lived ~60-day token via `fb_exchange_token`, no refresh token; Graph API default `v25.0`). **No `META_*`
+set in prod → Meta shows "setup pending": no OAuth, no sync, no external call (0 meta_ads connection rows).** Operator next
+step: create the Meta app + credentials (`META_OPERATOR_SETUP.md`). Google Ads (Phase 31) prior state below is unchanged.
+
+**Production HEAD baseline: `42ef955` (Phase 31 Google Ads Read Sync — LIVE-ACTIVATED & VALIDATED END-TO-END; blocked only
+on a Google-side developer-token Basic Access approval, SUBMITTED/pending).**
 App image `etk-web` (id `sha256:b8912f73…`) healthy; **payload_migrations 26** (`provider_accounts` +
 `synced_performance_daily`, additive). Platform Google Ads API credentials are **set in prod env** (operator-owned, never
 customer-facing). **Multi-tenant customer OAuth proven live:** a `workspace_owner` (workspace "testing", tenant 22)
@@ -68,6 +77,6 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `42ef955` (Phase 31 + 31A go-live fixes); the docs
-commit on top is docs-only. Local + server in sync. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `709e3fc` (Phase 32 Meta foundation, built & deployed;
+no migration); the docs commit on top is docs-only. Local + server in sync. Rollback point before Phase 32: `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained
 test workspace + 1 customer workspace "testing" [tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)

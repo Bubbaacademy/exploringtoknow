@@ -257,6 +257,27 @@ ExploringToKnow is a **SaaS provider**, not a single-account tool. The connectio
 - **Scale / RMF:** initial use is modest, per-customer, manual reporting. We can describe required-minimum-functionality
   reporting coverage on request. We are not requesting Standard (unlimited) access at this stage.
 
+## 4d. Meta Ads (Phase 32) — read-only foundation IMPLEMENTED & deployed (env-gated)
+
+The Meta read-only foundation is now built and deployed (prod HEAD `709e3fc`, no migration), mirroring the Google model in
+§4b. It is **env-gated**: with no `META_*` set it shows "platform setup pending" and makes no OAuth/API call. Operator setup
+steps: `META_OPERATOR_SETUP.md`.
+
+- **Auth/scopes (official Meta docs):** 3-legged OAuth via `facebook.com/{v}/dialog/oauth`; token exchange at
+  `graph.facebook.com/{v}/oauth/access_token`. **Read-only `ads_read` only** (no `ads_management`). Meta issues **no refresh
+  token** → long-lived ~60-day user token via `grant_type=fb_exchange_token` (re-extended <7d before expiry). Default Graph
+  API **v25.0** (env-overridable).
+- **Read endpoints only:** `me/adaccounts` (ad-account discovery) + `act_{id}/insights` (campaign + daily reporting). **No
+  create/edit/publish/budget calls.**
+- **Multi-tenant / isolation / secrets:** identical to Google — platform owns ONE Meta app (env only); each workspace owner
+  connects their OWN ad account; per-workspace AES-256-GCM tokens; owner/admin/super connect, others read-only; cross-tenant
+  blocked; sanitized Graph errors (type/code/subcode/message — never the token/app secret).
+- **Compliance talking points (when Meta App Review / Business Verification asks):** read-only reporting only (Ads Insights);
+  explicit per-user OAuth consent; `ads_read` minimum scope; encrypted, per-workspace, tenant-isolated token storage; data
+  labeled `api-synced` and never shared across customers; **zero mutate calls** (no campaign/ad/budget changes). Advanced
+  Access for `ads_read` + Business Verification are required to connect outside customers; app roles/test users validate the
+  live loop before review (the Meta equivalent of Google's Basic Access path).
+
 ## 5. Normalized provider connection architecture (DESIGN ONLY — not implemented)
 
 > These models are a **future design** to be implemented only in later, separately-approved phases. **No code, no

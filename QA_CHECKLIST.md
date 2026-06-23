@@ -210,6 +210,18 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 43. Phase 32 — Meta Ads provider connection + read-sync FOUNDATION (env-gated; live blocked by missing credentials)
+**2026-06-23 — prod HEAD `709e3fc`, img `sha256:dba3e20f…`, migrations 26 (NO new migration; `meta_ads` already in every provider enum). Mirrors Google (Phase 31), READ-ONLY. No `META_*` env in prod → Meta shows "platform setup pending": no OAuth, no sync, no external call (0 meta_ads connection rows). Code verified live in the freshly-built image. Google Ads untouched.**
+- [x] Deploy clean: build fresh (not stale image), app healthy, https 200, migrations unchanged at 26, worker/postgres/caddy untouched.
+- [x] Meta code present in running image (`oauth/[provider]/start` + chunk referencing `fb_exchange_token`/`me/adaccounts`).
+- [x] Env-gated: `META_APP_ID/SECRET/REDIRECT_URI/API_VERSION` absent → provider "setup pending"; **no OAuth/sync/external call**; 0 meta_ads rows.
+- [x] Google Ads provider untouched: connection id 8 (tenant 22) still `connected` (customer `2315570544`); Google routes' behavior unchanged (provider-dispatch added without altering the Google branch).
+- [ ] **After operator sets `META_*` (see `META_OPERATOR_SETUP.md`):** provider flips to "Ready"; **Connect Meta Ads** shows for owner/admin/super only (viewer/editor read-only); scope requested is read-only `ads_read` only.
+- [ ] OAuth connect (workspace owner) → callback exchanges code → **long-lived** token (fb_exchange_token; no refresh token) → AES-256-GCM-encrypted per-workspace (values never shown); status `connected`; tokens on the owner's workspace, not ETK (tenant isolation).
+- [ ] `me/adaccounts` discovery → workspace-scoped `provider-accounts`; auto-select first; **Sync last 30 days** → `synced_performance_daily` rows `provider=meta_ads`, `source=api_synced`, idempotent window-replace; impressions/clicks/spend exact, conversions = purchase actions only.
+- [ ] Sanitized error capture on failure: Graph `type/code/subcode/message` in `lastErrorMessage` + sync-run + logs; **no tokens/app-secret/headers**. 0-account discovery shows the App-Review/Advanced-Access hint.
+- [ ] Cross-tenant: ID-swap on `/discover-accounts`,`/sync`,`/select-account` → 404; unauth → 401; env-missing/not-connected → 422.
+
 ## 42B. Phase 31A — Google Ads GO-LIVE: live-validated end-to-end; blocked on developer-token Basic Access (Google review pending)
 **2026-06-23 — prod HEAD `42ef955`, img `sha256:b8912f73…`, migrations 26. Platform Google Ads API creds set in prod env. A `workspace_owner` (workspace "testing", tenant 22) connected their OWN account → encrypted per-workspace tokens → v24 account discovery OK (customer `2315570544` selected) → "Sync last 30 days" → report returns `DEVELOPER_TOKEN_NOT_APPROVED` (HTTP 403). Platform developer token at Test access can't query real accounts → 0 `api_synced` rows yet. Basic Access application SUBMITTED (pending Google). Not a code issue. Connection left connected (not removed). Read-only throughout; no secrets printed.**
 - [ ] OAuth connect (real workspace owner) → callback stores encrypted access+refresh tokens (vault `v1:`; values never shown); status `connected`; multi-tenant (tokens on the owner's workspace, not ETK).
