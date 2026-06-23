@@ -32,7 +32,9 @@ export function googleAdsEnv(): GoogleAdsEnv {
     clientId: env('GOOGLE_ADS_CLIENT_ID'), clientSecret: env('GOOGLE_ADS_CLIENT_SECRET'),
     developerToken: env('GOOGLE_ADS_DEVELOPER_TOKEN'), redirectUri: env('GOOGLE_ADS_REDIRECT_URI'),
     loginCustomerId: env('GOOGLE_ADS_LOGIN_CUSTOMER_ID').replace(/[^0-9]/g, ''),
-    apiVersion: env('GOOGLE_ADS_API_VERSION') || 'v20',
+    // Current Google Ads API major version (only the 3 most recent are maintained;
+    // v20/v21 are sunset → UNSUPPORTED_VERSION). Override via GOOGLE_ADS_API_VERSION.
+    apiVersion: env('GOOGLE_ADS_API_VERSION') || 'v24',
   };
 }
 
