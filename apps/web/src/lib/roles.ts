@@ -22,9 +22,14 @@ export const canManageSettings = (r: Role | null | undefined): boolean => r === 
 export const canManageBrand = (r: Role | null | undefined): boolean =>
   r === 'workspace_owner' || r === 'workspace_admin';
 
-/** Connect/disconnect provider connections (OAuth vault). Owner or workspace admin. */
+/**
+ * Connect/disconnect/sync provider connections (OAuth vault). Owner or workspace admin —
+ * plus the platform super admin, who has full SaaS authority and manages connections on
+ * their own (scoped) workspace. Editors/viewers remain read-only. Scope is always derived
+ * from the actor's membership, so this never widens tenant access.
+ */
 export const canManageConnections = (r: Role | null | undefined): boolean =>
-  r === 'workspace_owner' || r === 'workspace_admin';
+  r === 'workspace_owner' || r === 'workspace_admin' || r === 'platform_super_admin';
 
 /** Roles an owner may assign to a teammate (never owner/super-admin). */
 export const INVITABLE_ROLES: ReadonlyArray<Exclude<Role, 'workspace_owner' | 'platform_super_admin'>> = [
