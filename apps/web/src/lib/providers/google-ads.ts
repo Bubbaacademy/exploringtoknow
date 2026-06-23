@@ -17,9 +17,12 @@ const apiBase = (version: string) => `https://googleads.googleapis.com/${version
 async function googleError(res: Response, prefix: string): Promise<Error> {
   let body = '';
   try { body = await res.text(); } catch { /* ignore */ }
-  let j: Record<string, any> | undefined;
+  let j: any;
   try { j = JSON.parse(body); } catch { /* non-JSON */ }
-  const er = (j && j.error) || {};
+  // searchStream returns the error body as an ARRAY ([{error:{…}}]); other endpoints
+  // return the object form ({error:{…}}). Unwrap both.
+  const root = Array.isArray(j) ? (j[0] || {}) : (j || {});
+  const er = (root && root.error) || {};
   let detailCode = '';
   try {
     for (const d of (er.details || [])) {
