@@ -56,7 +56,7 @@ export function ProviderConnectionControls({ provider, canManage, configured, co
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button type="button" className="adm-btn" disabled={busy || !configured}
           onClick={() => call(`/api/app/provider-connections/oauth/${provider}/start`, 'POST')}>
-          {configured ? 'Connect your account' : 'Connect (setup pending)'}
+          {!configured ? 'Connect (setup pending)' : connectionStatus === 'connected' ? 'Reconnect / change account' : 'Connect Google Ads'}
         </button>
 
         {!connectionId ? (

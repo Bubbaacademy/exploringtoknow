@@ -24,7 +24,7 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
   const effectiveStatus = recordStatus && recordStatus !== 'not_configured' ? recordStatus : setup.setupStatus;
   const isConnected = recordStatus === 'connected';
   const accountsRaw = (def.id === 'google_ads' && connection) ? await listProviderAccounts(ws.scope, connection.id as never) : [];
-  const accounts = accountsRaw.map((a) => ({ id: a.id as string | number, providerAccountId: String(a.providerAccountId ?? ''), providerAccountName: String(a.providerAccountName ?? ''), selected: Boolean(a.selected) }));
+  const accounts = accountsRaw.map((a) => ({ id: a.id as string | number, providerAccountId: String(a.providerAccountId ?? ''), providerAccountName: String(a.providerAccountName ?? ''), manager: Boolean(a.managerCustomerId), selected: Boolean(a.selected) }));
 
   return (
     <>
@@ -51,7 +51,7 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
             {[def.capabilities.readMetrics && 'Read metrics', def.capabilities.createCampaigns && 'Create campaigns (future)', def.capabilities.socialPublish && 'Social publish (future)', def.capabilities.conversionTracking && 'Conversion tracking'].filter(Boolean).join('  ·  ')}
           </span></div>
           <div className="adm-row"><span className="t">Your token storage</span><strong>encrypted at rest · never shown</strong></div>
-          <div className="adm-row"><span className="t">Last sync</span><strong>{(connection?.lastSyncAt as string) ? new Date(String(connection!.lastSyncAt)).toISOString().slice(0, 16).replace('T', ' ') : '—'}</strong></div>
+          <div className="adm-row"><span className="t">Last sync</span><strong>{(connection?.lastSyncAt as string) ? new Date(String(connection!.lastSyncAt)).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : (isConnected ? 'Not synced yet' : '—')}</strong></div>
           {def.notes ? <p className="adm-note" style={{ marginTop: 8 }}>{def.notes}</p> : null}
 
           <ProviderConnectionControls
@@ -70,6 +70,7 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
               canManage={canManage}
               accounts={accounts}
               lastSync={(connection?.lastSyncAt as string) ?? null}
+              connectedAt={(connection?.lastConnectedAt as string) ?? null}
               lastError={(connection?.lastErrorMessage as string) ?? null}
             />
           ) : null}

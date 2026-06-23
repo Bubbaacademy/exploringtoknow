@@ -3,6 +3,11 @@
  * YYYY-MM-DD (validated by the caller). Campaign-daily grain for v1.
  */
 
+/** Customer (account) info — read-only identity for account discovery. */
+export function customerInfoGaql(): string {
+  return 'SELECT customer.id, customer.descriptive_name, customer.currency_code, customer.time_zone, customer.manager FROM customer LIMIT 1';
+}
+
 /** Campaign daily performance GAQL (segments.date over [start,end]). */
 export function campaignDailyGaql(startDate: string, endDate: string): string {
   return [

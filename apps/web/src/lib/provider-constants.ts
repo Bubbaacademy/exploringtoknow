@@ -127,8 +127,16 @@ export const CONNECTION_STATUS_LABELS: Record<string, string> = {
   not_configured: 'Not configured', ready_to_connect: 'Ready to connect', connected: 'Connected',
   expired: 'Expired', disconnected: 'Disconnected', error: 'Error', disabled: 'Disabled',
 };
-export const connStatusVariant = (s: string): 'good' | 'attn' | '' =>
-  s === 'connected' ? 'good' : (s === 'error' || s === 'expired') ? 'attn' : '';
+/**
+ * Status pill color (maps to .adm-badge.{ok|warn|err}; '' = neutral gray):
+ * connected → green; disconnected/error/expired → red; not_configured/disabled → amber;
+ * ready_to_connect / anything else → neutral gray.
+ */
+export const connStatusVariant = (s: string): 'ok' | 'warn' | 'err' | '' =>
+  s === 'connected' ? 'ok'
+    : (s === 'disconnected' || s === 'error' || s === 'expired') ? 'err'
+    : (s === 'not_configured' || s === 'disabled') ? 'warn'
+    : '';
 
 export const SYNC_TYPES = ['account_identity_placeholder', 'performance_read', 'campaign_read', 'creative_read', 'manual_test_placeholder'] as const;
 export const SYNC_RUN_STATUSES = ['queued', 'running', 'succeeded', 'failed', 'skipped'] as const;
