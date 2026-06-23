@@ -210,6 +210,14 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 42B. Phase 31A — Google Ads GO-LIVE: live-validated end-to-end; blocked on developer-token Basic Access (Google review pending)
+**2026-06-23 — prod HEAD `42ef955`, img `sha256:b8912f73…`, migrations 26. Platform Google Ads API creds set in prod env. A `workspace_owner` (workspace "testing", tenant 22) connected their OWN account → encrypted per-workspace tokens → v24 account discovery OK (customer `2315570544` selected) → "Sync last 30 days" → report returns `DEVELOPER_TOKEN_NOT_APPROVED` (HTTP 403). Platform developer token at Test access can't query real accounts → 0 `api_synced` rows yet. Basic Access application SUBMITTED (pending Google). Not a code issue. Connection left connected (not removed). Read-only throughout; no secrets printed.**
+- [ ] OAuth connect (real workspace owner) → callback stores encrypted access+refresh tokens (vault `v1:`; values never shown); status `connected`; multi-tenant (tokens on the owner's workspace, not ETK).
+- [ ] Account discovery on **v24** returns accessible customer(s); workspace-scoped `provider-accounts`; auto-select; correct CTAs (Connect / Reconnect / Discover / Sync); status badge colors (connected=green, error=red, not_configured=amber, ready=gray).
+- [ ] Sanitized error capture: failed report shows `code=DEVELOPER_TOKEN_NOT_APPROVED` in connection `lastErrorMessage` + sync-run + logs; **no tokens/headers/secrets**.
+- [ ] **Post-Google-approval re-verify:** re-run "Sync last 30 days" on `2315570544` → `synced-performance-daily` rows `source=api_synced` created; `/app/performance` shows the source-labeled Google Ads section; manual/internal data stay separate; calculated metrics handle zeros.
+- [ ] No mutate/launch/spend; read-only endpoints only (`listAccessibleCustomers`, `searchStream`); no Meta/Phase 32.
+
 ## 42A. Phase 31A — Multi-tenant OAuth model confirmation + copy correction (no behavior change)
 **Code audit confirmed Phase 31 already implements true multi-tenant customer OAuth (no rewrite). Copy/docs corrected; vault key placed in prod. Live customer OAuth still blocked by the 4 platform Google API values (operator-set, not yet present).**
 - [ ] Platform-level credentials only: Google Ads API client id/secret/developer token come from env (operator-set once); NO collection has a customer client-id/secret/developer-token field; the start route reads no client credential from the request.

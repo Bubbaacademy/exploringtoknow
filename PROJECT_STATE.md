@@ -1,19 +1,16 @@
 # PROJECT_STATE.md
 
-> Current snapshot. Updated 2026-06-20 — **Phase 31 (Google Ads Read Sync v1): IMPLEMENTATION DEPLOYED & VERIFIED LIVE
-> (env-gated). LIVE GOOGLE ADS OAUTH/SYNC BLOCKED BY MISSING OPERATOR CREDENTIALS.** Production HEAD `0cb27f5`, image
-> `etk-web` (id `sha256:d0a7b156…`) healthy; **migrations 26** (phase31 google ads sync applied). New `provider-accounts`
-> + `synced-performance-daily` tables + the full **read-only** Google Ads path: OAuth start/callback (live consent +
-> token exchange), accessible-account discovery, GAQL campaign-daily read sync into normalized `api_synced` rows, and a
-> source-labeled Google Ads section in `/app/performance`. **READ-ONLY** — no mutate/launch/spend. **All live behavior is
-> env-gated** (`GOOGLE_ADS_*` + `PROVIDER_TOKEN_ENCRYPTION_KEY`); **prod has none → everything stays `not_configured`,
-> start/sync return 422, and NO external call occurs** (verified). **Phase 31A (2026-06-20): confirmed the connection
-> model is true multi-tenant customer OAuth** — platform-level Google Ads API credentials set ONCE by the operator (env
-> only); each **workspace owner connects their OWN Google Ads account** via OAuth in-app; per-workspace encrypted tokens;
-> customers never provide API keys. UI/docs copy corrected to match (no "set these env vars" to customers; "setup pending"
-> instead). The vault key `PROVIDER_TOKEN_ENCRYPTION_KEY` is now **placed in prod env**; the 4 Google API values remain to
-> be set by the operator before customers can connect. Manual performance (Phase 28) remains the **fallback**. Email +
-> billing still **local-safe**. Prior: Phase 30 OAuth vault, Phase 29 audit/correction, Phase 28 manual performance, Phase 27 Ads Studio.
+> Current snapshot. Updated 2026-06-23 — **Phase 31 Google Ads Read Sync is LIVE-ACTIVATED & VALIDATED END-TO-END; the
+> only remaining blocker is a Google-side developer-token approval (Basic Access request SUBMITTED, pending).** Production
+> HEAD `42ef955`, image `etk-web` (id `sha256:b8912f73…`) healthy; **migrations 26**. Platform Google Ads API credentials
+> are set in prod env; **multi-tenant customer OAuth proven**: a `workspace_owner` (workspace "testing", tenant 22)
+> connected their OWN Google Ads account via OAuth → encrypted per-workspace tokens stored → **v24 account discovery
+> succeeded** (customer `2315570544` discovered + selected) → "Sync last 30 days" invoked. The report query then returns
+> a clean **`DEVELOPER_TOKEN_NOT_APPROVED`** (HTTP 403): the platform developer token is at **Test access**, which cannot
+> query real accounts — so 0 `api_synced` rows yet. **This is a Google account-approval gate, NOT a code issue** — the
+> whole pipeline (OAuth, vault, discovery, selection, sync, error capture) works. API default bumped **v20→v24** (sunset);
+> errors are captured **sanitized** (no tokens/headers). **READ-ONLY** throughout — no mutate/launch/spend. Manual
+> performance (Phase 28) remains the **fallback**. Email + billing still **local-safe**. Prior: Phase 30 OAuth vault, Phase 29 audit, Phase 28 manual performance.
 
 ---
 
@@ -261,6 +258,34 @@ Payload migrations **14 → 15**.
 
 ### Phase 15 DB backup
 `/opt/exploringtoknow/backups/pre-phase15_20260617_021233.sql.gz` (verified before migration: gzip OK).
+
+### Phase 31A — Google Ads GO-LIVE ACTIVATION: LIVE-VALIDATED END-TO-END; blocked on developer-token Basic Access (Google review pending)
+Platform Google Ads API credentials were set in prod env by the operator and the app recreated. The live customer-OAuth
+read-sync path was then **validated end-to-end against a real workspace** (no code regressions; all read-only):
+- **Multi-tenant customer OAuth proven:** a **`workspace_owner`** (workspace "testing", tenant 22) clicked **Connect**,
+  completed Google consent in-browser, and the callback stored **encrypted per-workspace access + refresh tokens** (vault
+  `v1:` format; values never shown) → connection `connected`, `connectedAt` set. Confirms the SaaS model (each workspace
+  connects its OWN account; tokens never cross tenants).
+- **Account discovery works (v24):** `listAccessibleCustomers` returned customer **`2315570544`**, stored as a
+  workspace-scoped `provider-account` and auto-selected. (The earlier `UNSUPPORTED_VERSION` was the sunset **v20** default
+  → fixed to **v24**.)
+- **Sync invoked; report query gated by Google:** "Sync last 30 days" → `searchStream` returns a clean, sanitized
+  **`http=403 PERMISSION_DENIED code=DEVELOPER_TOKEN_NOT_APPROVED`**. Cause: the **platform developer token is at Test
+  access** (can only query Google Ads **test** accounts); `2315570544` is a **real** account. **Not** a manager/account-type
+  issue and **not** `USER_PERMISSION_DENIED` (the OAuth user has access). **0 `api_synced` rows** until the token is approved.
+- **Operator action taken:** **Basic Access application SUBMITTED** to the Google Ads API Compliance team (ticket
+  acknowledged). Real-account sync stays blocked by `DEVELOPER_TOKEN_NOT_APPROVED` **until Google approves** the token.
+  (Alternative to validate now: connect a **Google Ads test account**, which works with the Test-access token.)
+- **Code fixes shipped this activation (read-only; no migration):** allow `platform_super_admin` in `canManageConnections`
+  (super-admin saw "view only"); connected-state UX (status badge colors → `ok/warn/err`; "Connected on" + "Last sync:
+  Not synced yet"; account display + **Discover accounts** action; CTA "Connect" vs "Reconnect / change account"); default
+  API version **v20→v24**; **sanitized Google error capture** (HTTP status + GoogleAdsFailure errorCode, array+object
+  bodies unwrapped) recorded to the connection's lastError, logged, and surfaced in UI — never tokens/headers.
+- **Current prod state:** HEAD `42ef955` (img `sha256:b8912f73…`), migrations 26; ETK content unchanged; manual
+  performance + all gates intact. Connection id 8 (tenant 22) left **connected** (not removed), selected `2315570544`.
+- **Next verification (after Google approval):** re-run "Sync last 30 days" on `2315570544` → confirm `api_synced` rows in
+  `synced-performance-daily` + the source-labeled Google Ads section in `/app/performance`. See `PROVIDER_API_AUDIT.md §4c`
+  for the compliance-review talking points.
 
 ### Phase 31A — Google Ads go-live activation support + multi-tenant OAuth model confirmation: COMPLETE (copy/docs only)
 Framing correction + activation prep. **No architecture change required** — an audit confirmed the Phase 31 code

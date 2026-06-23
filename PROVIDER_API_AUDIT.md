@@ -227,6 +227,36 @@ ExploringToKnow is a **SaaS provider**, not a single-account tool. The connectio
   workspace-scoped; callback stores per-workspace encrypted tokens; account discovery + sync are workspace-scoped; no
   customer-credential fields exist on any collection.)*
 
+## 4c. Google Ads API — Basic Access / compliance review: prepared talking points
+
+> Status: **Basic Access application SUBMITTED** (ticket acknowledged by the Google Ads API Compliance team, 2026-06-23).
+> Real-account report sync is blocked by **`DEVELOPER_TOKEN_NOT_APPROVED`** until approval. Use these honest, accurate
+> answers if Google sends follow-up questions. All claims match the shipped code — do not overstate.
+
+- **Tool name / company:** ExploringToKnow — a multi-tenant marketing/owned-media SaaS. The Google Ads API is one
+  optional, per-customer integration inside the product.
+- **Primary use of the API (current):** **read-only reporting only.** We pull each connected customer's own campaign
+  performance (GAQL `campaign` daily: impressions, clicks, cost_micros, conversions, conversions_value) via
+  `GoogleAdsService.SearchStream`, plus `listAccessibleCustomers` and a `customer` read for account identity. We
+  normalize these into the customer's workspace dashboard alongside their other (manual/first-party) marketing metrics.
+- **Do you create/modify campaigns, budgets, or ads?** **No.** The integration calls **only** read endpoints
+  (`listAccessibleCustomers`, `GoogleAdsService.SearchStream` / `Search`). There are **no mutate calls** anywhere in the
+  codebase — no campaign creation, no budget changes, no status/bid changes, no recommendations applied.
+- **OAuth model:** standard **3-legged OAuth** with **explicit end-user consent**. Each customer (a workspace owner/admin)
+  authorizes **their own** Google Ads account in their browser; we request the single scope
+  `https://www.googleapis.com/auth/adwords`. We are a SaaS provider with **one** OAuth client + **one** developer token;
+  customers never receive or supply API credentials.
+- **Token storage / security:** OAuth access + refresh tokens are **encrypted at rest (AES-256-GCM)** with a server-only
+  key; they are **never** logged, returned in API responses, or shown in the UI. Tokens are **scoped per customer
+  workspace** in a multi-tenant database with server-side tenant isolation (a workspace can only ever read its own
+  connection/accounts/metrics; cross-tenant access is rejected). Disconnect clears the stored tokens.
+- **Who can connect / manage:** only a workspace **owner/admin** (or the platform super-admin) can connect, disconnect, or
+  run a sync; other roles are read-only. Sync is **manual** (a button), default last 30 days, capped at 90.
+- **Data handling:** we store the customer's own returned metrics in their workspace, clearly labeled `api-synced`, kept
+  separate from manual entries and first-party web analytics. No data is sold or shared across customers.
+- **Scale / RMF:** initial use is modest, per-customer, manual reporting. We can describe required-minimum-functionality
+  reporting coverage on request. We are not requesting Standard (unlimited) access at this stage.
+
 ## 5. Normalized provider connection architecture (DESIGN ONLY — not implemented)
 
 > These models are a **future design** to be implemented only in later, separately-approved phases. **No code, no

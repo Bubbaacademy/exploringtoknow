@@ -3,18 +3,19 @@
 _Updated: 2026-06-18 — SSH access to the VPS restored (key authorized for `deploy`); facts below verified live
 over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `0cb27f5` (Blueprint v2 Phase 31 — Google Ads Read Sync v1). IMPLEMENTATION DEPLOYED & VERIFIED
-(env-gated); LIVE GOOGLE ADS OAUTH/SYNC BLOCKED BY MISSING OPERATOR CREDENTIALS.**
-App image `etk-web` (id `sha256:d0a7b156…`) healthy; **payload_migrations 26** (phase31: `provider_accounts` +
-`synced_performance_daily` tables, additive). The full **read-only** Google Ads path is deployed — OAuth start/callback,
-accessible-account discovery, GAQL campaign-daily sync into normalized `api_synced` rows, and a source-labeled Google
-Ads section in `/app/performance`. **READ-ONLY** (no mutate/launch/spend). **All live behavior is env-gated** behind
-`GOOGLE_ADS_*` + `PROVIDER_TOKEN_ENCRYPTION_KEY`; sync + OAuth start return `not_configured` until set. **Multi-tenant
-SaaS OAuth model (Phase 31A confirmed):** the Google Ads API credentials are **platform-level**, set once by the operator
-in env (never customer-facing/committed); **each workspace owner connects their OWN Google Ads account** via OAuth in-app;
-per-workspace encrypted tokens; customers never provide API keys (UI shows "setup pending" until the platform credentials
-exist). The vault key `PROVIDER_TOKEN_ENCRYPTION_KEY` is **now set in prod**; the **4 Google API values remain to be set
-by the operator** before customers can connect (see PROVIDER_API_AUDIT.md §4b). Manual performance (Phase 28) remains the **fallback**.
+**Production HEAD: `42ef955` (Phase 31 Google Ads Read Sync — LIVE-ACTIVATED & VALIDATED END-TO-END; blocked only on a
+Google-side developer-token Basic Access approval, SUBMITTED/pending).**
+App image `etk-web` (id `sha256:b8912f73…`) healthy; **payload_migrations 26** (`provider_accounts` +
+`synced_performance_daily`, additive). Platform Google Ads API credentials are **set in prod env** (operator-owned, never
+customer-facing). **Multi-tenant customer OAuth proven live:** a `workspace_owner` (workspace "testing", tenant 22)
+connected their OWN Google Ads account → **encrypted per-workspace tokens** stored → **v24 account discovery succeeded**
+(customer `2315570544` discovered + selected) → "Sync last 30 days" invoked. The report query returns a clean
+`DEVELOPER_TOKEN_NOT_APPROVED` (HTTP 403): the platform developer token is at **Test access** and can't query real
+accounts → **0 `api_synced` rows yet**. **Not a code issue** — the whole pipeline works; awaiting Google's **Basic Access**
+approval (or connect a **test account** to validate now). API default is **v24** (v20 sunset); errors captured **sanitized**
+(no tokens/headers). **READ-ONLY** — no mutate/launch/spend. The connection (id 8, tenant 22, customer `2315570544`) is
+left **connected** for the post-approval re-sync. Manual performance (Phase 28) remains the **fallback**. (Multi-tenant
+OAuth model + compliance talking points: PROVIDER_API_AUDIT.md §4b/§4c.)
 **Connections** area at `/app/provider-connections` (Phase 30 OAuth/token vault) — tokens AES-256-GCM-encrypted, never exposed.
 **Strategic direction is API-first** for ad/social/performance measurement (see `PROVIDER_API_AUDIT.md`):
 the **Performance** area at `/app/performance` is the **manual fallback / onboarding / formula-validation / CSV layer**,
@@ -67,6 +68,6 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `0cb27f5` (Phase 31 feat); the docs commit on
-top is docs-only. Local + server in sync. Worker fix baseline `c158c5f` unchanged. (Prod also has 1 retained test
-workspace + 1 organic customer workspace alongside ETK — 3 tenants total; ETK content unchanged.)
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `42ef955` (Phase 31 + 31A go-live fixes); the docs
+commit on top is docs-only. Local + server in sync. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained
+test workspace + 1 customer workspace "testing" [tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
