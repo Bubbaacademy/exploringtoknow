@@ -2,11 +2,17 @@
 
 _Updated: 2026-06-23 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `709e3fc` (Phase 32 Meta Ads provider connection + read-sync FOUNDATION — DEPLOYED, env-gated /
-"platform setup pending"; Phase 31/31A Google Ads remains LIVE-VALIDATED, blocked only on a Google-side developer-token
-Basic Access approval, SUBMITTED/pending).**
-App image `etk-web` (id `sha256:dba3e20f…`) healthy; **payload_migrations 26 (NO new migration — the Phase 30/31 schema
-already enumerates `meta_ads`).** **Phase 32 Meta:** mirrors the Google architecture, READ-ONLY (`ads_read` only); platform
+**Production HEAD: `d8bc378` (public legal pages + Exploring To Know brand assets — DEPLOYED & VERIFIED LIVE; on top of
+Phase 32 Meta Ads foundation).** App image `etk-web` (id `sha256:71654d3a…`) healthy; **payload_migrations 26 (no new
+migration).** **Public assets for Meta app setup (all HTTP 200):** `/privacy`, `/terms`, `/data-deletion` (doc-page style,
+contact `info@exploringtoknow.com`, footer "Legal" links); **brand:** 12-petal Persian-lotus mark (deep green + warm gold)
+at `apps/web/public/brand/` (incl. `icon-1024.png` = Meta app icon, `logo-wordmark.svg/.png`) + site favicons
+(`apps/web/src/app/icon.png`, `apple-icon.png`). No Meta App Review/publish started.
+
+**Prior — Phase 32 (HEAD `709e3fc`, img `dba3e20f…`):** Meta Ads provider connection + read-sync FOUNDATION — DEPLOYED,
+env-gated / "platform setup pending"; Phase 31/31A Google Ads remains LIVE-VALIDATED, blocked only on a Google-side
+developer-token Basic Access approval, SUBMITTED/pending.
+**payload_migrations 26 (the Phase 30/31 schema already enumerates `meta_ads`).** **Phase 32 Meta:** mirrors the Google architecture, READ-ONLY (`ads_read` only); platform
 owns ONE Meta app (env only), each workspace owner connects their OWN Meta ad account via OAuth (per-workspace AES-256-GCM
 tokens; Meta long-lived ~60-day token via `fb_exchange_token`, no refresh token; Graph API default `v25.0`). **No `META_*`
 set in prod → Meta shows "setup pending": no OAuth, no sync, no external call (0 meta_ads connection rows).** Operator next
@@ -77,6 +83,7 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `709e3fc` (Phase 32 Meta foundation, built & deployed;
-no migration); the docs commit on top is docs-only. Local + server in sync. Rollback point before Phase 32: `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `d8bc378` (legal pages + brand assets, built &
+deployed; no migration) on top of `709e3fc` (Phase 32 Meta foundation); the docs commit on top is docs-only. Local +
+server in sync. Rollback points: before legal/brand `8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained
 test workspace + 1 customer workspace "testing" [tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
