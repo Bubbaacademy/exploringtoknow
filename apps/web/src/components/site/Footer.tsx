@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AFFILIATE_DISCLOSURE, SITE_NAME } from '@/lib/public';
 import { Brand } from './Brand';
 import { NewsletterSignup } from './NewsletterSignup';
-import { PRIMARY_NAV, CTA, ABOUT_NAV, TOPICS_HREF, SEARCH_HREF, LOGIN_HREF, SIGNUP_HREF, saasCta } from '@/lib/nav';
+import { PRIMARY_NAV, CTA, ABOUT_NAV, LEGAL_NAV, TOPICS_HREF, SEARCH_HREF, LOGIN_HREF, SIGNUP_HREF, saasCta } from '@/lib/nav';
 
 export function Footer() {
   const year = 2026;
@@ -43,6 +43,10 @@ export function Footer() {
         </div>
 
         <div className="disclosure">{AFFILIATE_DISCLOSURE}</div>
+
+        <div className="footer-legal">
+          {LEGAL_NAV.map((l) => <Link key={l.href} href={l.href}>{l.label}</Link>)}
+        </div>
 
         <div className="footer-bottom">
           <span>© {year} {SITE_NAME}. All rights reserved.</span>

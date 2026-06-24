@@ -42,6 +42,13 @@ export const ABOUT_NAV: NavLink[] = [
   { label: 'Contact', href: '/contact' },
 ];
 
+/** Legal / policy pages (footer). */
+export const LEGAL_NAV: NavLink[] = [
+  { label: 'Privacy Policy', href: '/privacy' },
+  { label: 'Terms of Service', href: '/terms' },
+  { label: 'Data Deletion', href: '/data-deletion' },
+];
+
 export const TOPICS_HREF = '/categories';
 export const SEARCH_HREF = '/search';
 
