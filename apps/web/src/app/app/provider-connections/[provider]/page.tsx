@@ -16,6 +16,8 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
   const { connected, error } = await searchParams;
   if (!isProviderId(provider)) notFound();
   const def = PROVIDER_BY_ID[provider]!;
+  // Short, button-friendly name (drops any parenthetical, e.g. "Meta Ads (Facebook/Instagram)" → "Meta Ads").
+  const shortName = def.displayName.replace(/\s*\([^)]*\)\s*$/, '');
   const ws = await requireWorkspace();
   const canManage = canManageConnections(ws.role);
   const setup = providerSetup(def);
@@ -41,8 +43,8 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
         <div className="adm-panel" style={{ marginBottom: 16 }}>
           <strong>Connect your own {def.displayName} account.</strong> This workspace stores its <strong>own</strong> encrypted
           connection — never shared across workspaces or shown to anyone. To start it’s <strong>read-only</strong>: no campaigns
-          launch and no budget is spent. You don’t need any Google API keys — ExploringToKnow configures the API once; you just
-          authorize your account. Manual performance import remains a fallback.
+          launch and no budget is spent. You don’t need any API keys — ExploringToKnow configures the {def.displayName} API
+          once; you just authorize your account. Manual performance import remains a fallback.
         </div>
 
         <Card>
@@ -58,6 +60,7 @@ export default async function ProviderDetail({ params, searchParams }: Args) {
 
           <ProviderConnectionControls
             provider={def.id}
+            providerName={shortName}
             canManage={canManage}
             configured={setup.configured}
             comingSoon={def.comingSoon}
