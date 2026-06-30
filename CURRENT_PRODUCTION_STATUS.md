@@ -2,9 +2,16 @@
 
 _Updated: 2026-06-23 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `d8bc378` (public legal pages + Exploring To Know brand assets — DEPLOYED & VERIFIED LIVE; on top of
-Phase 32 Meta Ads foundation).** App image `etk-web` (id `sha256:71654d3a…`) healthy; **payload_migrations 26 (no new
-migration).** **Public assets for Meta app setup (all HTTP 200):** `/privacy`, `/terms`, `/data-deletion` (doc-page style,
+**Production HEAD: `e51a7a2` (provider-aware CTA labels fix + Meta Ads LIVE-CONNECTED & read-sync validated). App image
+`etk-web` (id `sha256:1df63148…`) healthy; payload_migrations 26 (no new migration).** **Meta env activated** (platform
+`META_APP_ID/SECRET/REDIRECT_URI/API_VERSION` set in prod env, deduped to one each; page shows "Ready"). A `workspace_owner`
+(tenant 22) connected their OWN Meta account → **encrypted per-workspace token** (no refresh token — Meta long-lived ~60d),
+scope `ads_read` → **`me/adaccounts` discovery returned 9 ad accounts** → account `1572024181155200` (Pouyan Pazargadi, USD)
+selected → **"Sync last 30 days" ran and SUCCEEDED** (run 6, read=0/written=0: the account had no ad activity in the window,
+so 0 honest `api_synced` rows — pipeline proven, no fabricated data). Fixed a UI cross-label bug (Meta page previously
+showed "Connect Google Ads"); CTA labels are now provider-aware. **Read-only `ads_read` throughout.** Earlier (`d8bc378`):
+public legal pages + brand assets. (Phase 32 foundation: `709e3fc`, img `dba3e20f`.)
+**Prior baseline marker — `d8bc378` (legal pages + brand assets); payload_migrations 26 (no new migration).** **Public assets for Meta app setup (all HTTP 200):** `/privacy`, `/terms`, `/data-deletion` (doc-page style,
 contact `info@exploringtoknow.com`, footer "Legal" links); **brand:** 12-petal Persian-lotus mark (deep green + warm gold)
 at `apps/web/public/brand/` (incl. `icon-1024.png` = Meta app icon, `logo-wordmark.svg/.png`) + site favicons
 (`apps/web/src/app/icon.png`, `apple-icon.png`). No Meta App Review/publish started.
