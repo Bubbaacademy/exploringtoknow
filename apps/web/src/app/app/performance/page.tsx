@@ -58,6 +58,11 @@ export default async function PerformanceOverview({ searchParams }: Args) {
     if (!st.configured && !st.status) return null; // not set up and never connected → nothing to show here
     const cur = ov.currency || (st.selectedAccount?.currency || 'USD');
     const avg = computeMetrics({ impressions: ov.totals.impressions, clicks: ov.totals.clicks, spend: ov.totals.cost, conversions: ov.totals.conversions, revenue: ov.totals.conversionValue });
+    // A 0-row result is only an "honest empty result" when the latest sync SUCCEEDED. If the
+    // latest run failed or there's a sanitized last error, it's a blocked/failed sync, not
+    // a no-activity result (e.g. Google's DEVELOPER_TOKEN_NOT_APPROVED / Basic Access gate).
+    const syncBlocked = st.lastRun?.status === 'failed' || Boolean(st.lastError);
+    const devTokenBlocked = /DEVELOPER_TOKEN_NOT_APPROVED/i.test(st.lastError?.message || '');
     return (
       <Section key={st.provider} title={`${st.displayName} — API-synced (read-only)`}
         action={<span>{sourceBadge('api_synced', 'ok')}{sourceBadge(st.provider)}</span>}>
@@ -99,6 +104,15 @@ export default async function PerformanceOverview({ searchParams }: Args) {
                   rows={ov.topCampaigns.map((c) => [c.name, fmtNum(c.clicks), fmtMoney(c.cost, cur), fmtNum(c.conversions), fmtMoney(c.conversionValue, cur), fmtX(c.roas)])} empty="No campaigns." />
               ) : null}
             </>
+          ) : st.connected && syncBlocked ? (
+            <div className="adm-panel warn" style={{ marginTop: 12 }}>
+              <strong>Connected, but sync is blocked by provider/API access approval.</strong> The account is connected{st.selectedAccount ? ` and selected (${st.selectedAccount.name || st.selectedAccount.id})` : ''}, but the latest sync run {st.lastRun?.status === 'failed' ? 'failed' : 'did not complete'} — no rows were written. This is a provider/API access issue, <strong>not</strong> a no-activity result.
+              {devTokenBlocked ? (
+                <> {st.displayName} returned <code>DEVELOPER_TOKEN_NOT_APPROVED</code>: real report sync requires <strong>Basic Access</strong> approval for the developer token (submitted, pending with the provider). The account stays connected and selected; data will sync once access is approved.</>
+              ) : (
+                <> See the sanitized reason in <strong>Last error</strong> above.</>
+              )}
+            </div>
           ) : st.connected ? (
             <div className="adm-panel" style={{ marginTop: 12 }}>
               <strong>Connected — no rows for the synced window yet.</strong> {st.selectedAccount ? `The selected account (${st.selectedAccount.name || st.selectedAccount.id}) ` : 'The selected account '}
