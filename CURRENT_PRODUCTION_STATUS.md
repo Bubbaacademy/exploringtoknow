@@ -2,8 +2,14 @@
 
 _Updated: 2026-06-23 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `9529a6d` (Phase 33 — Unified Performance / provider-agnostic analytics — DEPLOYED & VERIFIED LIVE).
-App image `etk-web` (id `sha256:3b29f25f…`) healthy; payload_migrations 26 (no new migration).** `/app/performance` is now
+**Production HEAD: `ace3cea` (Phase 33 Unified Performance + blocked-vs-empty-state fix — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:67dd3c1f…`) healthy; payload_migrations 26 (no new migration).** The provider card now
+distinguishes a **failed/blocked** sync from an **honest 0-row** result: `syncBlocked = latest run failed OR sanitized
+last_error present`. Google (ws22, `sync_failed` / `DEVELOPER_TOKEN_NOT_APPROVED`) shows a **"sync blocked by provider/API
+access approval — Basic Access pending"** message; Meta (ws22, succeeded 0-row) shows the honest no-activity empty state.
+A QA manual seed (3 rows, tenant 22, `import_batch_id=qa-seed-20260701`) validates the manual layer (still present; cleanup
+in QA §44). Sanitized only; no provider/credential/connection changes.
+**Prior — `9529a6d` (Phase 33 base) img `sha256:3b29f25f…`; migrations 26 (no new migration).** `/app/performance` is now
 provider-agnostic: a **source filter** (All / Manual / Google Ads / Meta Ads), per-provider **API-synced sections** with
 source badges (`api_synced` + `google_ads`/`meta_ads`) driven by the shared `synced_performance_daily` schema, and a
 **sanitized per-provider status** card (connection, selected account, last sync, latest run result, last error — no tokens).
@@ -98,7 +104,7 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `9529a6d` (Phase 33 Unified Performance, built &
-deployed; no migration); the docs commit on top is docs-only. Local + server in sync. Rollback points: before Phase 33
-`c7da882`; before legal/brand `8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `ace3cea` (Phase 33 + blocked-state fix, built &
+deployed; no migration); the docs commit on top is docs-only. Local + server in sync. Rollback points: before blocked-state
+fix `eb8e91b`; before Phase 33 `c7da882`; before legal/brand `8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained
 test workspace + 1 customer workspace "testing" [tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
