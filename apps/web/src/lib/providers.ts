@@ -105,16 +105,33 @@ export async function listSyncedDaily(scope: WorkspaceScope, provider?: string):
   return wsList(scope, 'synced-performance-daily', { sort: '-metricDate', limit: 5000, depth: 0, extra });
 }
 
-/** Aggregate api-synced totals + top campaigns for the Performance dashboard (Google Ads). */
-export async function syncedGoogleAdsOverview(scope: WorkspaceScope) {
-  const rows = await listSyncedDaily(scope, 'google_ads');
+export type SyncedOverview = {
+  provider: string;
+  rowCount: number;
+  totals: { impressions: number; clicks: number; cost: number; conversions: number; conversionValue: number };
+  currency: string;
+  dateRange: { min: string; max: string } | null;
+  topCampaigns: Array<{ name: string; impressions: number; clicks: number; cost: number; conversions: number; conversionValue: number; roas: number | null }>;
+};
+
+/**
+ * Provider-agnostic api-synced overview for the Performance dashboard. Aggregates the
+ * shared `synced_performance_daily` rows for ONE provider (workspace-scoped). Works
+ * identically for google_ads, meta_ads, and any future provider that writes to the
+ * shared schema. `cost` is in currency units (providers normalize micros on write).
+ */
+export async function syncedProviderOverview(scope: WorkspaceScope, provider: string): Promise<SyncedOverview> {
+  const rows = await listSyncedDaily(scope, provider);
   const totals = { impressions: 0, clicks: 0, cost: 0, conversions: 0, conversionValue: 0 };
   let currency = '';
+  let minDate = '', maxDate = '';
   const byCampaign = new Map<string, { name: string; impressions: number; clicks: number; cost: number; conversions: number; conversionValue: number }>();
   for (const r of rows) {
     totals.impressions += Number(r.impressions || 0); totals.clicks += Number(r.clicks || 0); totals.cost += Number(r.cost || 0);
     totals.conversions += Number(r.conversions || 0); totals.conversionValue += Number(r.conversionValue || 0);
     if (!currency && r.currencyCode) currency = String(r.currencyCode);
+    const d = String(r.metricDate || '');
+    if (d) { if (!minDate || d < minDate) minDate = d; if (!maxDate || d > maxDate) maxDate = d; }
     const key = String(r.campaignId || r.campaignName || '—');
     const cur = byCampaign.get(key) || { name: String(r.campaignName || r.campaignId || '—'), impressions: 0, clicks: 0, cost: 0, conversions: 0, conversionValue: 0 };
     cur.impressions += Number(r.impressions || 0); cur.clicks += Number(r.clicks || 0); cur.cost += Number(r.cost || 0);
@@ -124,7 +141,59 @@ export async function syncedGoogleAdsOverview(scope: WorkspaceScope) {
   const topCampaigns = [...byCampaign.values()]
     .map((c) => ({ ...c, roas: c.cost > 0 ? c.conversionValue / c.cost : null }))
     .sort((a, b) => b.clicks - a.clicks).slice(0, 10);
-  return { rowCount: rows.length, totals, currency, topCampaigns };
+  return { provider, rowCount: rows.length, totals, currency, dateRange: minDate ? { min: minDate, max: maxDate } : null, topCampaigns };
+}
+
+/** Back-compat alias (Phase 31). */
+export async function syncedGoogleAdsOverview(scope: WorkspaceScope): Promise<SyncedOverview> {
+  return syncedProviderOverview(scope, 'google_ads');
+}
+
+export type ProviderPerfStatus = {
+  provider: string;
+  displayName: string;
+  configured: boolean;          // platform env ready
+  connected: boolean;
+  status: string | null;        // connection record status
+  selectedAccount: { id: string; name: string; currency: string } | null;
+  accountCount: number;
+  lastSyncAt: string | null;
+  lastRun: { status: string; recordsRead: number; recordsWritten: number; windowStart: string | null; windowEnd: string | null; finishedAt: string | null } | null;
+  lastError: { code: string; message: string } | null;   // SANITIZED (stored sanitized by routes)
+};
+
+/**
+ * Sanitized per-provider connection + sync status for the Performance dashboard.
+ * Workspace-scoped. Reads ONLY non-secret fields (sanitizeConnection strips tokens; the
+ * last-error message is already sanitized when written by the sync/discover routes). No
+ * token, secret, header, or OAuth payload is ever read or returned here.
+ */
+export async function providerPerformanceStatus(scope: WorkspaceScope, provider: ProviderId): Promise<ProviderPerfStatus> {
+  const def = PROVIDER_BY_ID[provider]!;
+  const setup = providerSetup(def);
+  const raw = await connectionForProvider(scope, provider);
+  const conn = raw ? sanitizeConnection(raw) : null;
+  const status = conn ? String(conn.status) : null;
+  const accounts = conn ? await listProviderAccounts(scope, conn.id as string | number) : [];
+  const sel = accounts.find((a) => a.selected) ?? accounts[0] ?? null;
+  const runs = conn ? await listSyncRuns(scope, conn.id as string | number, 1) : [];
+  const run = runs[0] ?? null;
+  const lastError = conn && conn.lastErrorMessage
+    ? { code: String(conn.lastErrorCode || ''), message: String(conn.lastErrorMessage) }
+    : null;
+  return {
+    provider, displayName: def.displayName, configured: setup.configured,
+    connected: status === 'connected', status,
+    selectedAccount: sel ? { id: String(sel.providerAccountId || ''), name: String(sel.providerAccountName || ''), currency: String(sel.currencyCode || '') } : null,
+    accountCount: accounts.length,
+    lastSyncAt: conn?.lastSyncAt ? String(conn.lastSyncAt) : null,
+    lastRun: run ? {
+      status: String(run.status), recordsRead: Number(run.recordsRead || 0), recordsWritten: Number(run.recordsWritten || 0),
+      windowStart: run.windowStart ? String(run.windowStart) : null, windowEnd: run.windowEnd ? String(run.windowEnd) : null,
+      finishedAt: run.finishedAt ? String(run.finishedAt) : null,
+    } : null,
+    lastError,
+  };
 }
 
 export { PROVIDERS, PROVIDER_BY_ID };

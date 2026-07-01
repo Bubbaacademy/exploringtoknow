@@ -19,9 +19,10 @@ export function PerfNav({ active }: { active: string }) {
 export function PerfDisclaimer() {
   return (
     <div className="adm-panel" style={{ marginBottom: 16 }}>
-      <strong>Manual performance tracking.</strong> Metrics are calculated from manually entered or imported data —
-      <strong> no ad accounts are connected yet</strong> and nothing is synced from platforms. Revenue/conversions are
-      user-provided and not independently verified. No campaigns are launched from here.
+      <strong>Unified performance.</strong> Manual entries are a fallback / onboarding layer (user-provided, not
+      independently verified). Connected ad accounts sync <strong>read-only</strong> API metrics, labeled
+      {' '}<code>api_synced</code> and shown separately by provider. No campaigns are launched and no budgets are changed
+      from here.
     </div>
   );
 }

@@ -20,6 +20,21 @@ export const PERF_CHANNEL_LABELS: Record<string, string> = {
   ad: 'Ad', social: 'Social', landing_page: 'Landing page', article: 'Article', product: 'Product', email_placeholder: 'Email (placeholder)', generic: 'Generic',
 };
 
+/**
+ * Unified Performance (Phase 33) — provider-agnostic labels. `synced_performance_daily`
+ * rows are written with `source = 'api_synced'`; manual `performance-entries` are the
+ * `manual_import` layer. These drive the source filter + badges on the dashboard.
+ */
+export const SYNC_PROVIDER_LABELS: Record<string, string> = { google_ads: 'Google Ads', meta_ads: 'Meta Ads' };
+export const PERF_DATA_SOURCE_LABELS: Record<string, string> = { manual_import: 'Manual / imported', api_synced: 'API-synced', internal: 'Internal' };
+/** Source-filter options for the unified dashboard (value → label). */
+export const PERF_FILTERS: Array<{ value: string; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'manual', label: 'Manual' },
+  { value: 'google_ads', label: 'Google Ads' },
+  { value: 'meta_ads', label: 'Meta Ads' },
+];
+
 export const PERF_STATUSES = ['draft', 'recorded', 'archived'] as const;
 export const PERF_STATUS_LABELS: Record<string, string> = { draft: 'Draft', recorded: 'Recorded', archived: 'Archived' };
 export const perfStatusVariant = (s: string): 'good' | 'attn' | '' => (s === 'recorded' ? 'good' : s === 'draft' ? 'attn' : '');
