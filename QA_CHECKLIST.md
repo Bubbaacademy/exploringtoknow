@@ -221,6 +221,13 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 - [x] **Tenant isolation**: all reads workspace-scoped (`wsList`/scoped finds); 0 synced rows and 0 connections with NULL workspace; cross-tenant blocked; viewer/editor read-only (canWrite gates edit actions only).
 - [ ] **After a Meta account has activity**: re-run "Sync last 30 days" → rows land in `synced_performance_daily (provider=meta_ads)` → the Meta API-synced section auto-populates (impressions/clicks/cost/conv/CTR/CPC/ROAS + top campaigns), replacing the empty state. (Same path proven for the schema; awaiting real activity.)
 
+### QA seed (manual display validation — 2026-07-01, Testing / tenant 22 only)
+Seeded **3 `manual_entry` rows** (ids 4–6) in `performance_entries`, tenant 22 / workspace 22, `import_batch_id='qa-seed-20260701'`, campaigns "QA TEST - Campaign A/B (safe to delete)". Totals: impr 3,300 · clicks 115 · spend 72.50 · conv 8 · rev 360 · leads 6. **Not** mixed with provider rows (ws22 synced google=0, meta=0); no leakage to other workspaces; provider connections/credentials untouched. Populates the Manual/import section (badge `manual_import`) under "All" and "Manual" filters; Google/Meta status cards unchanged (Google waiting on Basic Access, Meta connected 0-row honest empty state).
+**Cleanup (removes only the QA seed):**
+```sql
+DELETE FROM performance_entries WHERE import_batch_id='qa-seed-20260701' AND workspace_id=22;
+```
+
 ## 43. Phase 32 — Meta Ads provider connection + read-sync FOUNDATION (env-gated; live blocked by missing credentials)
 **2026-06-23 — prod HEAD `709e3fc`, img `sha256:dba3e20f…`, migrations 26 (NO new migration; `meta_ads` already in every provider enum). Mirrors Google (Phase 31), READ-ONLY. No `META_*` env in prod → Meta shows "platform setup pending": no OAuth, no sync, no external call (0 meta_ads connection rows). Code verified live in the freshly-built image. Google Ads untouched.**
 - [x] Deploy clean: build fresh (not stale image), app healthy, https 200, migrations unchanged at 26, worker/postgres/caddy untouched.
