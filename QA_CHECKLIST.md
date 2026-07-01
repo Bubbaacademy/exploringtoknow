@@ -210,6 +210,17 @@ Production `main` @ `5d80ddc` · app image `etk-web@sha256:7754ccb1…`. Routes 
 ## 30. Safety re-checks
 - [ ] No generation/approval/auto-publish; published fingerprints unchanged; affiliate CTA dest/rel unchanged; media count not duplicated.
 
+## 44. Phase 33 — Unified Performance / provider-agnostic analytics
+**2026-06-30 — prod HEAD `9529a6d`, img `sha256:3b29f25f…`, migrations 26 (NO new migration — reuses the shared `synced_performance_daily` schema). `/app/performance` generalized beyond Google/manual; sanitized status only (no tokens/secrets/headers/OAuth payloads). Read-only. Google untouched.**
+- [x] Routes + source filters serve without 500: `/app/performance` and `?source=manual|google_ads|meta_ads` → 307 (auth redirect) unauth; page compiles in Docker build.
+- [x] **provider=meta_ads state** (ws22): connected, account `1572024181155200` selected, last run `succeeded` read=0/written=0, 0 rows → **honest empty state** ("no ad activity/spend in the window; not an error; appears automatically once active"), status card shows connection + selected account + last sync + run result.
+- [x] **provider=google_ads state** (ws22): connected, 0 rows, `sync_failed` last error → status card shows **sanitized** error + empty state (read-only display; Google connection unchanged, still awaiting Basic Access).
+- [x] **no-data state** (ws1 ETK): 0 manual, 0 synced, no connection → "Ready to connect / Not connected yet" hints + zeroed manual sections.
+- [x] **manual layer** preserved (Phase 28 logic unchanged) — labeled `manual_import`; renders zero-totals + honest empty state when no entries.
+- [x] **Labels/badges**: `manual_import`, `api_synced`, `google_ads`, `meta_ads` shown on sections; connection status badge (connected=green/error=red/pending=amber).
+- [x] **Tenant isolation**: all reads workspace-scoped (`wsList`/scoped finds); 0 synced rows and 0 connections with NULL workspace; cross-tenant blocked; viewer/editor read-only (canWrite gates edit actions only).
+- [ ] **After a Meta account has activity**: re-run "Sync last 30 days" → rows land in `synced_performance_daily (provider=meta_ads)` → the Meta API-synced section auto-populates (impressions/clicks/cost/conv/CTR/CPC/ROAS + top campaigns), replacing the empty state. (Same path proven for the schema; awaiting real activity.)
+
 ## 43. Phase 32 — Meta Ads provider connection + read-sync FOUNDATION (env-gated; live blocked by missing credentials)
 **2026-06-23 — prod HEAD `709e3fc`, img `sha256:dba3e20f…`, migrations 26 (NO new migration; `meta_ads` already in every provider enum). Mirrors Google (Phase 31), READ-ONLY. No `META_*` env in prod → Meta shows "platform setup pending": no OAuth, no sync, no external call (0 meta_ads connection rows). Code verified live in the freshly-built image. Google Ads untouched.**
 - [x] Deploy clean: build fresh (not stale image), app healthy, https 200, migrations unchanged at 26, worker/postgres/caddy untouched.

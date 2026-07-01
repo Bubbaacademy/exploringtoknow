@@ -2,8 +2,16 @@
 
 _Updated: 2026-06-23 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `e51a7a2` (provider-aware CTA labels fix + Meta Ads LIVE-CONNECTED & read-sync validated). App image
-`etk-web` (id `sha256:1df63148…`) healthy; payload_migrations 26 (no new migration).** **Meta env activated** (platform
+**Production HEAD: `9529a6d` (Phase 33 — Unified Performance / provider-agnostic analytics — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:3b29f25f…`) healthy; payload_migrations 26 (no new migration).** `/app/performance` is now
+provider-agnostic: a **source filter** (All / Manual / Google Ads / Meta Ads), per-provider **API-synced sections** with
+source badges (`api_synced` + `google_ads`/`meta_ads`) driven by the shared `synced_performance_daily` schema, and a
+**sanitized per-provider status** card (connection, selected account, last sync, latest run result, last error — no tokens).
+**Honest empty state**: a connected provider with 0 rows (no ad activity/spend in the window) is explained as a non-error,
+and rows surface automatically once the account has activity. Manual import kept as the labeled `manual_import` fallback.
+Verified live: routes+filters 307 (no 500s); meta_ads (ws22) connected+0-rows→empty state; google_ads (ws22) connected+0-rows
++sanitized error; no-data (ws1) shows connect hints; tenant isolation (no NULL-workspace rows; workspace-scoped reads).
+**Prior — `e51a7a2`: provider-aware CTA labels fix + Meta Ads LIVE-CONNECTED & read-sync validated (img `1df63148`).** **Meta env activated** (platform
 `META_APP_ID/SECRET/REDIRECT_URI/API_VERSION` set in prod env, deduped to one each; page shows "Ready"). A `workspace_owner`
 (tenant 22) connected their OWN Meta account → **encrypted per-workspace token** (no refresh token — Meta long-lived ~60d),
 scope `ads_read` → **`me/adaccounts` discovery returned 9 ad accounts** → account `1572024181155200` (Pouyan Pazargadi, USD)
@@ -90,7 +98,7 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `d8bc378` (legal pages + brand assets, built &
-deployed; no migration) on top of `709e3fc` (Phase 32 Meta foundation); the docs commit on top is docs-only. Local +
-server in sync. Rollback points: before legal/brand `8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `9529a6d` (Phase 33 Unified Performance, built &
+deployed; no migration); the docs commit on top is docs-only. Local + server in sync. Rollback points: before Phase 33
+`c7da882`; before legal/brand `8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained
 test workspace + 1 customer workspace "testing" [tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
