@@ -11,8 +11,8 @@ export default async function NewRequestPage() {
   if (!canWrite(ws.role)) {
     return (
       <>
-        <TopBar title="Request an article" sub="Your role has read-only access." />
-        <div className="adm-content"><div className="adm-panel warn">Your role can view this workspace but can’t submit requests. Ask a workspace owner or admin if you need edit access.</div></div>
+        <TopBar title="New seller submission" sub="Your role has read-only access." />
+        <div className="adm-content"><div className="adm-panel warn">Your role can view this workspace but can’t submit offers. Ask a workspace owner or admin if you need edit access.</div></div>
       </>
     );
   }
@@ -21,9 +21,9 @@ export default async function NewRequestPage() {
     .sort((a, b) => a.name.localeCompare(b.name));
   return (
     <>
-      <TopBar title="Request an article" sub="Tell us about a product and we’ll create a reviewed article for it. Every request is read by an editor — nothing is generated or published automatically." />
+      <TopBar title="New seller submission" sub="Tell us about the product or service offer. Every submission is reviewed by the BubbaAffiliate team before it enters a campaign — nothing runs automatically." />
       <div className="adm-content">
-        <CreateProductForm categories={categories} submitLabel="Submit request" />
+        <CreateProductForm categories={categories} submitLabel="Submit offer for review" />
       </div>
     </>
   );

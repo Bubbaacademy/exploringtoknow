@@ -133,8 +133,8 @@ export default async function PerformanceOverview({ searchParams }: Args) {
   return (
     <>
       <TopBar
-        title="Performance"
-        sub="Unified — manual entries plus read-only API-synced metrics from connected providers, each labeled by source."
+        title="Attribution & Reports"
+        sub="Campaign attribution and performance reports — manual entries plus read-only API-synced metrics from connected providers, each labeled by source."
         actions={editable ? <><WsLink href="/app/performance/import">Import CSV</WsLink><WsLink href="/app/performance/new" primary>New entry</WsLink></> : undefined}
       />
       <div className="adm-content">

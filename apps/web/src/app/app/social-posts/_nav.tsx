@@ -7,10 +7,10 @@ const TABS: Array<[string, string]> = [
   ['Export', '/app/social-posts/export'],
 ];
 
-/** Sub-navigation across the Social Studio views. `active` is the href of the current tab. */
+/** Sub-navigation across the Creator Studio views. `active` is the href of the current tab. */
 export function SocialNav({ active }: { active: string }) {
   return (
-    <nav aria-label="Social Studio views" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+    <nav aria-label="Creator Studio views" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
       {TABS.map(([label, href]) => (
         <Link key={href} href={href} className={`adm-btn${href === active ? '' : ' ghost'}`} aria-current={href === active ? 'page' : undefined}>{label}</Link>
       ))}

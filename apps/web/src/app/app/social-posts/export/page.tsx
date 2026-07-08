@@ -22,7 +22,7 @@ export default async function SocialExport() {
 
   return (
     <>
-      <TopBar title="Social Studio — Export" sub="Manually copy/export approved posts. This is not publishing — nothing is sent to any network." />
+      <TopBar title="Creator Studio — Export" sub="Manually copy/export approved campaign assets for creators. This is not publishing — nothing is sent to any network." />
       <div className="adm-content">
         <SocialNav active="/app/social-posts/export" />
         {!editable ? (

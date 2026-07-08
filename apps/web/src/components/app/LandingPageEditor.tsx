@@ -138,7 +138,7 @@ export function LandingPageEditor({ page, workspaceSlug, products = [], requests
                 </select>
                 <button type="button" className="adm-btn ghost" onClick={() => prefillFrom(products, relatedProduct)} disabled={!relatedProduct}>Use link → CTA</button>
               </span>
-            ) : <p className="adm-note">No products yet. <a href="/app/products">Add a product</a>.</p>}
+            ) : <p className="adm-note">No offers yet. <a href="/app/products">Add an offer</a>.</p>}
           </div>
           <div className="field"><label htmlFor="relatedRequest">Related request</label>
             {requests.length ? (
@@ -149,7 +149,7 @@ export function LandingPageEditor({ page, workspaceSlug, products = [], requests
                 </select>
                 <button type="button" className="adm-btn ghost" onClick={() => prefillFrom(requests, relatedRequest)} disabled={!relatedRequest}>Use link → CTA</button>
               </span>
-            ) : <p className="adm-note">No requests yet. <a href="/app/product-requests">Request a product</a>.</p>}
+            ) : <p className="adm-note">No submissions yet. <a href="/app/product-requests">Intake an offer</a>.</p>}
           </div>
         </div>
 

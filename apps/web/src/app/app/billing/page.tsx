@@ -25,8 +25,8 @@ export default async function BillingPage() {
   if (!canManageSettings(ws.role)) {
     return (
       <>
-        <TopBar title="Billing" sub="Owner only." />
-        <div className="adm-content"><div className="adm-panel warn">Only the workspace owner can view and manage billing.</div></div>
+        <TopBar title="Invoices & Payouts" sub="Owner only." />
+        <div className="adm-content"><div className="adm-panel warn">Only the workspace owner can view and manage invoices and payouts.</div></div>
       </>
     );
   }
@@ -38,15 +38,18 @@ export default async function BillingPage() {
 
   return (
     <>
-      <TopBar title="Billing & plan" sub={`${(ws.tenant?.name as string) || 'Your account'} · plan: ${tp.plan.label} · status: ${tp.status}`} />
+      <TopBar title="Invoices, Wallet & Payouts" sub={`${(ws.tenant?.name as string) || 'Your account'} · plan: ${tp.plan.label} · status: ${tp.status}`} />
       <div className="adm-content">
+        <div className="adm-panel" style={{ marginBottom: 16 }}>
+          <strong>Financial control center.</strong> This area is the home for invoices, seller wallet balance, the commission ledger and creator payouts as the managed affiliate model rolls out. Activation fees and campaign operation plans are shown below; commission and payout controls arrive in a later phase.
+        </div>
         {tp.trialExpired ? (
           <div className="adm-panel warn" style={{ marginBottom: 16 }}>
             <strong>Your free trial has ended.</strong> Your data is safe and readable, but creating new requests, uploads, or invites is paused. Upgrade below to continue.
           </div>
         ) : tp.restricted ? (
           <div className="adm-panel warn" style={{ marginBottom: 16 }}>
-            <strong>Your subscription is inactive (status: {tp.status}).</strong> Your data is safe and readable, but creating new requests, uploads, or invites is paused. Use “Manage billing” to reactivate.
+            <strong>Your account is inactive (status: {tp.status}).</strong> Your data is safe and readable, but creating new submissions, uploads, or invites is paused. Use “Manage billing” to reactivate.
           </div>
         ) : tp.pastDue ? (
           <div className="adm-panel warn" style={{ marginBottom: 16 }}>

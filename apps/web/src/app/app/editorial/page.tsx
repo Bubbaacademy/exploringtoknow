@@ -25,12 +25,12 @@ export default async function EditorialPage() {
   if (review > 0) warnings.push(['Article drafts ready for your review', review]);
   const nextAction = reqWaiting > 0
     ? `${reqWaiting} request${reqWaiting === 1 ? '' : 's'} awaiting editorial review.`
-    : (review > 0 ? `${review} draft${review === 1 ? '' : 's'} ready for your review.` : 'Submit a product request to start the pipeline.');
+    : (review > 0 ? `${review} draft${review === 1 ? '' : 's'} ready for your review.` : 'Intake a seller offer to start the pipeline.');
   return (
     <>
       <TopBar
-        title="Editorial console"
-        sub="Your workspace publishing pipeline. Every step is manual and reviewed by you — nothing generates or publishes automatically."
+        title="Editorial Console"
+        sub="The ExploringToKnow publishing pipeline — editorial content for the media layer. Every step is manual and reviewed by you; nothing generates or publishes automatically."
         actions={<WsLink href="/app/product-requests" primary>Request an article</WsLink>}
       />
       <div className="adm-content">
@@ -74,7 +74,7 @@ export default async function EditorialPage() {
           <Card title="Drafts & ready-for-review">
             {reviewDocs.length ? reviewDocs.map((a) => (
               <div key={String(a.id)} className="adm-row"><span className="t">{(a.title as string) || '(untitled)'}</span><StatusBadge status={String(a.editorialStatus)} /></div>
-            )) : <Empty>Nothing in the editorial queue yet. Submit a product request to begin.</Empty>}
+            )) : <Empty>Nothing in the editorial queue yet. Intake a seller offer to begin.</Empty>}
           </Card>
         </Section>
         <Section title="Recent generation runs">

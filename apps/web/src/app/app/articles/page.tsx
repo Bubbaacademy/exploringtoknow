@@ -16,15 +16,15 @@ export default async function ArticlesPage() {
     <>
       <TopBar
         title="Articles"
-        sub="Articles in your workspace. Only ‘Published’ items appear on your public site — nothing publishes automatically."
-        actions={<WsLink href="/app/product-requests" primary>Request an article</WsLink>}
+        sub="ExploringToKnow editorial content for the publishing layer. Only ‘Published’ items appear on the public media site — nothing publishes automatically."
+        actions={<WsLink href="/app/product-requests" primary>New seller submission</WsLink>}
       />
       <div className="adm-content">
         <Card title={`${docs.length} article${docs.length === 1 ? '' : 's'}`}>
           <DataTable
             head={['Title', 'Category', 'Editorial status', 'Date']}
             rows={rows}
-            empty="No articles yet. Submit a product request to start the editorial pipeline — an editor reviews everything before anything is generated or published."
+            empty="No articles yet. Intake a seller offer to start the editorial pipeline — an editor reviews everything before anything is generated or published."
           />
         </Card>
       </div>

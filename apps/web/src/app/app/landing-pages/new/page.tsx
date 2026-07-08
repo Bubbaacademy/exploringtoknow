@@ -12,8 +12,8 @@ export default async function NewLandingPage() {
   if (!canWrite(ws.role)) {
     return (
       <>
-        <TopBar title="New landing page" />
-        <div className="adm-content"><div className="adm-panel warn">You don’t have permission to create landing pages.</div></div>
+        <TopBar title="New offer page" />
+        <div className="adm-content"><div className="adm-panel warn">You don’t have permission to create offer pages.</div></div>
       </>
     );
   }
@@ -25,7 +25,7 @@ export default async function NewLandingPage() {
 
   return (
     <>
-      <TopBar title="New landing page" sub="Starts as a private draft. Publishing is a separate, explicit step." />
+      <TopBar title="New offer page" sub="Starts as a private draft. Publishing is a separate, explicit step." />
       <div className="adm-content">
         <LandingPageEditor workspaceSlug={(ws.workspace?.slug as string) || undefined} products={products} requests={requests} brand={brand} />
       </div>

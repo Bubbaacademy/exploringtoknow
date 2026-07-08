@@ -23,7 +23,7 @@ export default async function RequestDetailPage({ params }: { params: Promise<{ 
 
   return (
     <>
-      <TopBar title={(doc.productName as string) || 'Product request'} sub={<>Status: <StatusBadge status={String(doc.status)} /> · submitted {fmtDate(doc.submittedAt || doc.createdAt)}</>} />
+      <TopBar title={(doc.productName as string) || 'Seller submission'} sub={<>Status: <StatusBadge status={String(doc.status)} /> · submitted {fmtDate(doc.submittedAt || doc.createdAt)}</>} />
       <div className="adm-content">
         <Section title="Request details">
           <Card>

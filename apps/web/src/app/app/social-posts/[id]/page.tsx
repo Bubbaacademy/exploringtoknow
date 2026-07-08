@@ -48,7 +48,7 @@ export default async function EditSocialPost({ params }: Args) {
   return (
     <>
       <TopBar
-        title={post.name || 'Social post'}
+        title={post.name || 'Campaign asset'}
         sub={<>{SS_CHANNEL_LABELS[post.channel] || post.channel} · {SS_FORMAT_LABELS[post.format] || post.format} · {SS_STATUS_LABELS[post.status] || post.status}</>}
         actions={<WsLink href="/app/social-posts">Back to list</WsLink>}
       />

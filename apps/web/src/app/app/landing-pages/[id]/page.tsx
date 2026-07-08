@@ -44,7 +44,7 @@ export default async function EditLandingPage({ params }: Args) {
   return (
     <>
       <TopBar
-        title={page.title || 'Landing page'}
+        title={page.title || 'Offer page'}
         sub={<>Status: {LP_STATUS_LABELS[page.status] || page.status} · {LP_PAGE_TYPE_LABELS[page.pageType] || page.pageType} · {views} view{views === 1 ? '' : 's'}</>}
         actions={<>
           {editable ? <WsLink href={`/app/social-posts/new?fromLanding=${d.id}`}>Create social post</WsLink> : null}

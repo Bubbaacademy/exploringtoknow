@@ -35,7 +35,7 @@ export default async function SocialCalendar() {
 
   return (
     <>
-      <TopBar title="Social Studio — Calendar" sub="Planning dates only. Nothing is posted or scheduled to run on these dates — this is a manual plan." actions={<WsLink href="/app/social-posts/new" primary>New social post</WsLink>} />
+      <TopBar title="Creator Studio — Calendar" sub="Planning dates only. Nothing is posted or scheduled to run on these dates — this is a manual campaign plan." actions={<WsLink href="/app/social-posts/new" primary>New campaign asset</WsLink>} />
       <div className="adm-content">
         <SocialNav active="/app/social-posts/calendar" />
         {dated.length ? (
