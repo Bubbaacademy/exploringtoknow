@@ -12,7 +12,7 @@ import { headers } from 'next/headers';
 const GATEWAY_HOSTS = new Set(['bubbaaffiliate.com', 'www.bubbaaffiliate.com']);
 
 export async function gatewayBase(): Promise<string> {
-  const host = ((await headers()).get('host') || '').toLowerCase().split(':')[0];
+  const host = ((await headers()).get('host') || '').toLowerCase().split(':')[0] || '';
   return GATEWAY_HOSTS.has(host) ? '' : '/bubbaaffiliate';
 }
 

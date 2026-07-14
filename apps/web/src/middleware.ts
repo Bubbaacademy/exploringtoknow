@@ -47,7 +47,7 @@ export function middleware(req: NextRequest) {
   }
 
   // 2) BubbaAffiliate apex — clean host-aware rewrite. www -> apex is handled at Caddy.
-  const host = (req.headers.get('host') || '').toLowerCase().split(':')[0];
+  const host = (req.headers.get('host') || '').toLowerCase().split(':')[0] || '';
   if (host === GATEWAY_HOST) {
     const internal = CLEAN_TO_INTERNAL[pathname];
     if (internal) {
