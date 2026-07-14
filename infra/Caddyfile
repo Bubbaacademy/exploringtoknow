@@ -12,3 +12,24 @@ exploringtoknow.com, www.exploringtoknow.com {
     }
     reverse_proxy app:3000
 }
+
+# BubbaAffiliate gateway (Phase 1C). The apex serves the SAME app container; the
+# app's middleware maps the clean apex paths (/, /sellers, /creators, /pricing,
+# /how-it-works) to the internal /bubbaaffiliate/* routes host-aware, WITHOUT
+# changing the browser URL. No path rewriting is done here. www -> apex is a plain
+# host-level 301. Requires DNS A records for both names -> this VPS (already set).
+bubbaaffiliate.com {
+    encode zstd gzip
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        -Server
+    }
+    reverse_proxy app:3000
+}
+
+www.bubbaaffiliate.com {
+    header -Server
+    redir https://bubbaaffiliate.com{uri} permanent
+}

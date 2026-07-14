@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { gatewayBase, gwHref } from '@/lib/gateway';
 
 export const metadata: Metadata = {
   title: 'Pricing — BubbaAffiliate',
@@ -29,7 +30,8 @@ function Tier({ tier, per }: { tier: { name: string; price: number; featured: bo
   );
 }
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const base = await gatewayBase();
   return (
     <>
       <section className="ba-hero">
@@ -130,8 +132,8 @@ export default function PricingPage() {
             <h2>Start with a single offer</h2>
             <p>Submit your offer and we&apos;ll recommend the right onboarding and operation plan for your goals.</p>
             <div className="ba-hero-actions">
-              <Link href="/bubbaaffiliate/sellers#apply" className="btn btn-lg">Submit Your Offer</Link>
-              <Link href="/bubbaaffiliate/creators#apply" className="btn btn-ghost btn-lg">Become a Creator Partner</Link>
+              <Link href={`${gwHref(base, '/sellers')}#apply`} className="btn btn-lg">Submit Your Offer</Link>
+              <Link href={`${gwHref(base, '/creators')}#apply`} className="btn btn-ghost btn-lg">Become a Creator Partner</Link>
             </div>
           </div>
         </div>

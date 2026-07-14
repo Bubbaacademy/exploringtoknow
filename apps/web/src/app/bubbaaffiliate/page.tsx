@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { gatewayBase, gwHref } from '@/lib/gateway';
 
 export const metadata: Metadata = {
   title: 'BubbaAffiliate — Sell the outcome, not the software',
@@ -14,7 +15,9 @@ const HOW = [
   { n: '4', t: 'You see measurable results', d: 'We track attribution, manage commissions, and report performance. Sellers get outcomes; creators get paid on validated conversions.' },
 ];
 
-export default function BubbaAffiliateHome() {
+export default async function BubbaAffiliateHome() {
+  const base = await gatewayBase();
+  const href = (path = '') => gwHref(base, path);
   return (
     <>
       {/* Hero */}
@@ -28,8 +31,8 @@ export default function BubbaAffiliateHome() {
             distribution, tracking, attribution, reporting, and commission control.
           </p>
           <div className="ba-hero-actions">
-            <Link href="/bubbaaffiliate/sellers#apply" className="btn btn-accent btn-lg">Submit Your Offer</Link>
-            <Link href="/bubbaaffiliate/creators#apply" className="btn btn-ghost btn-lg">Become a Creator Partner</Link>
+            <Link href={`${href('/sellers')}#apply`} className="btn btn-accent btn-lg">Submit Your Offer</Link>
+            <Link href={`${href('/creators')}#apply`} className="btn btn-ghost btn-lg">Become a Creator Partner</Link>
           </div>
           <div className="ba-hero-trust">
             <span>AI-powered, human-reviewed</span>
@@ -60,7 +63,7 @@ export default function BubbaAffiliateHome() {
                 <li>Tracking, attribution &amp; performance reports</li>
                 <li>You keep fulfillment, shipping &amp; customer service</li>
               </ul>
-              <Link href="/bubbaaffiliate/sellers#apply" className="btn btn-accent">Submit Your Offer</Link>
+              <Link href={`${href('/sellers')}#apply`} className="btn btn-accent">Submit Your Offer</Link>
             </div>
             <div className="ba-side">
               <span className="eyebrow">For creators &amp; affiliates</span>
@@ -72,7 +75,7 @@ export default function BubbaAffiliateHome() {
                 <li>Content briefs, tracking links &amp; promo codes</li>
                 <li>Transparent, managed payouts on validated sales</li>
               </ul>
-              <Link href="/bubbaaffiliate/creators#apply" className="btn btn-accent">Become a Creator Partner</Link>
+              <Link href={`${href('/creators')}#apply`} className="btn btn-accent">Become a Creator Partner</Link>
             </div>
           </div>
         </div>
@@ -86,7 +89,7 @@ export default function BubbaAffiliateHome() {
               <span className="eyebrow">How it works</span>
               <h2>Managed from offer to outcome</h2>
             </div>
-            <Link href="/bubbaaffiliate/how-it-works" className="section-link">See the full process →</Link>
+            <Link href={href('/how-it-works')} className="section-link">See the full process →</Link>
           </div>
           <div className="ba-cards">
             {HOW.slice(0, 3).map((s) => (
@@ -107,8 +110,8 @@ export default function BubbaAffiliateHome() {
             <h2>Ready to turn your offer into results?</h2>
             <p>Submit your offer and we&apos;ll design a managed campaign — or apply as a Creator Partner and start earning on campaigns that fit your audience.</p>
             <div className="ba-hero-actions">
-              <Link href="/bubbaaffiliate/sellers#apply" className="btn btn-lg">Submit Your Offer</Link>
-              <Link href="/bubbaaffiliate/creators#apply" className="btn btn-ghost btn-lg">Become a Creator Partner</Link>
+              <Link href={`${href('/sellers')}#apply`} className="btn btn-lg">Submit Your Offer</Link>
+              <Link href={`${href('/creators')}#apply`} className="btn btn-ghost btn-lg">Become a Creator Partner</Link>
             </div>
           </div>
         </div>
