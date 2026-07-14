@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SellerIntakeForm } from '@/components/bubbaaffiliate/SellerIntakeForm';
+import { gatewayBase, gwHref } from '@/lib/gateway';
 
 export const metadata: Metadata = {
   title: 'For Sellers & Brands — BubbaAffiliate',
@@ -17,7 +18,8 @@ const VALUE = [
 const YOURS = ['Product claims & accuracy', 'Fulfillment & shipping', 'Inventory', 'Customer service & refunds'];
 const OURS = ['Campaign design & terms', 'Content direction (AI-assisted, human-reviewed)', 'Creator matching & distribution', 'Tracking, attribution & reporting', 'Commission logic & payouts'];
 
-export default function SellersPage() {
+export default async function SellersPage() {
+  const base = await gatewayBase();
   return (
     <>
       <section className="ba-hero">
@@ -31,7 +33,7 @@ export default function SellersPage() {
           </p>
           <div className="ba-hero-actions">
             <Link href="#apply" className="btn btn-accent btn-lg">Submit Your Offer</Link>
-            <Link href="/bubbaaffiliate/pricing" className="btn btn-ghost btn-lg">See pricing</Link>
+            <Link href={gwHref(base, '/pricing')} className="btn btn-ghost btn-lg">See pricing</Link>
           </div>
         </div>
       </section>

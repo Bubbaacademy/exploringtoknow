@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { CreatorIntakeForm } from '@/components/bubbaaffiliate/CreatorIntakeForm';
+import { gatewayBase, gwHref } from '@/lib/gateway';
 
 export const metadata: Metadata = {
   title: 'Become a Creator Partner — BubbaAffiliate',
@@ -16,7 +17,8 @@ const PERKS = [
 
 const WHO = ['Instagram / TikTok / YouTube creators', 'Bloggers & newsletter owners', 'Community & group owners', 'Affiliate marketers & micro-influencers'];
 
-export default function CreatorsPage() {
+export default async function CreatorsPage() {
+  const base = await gatewayBase();
   return (
     <>
       <section className="ba-hero">
@@ -30,7 +32,7 @@ export default function CreatorsPage() {
           </p>
           <div className="ba-hero-actions">
             <Link href="#apply" className="btn btn-accent btn-lg">Become a Creator Partner</Link>
-            <Link href="/bubbaaffiliate/how-it-works" className="btn btn-ghost btn-lg">How it works</Link>
+            <Link href={gwHref(base, '/how-it-works')} className="btn btn-ghost btn-lg">How it works</Link>
           </div>
         </div>
       </section>
@@ -60,7 +62,7 @@ export default function CreatorsPage() {
               <span className="eyebrow">How you get paid</span>
               <h3>Simple, validated, managed</h3>
               <p>Creator Partners typically receive the majority of each offer&apos;s commission pool. Payouts are released after conversions are validated (to protect against refunds and fraud). See the full split on our pricing page.</p>
-              <Link href="/bubbaaffiliate/pricing" className="btn btn-ghost">See the commission split →</Link>
+              <Link href={gwHref(base, '/pricing')} className="btn btn-ghost">See the commission split →</Link>
             </div>
           </div>
         </div>

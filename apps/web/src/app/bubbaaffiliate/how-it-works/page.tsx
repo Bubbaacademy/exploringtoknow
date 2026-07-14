@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { gatewayBase, gwHref } from '@/lib/gateway';
 
 export const metadata: Metadata = {
   title: 'How it works — BubbaAffiliate',
@@ -20,7 +21,8 @@ const STEPS = [
   { n: '10', t: 'Learning & optimization', d: 'Every campaign produces data on what categories, creators, angles, and formats perform — which makes the next campaign better.' },
 ];
 
-export default function HowItWorksPage() {
+export default async function HowItWorksPage() {
+  const base = await gatewayBase();
   return (
     <>
       <section className="ba-hero">
@@ -33,8 +35,8 @@ export default function HowItWorksPage() {
             commissions, and payouts — and we learn from every campaign.
           </p>
           <div className="ba-hero-actions">
-            <Link href="/bubbaaffiliate/sellers#apply" className="btn btn-accent btn-lg">Submit Your Offer</Link>
-            <Link href="/bubbaaffiliate/creators#apply" className="btn btn-ghost btn-lg">Become a Creator Partner</Link>
+            <Link href={`${gwHref(base, '/sellers')}#apply`} className="btn btn-accent btn-lg">Submit Your Offer</Link>
+            <Link href={`${gwHref(base, '/creators')}#apply`} className="btn btn-ghost btn-lg">Become a Creator Partner</Link>
           </div>
         </div>
       </section>
@@ -61,8 +63,8 @@ export default function HowItWorksPage() {
             <h2>The software runs the operation. You get the outcome.</h2>
             <p>Do not buy the software. Use the outcome. Submit your offer or apply as a Creator Partner to get started.</p>
             <div className="ba-hero-actions">
-              <Link href="/bubbaaffiliate/sellers#apply" className="btn btn-lg">Submit Your Offer</Link>
-              <Link href="/bubbaaffiliate/creators#apply" className="btn btn-ghost btn-lg">Become a Creator Partner</Link>
+              <Link href={`${gwHref(base, '/sellers')}#apply`} className="btn btn-lg">Submit Your Offer</Link>
+              <Link href={`${gwHref(base, '/creators')}#apply`} className="btn btn-ghost btn-lg">Become a Creator Partner</Link>
             </div>
           </div>
         </div>
