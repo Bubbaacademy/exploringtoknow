@@ -1,8 +1,25 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-06-23 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-07-14 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `ace3cea` (Phase 33 Unified Performance + blocked-vs-empty-state fix — DEPLOYED & VERIFIED LIVE).
+**Production HEAD: `2daa0f2` (Phase 1A — BubbaAffiliate strategic repositioning — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:ac11d504…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
+Phase 1A repositions the `/app` workspace console away from public-SaaS language toward the **BubbaAffiliate managed
+affiliate operating model** ("Do not sell the software. Use the software to sell the outcome."). **Copy/nav/label/text
+ONLY** — 27 files under `apps/web/src/app/app/**` + `apps/web/src/components/app/**`, plus the Master Blueprint added at
+`docs/BubbaAffiliate_ETK_Master_Blueprint_2026-07-07.md` (28 files, +1017/-101). Nav reframed: **Command Center**
+(dashboard), **Offers** (was Products), **Seller Intake Pipeline** (was Product Requests), **Creator Campaign Asset
+Factory** (was Social Studio), **Offer Pages** (was Landing Pages), **Attribution & Reports** (was Performance),
+**Invoices & Payouts** (was Billing), **Editorial Console** framed as the ExploringToKnow publishing layer. **No** schema,
+migration, route, package/lockfile, provider, OAuth, env, token, credential, Google Ads, Meta Ads, connection-record, or
+sync-state changes. Merged to `main` via PR #1 (commit `a47b182` under merge `2daa0f2`). Delivered to the VPS by signed git
+bundle over SSH (no GitHub remote on the VPS), working tree fast-forwarded to `2daa0f2`, then deployed with the standard
+`infra/server/deploy-app.sh`. **Verified live:** build + typecheck + lint passed in the production Docker image; migrate ran
+as an observable no-op step (26 → 26); only `etk-app` force-recreated onto the freshly built image `ac11d504` (running image
+== built image, no stale image); worker/Postgres/Caddy untouched (not restarted); public health `GET /api/health` → HTTP 200
+`{"status":"ok","service":"web","missingEnv":[]}`. Pre-deploy: local VPS/Linux build-only validation of `a47b182` passed
+(throwaway image `etk-web:phase1a-validate`, isolated `/tmp` build, cleaned up; live app/DB untouched).
+**Prior — `ace3cea` (Phase 33 Unified Performance + blocked-vs-empty-state fix — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:67dd3c1f…`) healthy; payload_migrations 26 (no new migration).** The provider card now
 distinguishes a **failed/blocked** sync from an **honest 0-row** result: `syncBlocked = latest run failed OR sanitized
 last_error present`. Google (ws22, `sync_failed` / `DEVELOPER_TOKEN_NOT_APPROVED`) shows a **"sync blocked by provider/API
@@ -104,7 +121,9 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `ace3cea` (Phase 33 + blocked-state fix, built &
-deployed; no migration); the docs commit on top is docs-only. Local + server in sync. Rollback points: before blocked-state
-fix `eb8e91b`; before Phase 33 `c7da882`; before legal/brand `8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained
-test workspace + 1 customer workspace "testing" [tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `2daa0f2` (Phase 1A repositioning merge; built &
+deployed; no migration, 26 → 26). GitHub origin `Bubbaacademy/exploringtoknow` holds `main` @ `2daa0f2`; the VPS has no
+GitHub remote (updated via signed git bundle over SSH). Rollback points: before Phase 1A `ace3cea` (prior production HEAD);
+before blocked-state fix `eb8e91b`; before Phase 33 `c7da882`; before legal/brand `8fccef5`; before Phase 32 `2993976`.
+Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained test workspace + 1 customer workspace "testing"
+[tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
