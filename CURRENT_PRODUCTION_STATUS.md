@@ -2,7 +2,27 @@
 
 _Updated: 2026-07-14 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `2daa0f2` (Phase 1A — BubbaAffiliate strategic repositioning — DEPLOYED & VERIFIED LIVE).
+**Production HEAD: `432c502` (Phase 1B / 2A — BubbaAffiliate public gateway + seller/creator intake — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:896d492d…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
+Adds the public **BubbaAffiliate gateway** as a separate top-level `/bubbaaffiliate` segment (its own layout + brand
+chrome, distinct from the ExploringToKnow media layer). **Live routes:** `/bubbaaffiliate` (landing), `/bubbaaffiliate/sellers`,
+`/bubbaaffiliate/creators`, `/bubbaaffiliate/pricing`, `/bubbaaffiliate/how-it-works`, and `POST /api/bubbaaffiliate/intake`.
+CTAs: **Submit Your Offer** and **Become a Creator Partner**. Pricing page shows the approved early model (onboarding
+$99/$299/$499; operation $99/$299/$599 mo) and performance splits (Products 70/30, Services 60/40). **Intake stores
+submissions in the existing `contact-messages` collection via the safe Local-API pattern (overrideAccess, honeypot) —
+`source=bubbaaffiliate-seller` / `bubbaaffiliate-creator`, `reason=partnership`, structured details composed into `message`.
+NO new schema, NO migrations, NO CreatorProfile tables, NO social OAuth, NO dashboards, NO tracking/ledger/payout.** Gateway
+pages are `noindex` until `bubbaaffiliate.com` DNS is live. **Purely additive** — 10 new files (`apps/web/src/app/bubbaaffiliate/**`,
+`apps/web/src/app/api/bubbaaffiliate/**`, `apps/web/src/components/bubbaaffiliate/**`); existing routes, `/app`, and `/platform`
+untouched. Merged to `main` via PR #2 (commit `719fbad` under merge `432c502`). Delivered to the VPS by signed git bundle over
+SSH, working tree fast-forwarded to `432c502`, deployed with the standard `infra/server/deploy-app.sh`. **Verified live:**
+build + typecheck + lint passed (44/44 static pages generated in the production image); migrate ran as an observable no-op
+(26 → 26); only `etk-app` force-recreated onto freshly built image `896d492` (running image == built image); worker/Postgres/
+Caddy untouched (not restarted); public health `GET /api/health` → HTTP 200; `GET /bubbaaffiliate` → 200, `GET
+/bubbaaffiliate/pricing` → 200, `POST /api/bubbaaffiliate/intake` → 400 on empty body (wired + validating, not 404/500).
+Pre-deploy: local VPS/Linux build-only validation of `719fbad` passed (throwaway image `etk-web:phase1b-validate`, isolated
+`/tmp` build, cleaned up; live app/DB untouched).
+**Prior — `2daa0f2` (Phase 1A — BubbaAffiliate strategic repositioning — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:ac11d504…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
 Phase 1A repositions the `/app` workspace console away from public-SaaS language toward the **BubbaAffiliate managed
 affiliate operating model** ("Do not sell the software. Use the software to sell the outcome."). **Copy/nav/label/text
@@ -121,9 +141,9 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `2daa0f2` (Phase 1A repositioning merge; built &
-deployed; no migration, 26 → 26). GitHub origin `Bubbaacademy/exploringtoknow` holds `main` @ `2daa0f2`; the VPS has no
-GitHub remote (updated via signed git bundle over SSH). Rollback points: before Phase 1A `ace3cea` (prior production HEAD);
-before blocked-state fix `eb8e91b`; before Phase 33 `c7da882`; before legal/brand `8fccef5`; before Phase 32 `2993976`.
-Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained test workspace + 1 customer workspace "testing"
-[tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `432c502` (Phase 1B / 2A gateway merge; built &
+deployed; no migration, 26 → 26). GitHub origin `Bubbaacademy/exploringtoknow` holds `main` @ `432c502`; the VPS has no
+GitHub remote (updated via signed git bundle over SSH). Rollback points: before Phase 1B/2A `2daa0f2` (prior production HEAD;
+Phase 1A); before Phase 1A `ace3cea`; before blocked-state fix `eb8e91b`; before Phase 33 `c7da882`; before legal/brand
+`8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained test workspace +
+1 customer workspace "testing" [tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
