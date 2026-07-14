@@ -28,18 +28,18 @@ export default async function LandingPagesList() {
   return (
     <>
       <TopBar
-        title="Landing Pages"
-        sub="Reviewed and published manually — nothing is generated or published automatically."
+        title="Offer Pages"
+        sub="Offer and campaign landing pages — the tracking destinations for campaigns. Reviewed and published manually; nothing is generated or published automatically."
         actions={editable ? <WsLink href="/app/landing-pages/new" primary>New landing page</WsLink> : undefined}
       />
       <div className="adm-content">
         {!brand ? (
           <div className="adm-panel" style={{ marginBottom: 16 }}>
-            Tip: set up your <Link href="/app/brand">Brand Kit</Link> first — landing pages use your brand voice, colors, and disclosure notes.
+            Tip: set up your <Link href="/app/brand">Brand Kit</Link> first — offer pages use your brand voice, colors, and disclosure notes.
           </div>
         ) : null}
 
-        <Section title="Your landing pages">
+        <Section title="Your offer pages">
           {pages.length ? (
             <Card>
               <DataTable
@@ -53,12 +53,12 @@ export default async function LandingPagesList() {
                   fmtDate(p.updatedAt),
                   <Link key="e" href={`/app/landing-pages/${p.id}`}>{editable ? 'Edit' : 'View'}</Link>,
                 ])}
-                empty="No landing pages yet."
+                empty="No offer pages yet."
               />
             </Card>
           ) : (
             <Empty>
-              No landing pages yet. {editable ? <>Create your first one — it starts as a private draft.</> : <>An owner, admin, or editor can create one.</>}
+              No offer pages yet. {editable ? <>Create your first one — it starts as a private draft.</> : <>An owner, admin, or editor can create one.</>}
             </Empty>
           )}
         </Section>

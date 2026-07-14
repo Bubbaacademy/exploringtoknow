@@ -196,7 +196,7 @@ export function AdCampaignEditor({ campaign, products = [], requests = [], landi
                 </select>
                 <button type="button" className="adm-btn ghost" onClick={() => prefillFrom(products, relatedProduct)} disabled={!relatedProduct}>Use link →</button>
               </span>
-            ) : <p className="adm-note">No products yet. <a href="/app/products">Add one</a>.</p>}
+            ) : <p className="adm-note">No offers yet. <a href="/app/products">Add one</a>.</p>}
           </div>
           <div className="field"><label htmlFor="relatedLandingPage">Related landing page</label>
             {landingPages.length ? (

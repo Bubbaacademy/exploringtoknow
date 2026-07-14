@@ -25,7 +25,7 @@ export default async function SocialBoard() {
 
   return (
     <>
-      <TopBar title="Social Studio — Board" sub="Posts grouped by status. Move them manually via each post’s status controls — nothing posts automatically." actions={<WsLink href="/app/social-posts/new" primary>New social post</WsLink>} />
+      <TopBar title="Creator Studio — Board" sub="Campaign assets grouped by status. Move them manually via each asset’s status controls — nothing posts automatically." actions={<WsLink href="/app/social-posts/new" primary>New campaign asset</WsLink>} />
       <div className="adm-content">
         <SocialNav active="/app/social-posts/board" />
         {posts.length ? (

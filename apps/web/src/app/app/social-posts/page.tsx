@@ -31,20 +31,20 @@ export default async function SocialPostsList() {
   return (
     <>
       <TopBar
-        title="Social Studio"
-        sub="Plan and export posts manually. Nothing is generated, scheduled, or posted automatically."
-        actions={editable ? <WsLink href="/app/social-posts/new" primary>New social post</WsLink> : undefined}
+        title="Creator Campaign Asset Factory"
+        sub="Produce and coordinate creator campaign assets — captions, scripts and content direction. Plan and export manually; nothing is posted automatically."
+        actions={editable ? <WsLink href="/app/social-posts/new" primary>New campaign asset</WsLink> : undefined}
       />
       <div className="adm-content">
         <SocialNav active="/app/social-posts" />
         <SocialOverview o={overview} />
         {!brand ? (
           <div className="adm-panel" style={{ marginBottom: 16 }}>
-            Tip: set up your <Link href="/app/brand">Brand Kit</Link> first — Social Studio uses your brand voice, audience, and disclosure notes as helper context.
+            Tip: set up your <Link href="/app/brand">Brand Kit</Link> first — Creator Studio uses your brand voice, audience, and disclosure notes as helper context.
           </div>
         ) : null}
 
-        <Section title="Your social posts">
+        <Section title="Your campaign assets">
           {posts.length ? (
             <Card>
               <DataTable
@@ -60,13 +60,13 @@ export default async function SocialPostsList() {
                   fmtDate(p.updatedAt),
                   <Link key="e" href={`/app/social-posts/${p.id}`}>{editable ? 'Edit' : 'View'}</Link>,
                 ])}
-                empty="No social posts yet."
+                empty="No campaign assets yet."
               />
             </Card>
           ) : (
             <Empty>
-              No social posts yet. {editable
-                ? <>Create your first one — posts are authored by hand and can later be connected to publishing and ad workflows. Nothing posts automatically.</>
+              No campaign assets yet. {editable
+                ? <>Create your first one — assets are authored by hand and can later be connected to publishing and ad workflows. Nothing posts automatically.</>
                 : <>An owner, admin, or editor can create one.</>}
             </Empty>
           )}

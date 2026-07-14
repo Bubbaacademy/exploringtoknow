@@ -102,7 +102,7 @@ export function CreateProductForm({ categories, submitLabel = 'Submit for editor
   const canSubmit = state !== 'sending' && !uploading && !!catId && (!isOther || suggested.trim().length >= 2) && images.length >= MIN && permission;
 
   if (state === 'ok') {
-    return <div className="adm-panel ok" role="status"><strong>Submitted.</strong> Taking you to your product requests…</div>;
+    return <div className="adm-panel ok" role="status"><strong>Submitted.</strong> Taking you to your seller submissions…</div>;
   }
 
   return (

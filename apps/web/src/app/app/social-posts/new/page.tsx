@@ -14,8 +14,8 @@ export default async function NewSocialPost({ searchParams }: Args) {
   if (!canWrite(ws.role)) {
     return (
       <>
-        <TopBar title="New social post" />
-        <div className="adm-content"><div className="adm-panel warn">You don’t have permission to create social posts.</div></div>
+        <TopBar title="New campaign asset" />
+        <div className="adm-content"><div className="adm-panel warn">You don’t have permission to create campaign assets.</div></div>
       </>
     );
   }
@@ -39,7 +39,7 @@ export default async function NewSocialPost({ searchParams }: Args) {
 
   return (
     <>
-      <TopBar title="New social post" sub="Starts as a private draft. Authoring is manual — nothing is generated or posted." />
+      <TopBar title="New campaign asset" sub="Starts as a private draft. Authoring is manual — nothing is generated or posted." />
       <div className="adm-content">
         <SocialPostEditor
           post={initial}

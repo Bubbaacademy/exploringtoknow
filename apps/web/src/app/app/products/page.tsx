@@ -16,13 +16,13 @@ export default async function ProductsPage() {
   return (
     <>
       <TopBar
-        title="Products"
-        sub="The catalog behind your reviews and guides, scoped to your workspace. Submitting a product sends it for editorial review before it becomes a live catalog product."
-        actions={canWrite(ws.role) ? <WsLink href="/app/products/new" primary>Add a product</WsLink> : undefined}
+        title="Offers"
+        sub="Seller offers, products and services managed for campaigns. Submitting an offer sends it for BubbaAffiliate review before it goes into a campaign."
+        actions={canWrite(ws.role) ? <WsLink href="/app/products/new" primary>Add an offer</WsLink> : undefined}
       />
       <div className="adm-content">
-        <Card title={`${docs.length} product${docs.length === 1 ? '' : 's'}`}>
-          <DataTable head={['Title', 'Offer type', 'Status', 'Added']} rows={rows} empty="No products yet. Click ‘Add a product’ to submit your first one — an editor reviews it before anything is generated or published." />
+        <Card title={`${docs.length} offer${docs.length === 1 ? '' : 's'}`}>
+          <DataTable head={['Title', 'Offer type', 'Status', 'Added']} rows={rows} empty="No offers yet. Click ‘Add an offer’ to submit your first one — BubbaAffiliate reviews it before anything is generated or runs." />
         </Card>
       </div>
     </>

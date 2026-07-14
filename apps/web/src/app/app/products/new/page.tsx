@@ -11,8 +11,8 @@ export default async function NewProductPage() {
   if (!canWrite(ws.role)) {
     return (
       <>
-        <TopBar title="Add a product" sub="Your role has read-only access." />
-        <div className="adm-content"><div className="adm-panel warn">Your role can view this workspace but can’t create products. Ask a workspace owner or admin if you need edit access.</div></div>
+        <TopBar title="Add an offer" sub="Your role has read-only access." />
+        <div className="adm-content"><div className="adm-panel warn">Your role can view this workspace but can’t create offers. Ask a workspace owner or admin if you need edit access.</div></div>
       </>
     );
   }
@@ -21,9 +21,9 @@ export default async function NewProductPage() {
     .sort((a, b) => a.name.localeCompare(b.name));
   return (
     <>
-      <TopBar title="Add a product" sub="Submit a product for your publication. An editor reviews it before anything is generated or published — nothing happens automatically." />
+      <TopBar title="Add an offer" sub="Submit a product or service offer. BubbaAffiliate reviews it before it enters a campaign — nothing runs automatically." />
       <div className="adm-content">
-        <CreateProductForm categories={categories} submitLabel="Submit for editorial review" />
+        <CreateProductForm categories={categories} submitLabel="Submit offer for review" />
       </div>
     </>
   );
