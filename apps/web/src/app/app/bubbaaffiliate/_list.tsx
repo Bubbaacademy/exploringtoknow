@@ -31,6 +31,10 @@ export async function SubmissionList({
     ];
   });
 
+  const sourceHint = kind === 'seller'
+    ? 'New submissions come from bubbaaffiliate.com/sellers.'
+    : 'New applications come from bubbaaffiliate.com/creators.';
+
   const chips = STATUS_FILTERS.map((f) => (
     <Link key={f.value} href={href(f.value, newestFirst)} className={`adm-btn${f.value === status ? '' : ' ghost'}`}>{f.label}</Link>
   ));
@@ -56,7 +60,7 @@ export async function SubmissionList({
             <DataTable
               head={['Name', 'Email', kind === 'seller' ? 'Business / brand' : 'Handle', kind === 'seller' ? 'Offer type' : 'Platform', 'Status', 'Received']}
               rows={rows}
-              empty={`No ${labels.plural.toLowerCase()} yet${status !== 'all' ? ` with status “${status}”` : ''}.`}
+              empty={`No ${labels.plural.toLowerCase()} yet${status !== 'all' ? ` with status “${status}”` : ''}. ${sourceHint}`}
             />
           </Card>
         </Section>
