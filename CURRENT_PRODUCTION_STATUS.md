@@ -2,7 +2,32 @@
 
 _Updated: 2026-07-14 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `432c502` (Phase 1B / 2A — BubbaAffiliate public gateway + seller/creator intake — DEPLOYED & VERIFIED LIVE).
+**Production HEAD: `745d8a6` (Phase 1C — clean host-aware bubbaaffiliate.com domain routing — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:e3861b22…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
+**`bubbaaffiliate.com` and `www.bubbaaffiliate.com` now serve the BubbaAffiliate gateway.** App middleware
+(`apps/web/src/middleware.ts`) does a **host-aware internal rewrite** on the apex — `/`→`/bubbaaffiliate`,
+`/sellers`→`/bubbaaffiliate/sellers`, `/creators`→`/bubbaaffiliate/creators`, `/pricing`→`/bubbaaffiliate/pricing`,
+`/how-it-works`→`/bubbaaffiliate/how-it-works` — so the **browser URL stays clean** (`NextResponse.rewrite`, verified
+**HTTP 200 with 0 redirects** on all five). Gateway layout + pages emit **host-aware links** (clean on the apex,
+`/bubbaaffiliate/*` elsewhere) via `apps/web/src/lib/gateway.ts`. Assets (`/_next/*`), `/api/*`, and the existing
+`/bubbaaffiliate/*` routes pass through untouched. **Caddy** (`infra/Caddyfile`, mirrored to the live
+`/opt/exploringtoknow/caddy/Caddyfile`) adds a `bubbaaffiliate.com` block (reverse-proxy to the same app container, no
+path rewriting — middleware owns clean URLs) and a `www.bubbaaffiliate.com` block that **301-redirects to the apex**
+(verified `301 → https://bubbaaffiliate.com/`); TLS auto-issued by Caddy for both names. **Coordinated deploy:** app first
+via the standard `infra/server/deploy-app.sh` (fresh image `e3861b22`, migrate no-op 26→26, only `etk-app`
+force-recreated → healthy), then the live Caddyfile was **backed up** (`caddy/Caddyfile.bak-20260714-050927`), replaced
+from the reviewed repo file, **`caddy validate` → Valid configuration**, and **gracefully reloaded** (no container
+restart; Postgres/worker/Caddy not restarted). **Verified live:** `exploringtoknow.com/api/health` 200,
+`exploringtoknow.com/` 200, `exploringtoknow.com/bubbaaffiliate` **still 200 (unchanged)**; `bubbaaffiliate.com/`,
+`/sellers`, `/creators`, `/pricing`, `/how-it-works` all 200 clean; `www` 301→apex; `POST
+bubbaaffiliate.com/api/bubbaaffiliate/intake` reachable (400 on empty body = wired + validating). **No** schema,
+migration, route-logic, ContactMessages/intake, package/lockfile, provider, OAuth, env, token, credential, Google Ads,
+Meta Ads, connection-record, or sync-state changes. Merged to `main` via PR #3 (`19f3d32`/`91674be` under merge
+`745d8a6`); delivered to the VPS by signed git bundle over SSH. Gateway pages remain `noindex` until go-live on the apex.
+Pre-deploy: local VPS/Linux build-only validation passed (temp image `etk-web:phase1c-validate` + isolated `caddy
+validate`; the first build correctly **caught a type error** — `noUncheckedIndexedAccess` on `.split(':')[0]` — fixed in
+`19f3d32` and re-validated green; live app/DB untouched).
+**Prior — `432c502` (Phase 1B / 2A — BubbaAffiliate public gateway + seller/creator intake — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:896d492d…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
 Adds the public **BubbaAffiliate gateway** as a separate top-level `/bubbaaffiliate` segment (its own layout + brand
 chrome, distinct from the ExploringToKnow media layer). **Live routes:** `/bubbaaffiliate` (landing), `/bubbaaffiliate/sellers`,
@@ -141,9 +166,11 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `432c502` (Phase 1B / 2A gateway merge; built &
-deployed; no migration, 26 → 26). GitHub origin `Bubbaacademy/exploringtoknow` holds `main` @ `432c502`; the VPS has no
-GitHub remote (updated via signed git bundle over SSH). Rollback points: before Phase 1B/2A `2daa0f2` (prior production HEAD;
-Phase 1A); before Phase 1A `ace3cea`; before blocked-state fix `eb8e91b`; before Phase 33 `c7da882`; before legal/brand
-`8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained test workspace +
-1 customer workspace "testing" [tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `745d8a6` (Phase 1C clean-domain merge; built &
+deployed; no migration, 26 → 26). Live Caddy config updated to serve `bubbaaffiliate.com` + `www` (backup retained at
+`/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin `Bubbaacademy/exploringtoknow` holds `main` @
+`745d8a6`; the VPS has no GitHub remote (updated via signed git bundle over SSH). Rollback points: before Phase 1C `432c502`
+(prior production HEAD; Phase 1B/2A) — for a Caddy-only rollback, restore the `.bak-*` file and `caddy reload`; before Phase
+1B/2A `2daa0f2` (Phase 1A); before Phase 1A `ace3cea`; before blocked-state fix `eb8e91b`; before Phase 33 `c7da882`; before
+legal/brand `8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained test
+workspace + 1 customer workspace "testing" [tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
