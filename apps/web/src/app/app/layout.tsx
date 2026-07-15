@@ -14,6 +14,7 @@ const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
   { group: 'Overview', items: [['Command Center', '/app']] },
   { group: 'Offers & Content', items: [['Offers', '/app/products'], ['Articles', '/app/articles'], ['Categories', '/app/categories'], ['Media', '/app/media'], ['Brand Kit', '/app/brand'], ['Offer Pages', '/app/landing-pages'], ['Creator Studio', '/app/social-posts']] },
   { group: 'Workflow', items: [['Seller Intake', '/app/product-requests'], ['Editorial', '/app/editorial']] },
+  { group: 'BubbaAffiliate', items: [['Intake Overview', '/app/bubbaaffiliate'], ['Seller Submissions', '/app/bubbaaffiliate/seller-submissions'], ['Creator Applications', '/app/bubbaaffiliate/creator-applications']] },
   { group: 'Attribution & Growth', items: [['Ads Studio', '/app/ads'], ['Attribution & Reports', '/app/performance'], ['Connections', '/app/provider-connections'], ['Analytics', '/app/analytics'], ['Newsletter', '/app/newsletter'], ['Contact Inbox', '/app/contact']] },
   { group: 'Workspace', items: [['Team', '/app/team'], ['Settings', '/app/settings']] },
 ];
