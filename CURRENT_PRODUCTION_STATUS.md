@@ -1,8 +1,33 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-07-14 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-07-15 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `745d8a6` (Phase 1C — clean host-aware bubbaaffiliate.com domain routing — DEPLOYED & VERIFIED LIVE).
+**Production HEAD: `68575b2` (`68575b290734e91e2fa333e2a41dbcb8dc8f4c6b`) (Phase 2B/3A — Internal BubbaAffiliate Intake
+Management — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:7cc8045a…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
+Phase 2B/3A adds an **internal BubbaAffiliate intake command center** at `/app/bubbaaffiliate`, inside the authenticated `/app`
+workspace console (NOT a public surface). **Live internal routes** — `/app/bubbaaffiliate` (command center),
+`/app/bubbaaffiliate/seller-submissions` (list) + `/app/bubbaaffiliate/seller-submissions/[id]` (detail),
+`/app/bubbaaffiliate/creator-applications` (list) + `/app/bubbaaffiliate/creator-applications/[id]` (detail). **All are
+auth-gated: unauthenticated access correctly `307 → https://exploringtoknow.com/login`** (verified — not 404/500), and the
+pages render once signed in. **Reads existing submissions from the `contact-messages` collection only** — seller submissions
+filtered by `source=bubbaaffiliate-seller`, creator applications by `source=bubbaaffiliate-creator` (the very records the Phase
+1B/2A public intake already writes), via the safe Local-API pattern. Status handling uses the existing `status` field only;
+notes deferred. **Purely additive — NO new schema, NO migrations, NO new collections, NO package/lockfile changes, NO change to
+ContactMessages schema or intake logic:** 9 new files under `apps/web/src/app/app/bubbaaffiliate/**` +
+`apps/web/src/lib/bubbaaffiliate-intake.ts`, plus one nav line in `apps/web/src/app/app/layout.tsx` (11 files, +608/−7). Merged
+to `main` via PR #4 (`0431b43` under merge `68575b2`). Delivered to the VPS by git bundle over SSH (SHA256-verified; `git
+bundle verify` passed), working tree fast-forwarded `745d8a6 → 68575b2`, deployed with the standard
+`infra/server/deploy-app.sh`. **Verified live:** **build passed** (rebuilt `etk-web`; deploy script's stale-image guard passed
+— running image == freshly built `7cc8045a`); migrate ran as an observable **no-op** (`migrations up to date`, 26 → 26); **only
+`etk-app` was force-recreated** (`--no-deps`) and came back **healthy**; **worker/Postgres/Caddy were NOT restarted** (unchanged
+`StartedAt 2026-07-14T00:22:20Z`) and **no Caddy config was changed**; **health check passed** — `GET
+https://exploringtoknow.com/api/health` → HTTP 200 `{"status":"ok","service":"web","missingEnv":[]}`. **DB/env/providers/
+credentials/OAuth/tokens/connection-records/Google Ads/Meta Ads all untouched** (no schema/migration change, migrations still
+26; no secrets read or printed). Pre-deploy: isolated VPS/Linux **build-only** validation of `0431b43` passed (throwaway image
+`etk-web:phase2b3a-validate`, isolated `git archive` extraction, typecheck + lint + `next build` green, cleaned up; live
+app/DB untouched). Internal-only; no new public or `noindex` surface introduced.
+**Prior — `745d8a6` (Phase 1C — clean host-aware bubbaaffiliate.com domain routing — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:e3861b22…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
 **`bubbaaffiliate.com` and `www.bubbaaffiliate.com` now serve the BubbaAffiliate gateway.** App middleware
 (`apps/web/src/middleware.ts`) does a **host-aware internal rewrite** on the apex — `/`→`/bubbaaffiliate`,
@@ -166,11 +191,12 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `745d8a6` (Phase 1C clean-domain merge; built &
-deployed; no migration, 26 → 26). Live Caddy config updated to serve `bubbaaffiliate.com` + `www` (backup retained at
-`/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin `Bubbaacademy/exploringtoknow` holds `main` @
-`745d8a6`; the VPS has no GitHub remote (updated via signed git bundle over SSH). Rollback points: before Phase 1C `432c502`
-(prior production HEAD; Phase 1B/2A) — for a Caddy-only rollback, restore the `.bak-*` file and `caddy reload`; before Phase
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `68575b2` (Phase 2B/3A internal-intake merge, PR #4;
+built & deployed; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`;
+backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin `Bubbaacademy/exploringtoknow`
+holds `main` @ `68575b2`; the VPS has no GitHub remote (updated via git bundle over SSH). Rollback points: before Phase 2B/3A
+`745d8a6` (prior production HEAD; Phase 1C — app-only rollback, redeploy that commit with `deploy-app.sh`); before Phase 1C
+`432c502` (Phase 1B/2A) — for a Caddy-only rollback, restore the `.bak-*` file and `caddy reload`; before Phase
 1B/2A `2daa0f2` (Phase 1A); before Phase 1A `ace3cea`; before blocked-state fix `eb8e91b`; before Phase 33 `c7da882`; before
 legal/brand `8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained test
 workspace + 1 customer workspace "testing" [tenant 22, which holds the live Google Ads connection]; ETK content unchanged.)
