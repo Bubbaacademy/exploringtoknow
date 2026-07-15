@@ -51,6 +51,7 @@
   color: #d4e3dd; text-decoration: none; font-size: 13.5px; padding: 8px 10px; border-radius: var(--a-r-sm);
 }
 .adm-nav a:hover { background: rgba(255,255,255,.08); color: #fff; }
+.adm-nav a[aria-current="page"] { background: rgba(255,255,255,.14); color: #fff; font-weight: 600; box-shadow: inset 2px 0 0 var(--a-accent); }
 .adm-nav a .adm-pill { background: var(--a-accent); color: #fff; border-radius: 999px; font-size: 11px; padding: 1px 7px; font-weight: 700; }
 .adm-side-foot { margin-top: auto; padding: 12px; border-top: 1px solid rgba(255,255,255,.12); display: flex; flex-direction: column; gap: 2px; }
 .adm-side-foot a { color: #b7d2c8; font-size: 12.5px; padding: 6px 10px; border-radius: var(--a-r-sm); text-decoration: none; }

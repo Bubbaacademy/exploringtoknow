@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
 import '../dashboard/dashboard.css';
+import { SidebarNav } from './_nav';
 import { requireWorkspace } from '@/lib/workspace';
 import { canManageSettings } from '@/lib/roles';
 import { ROLE_LABEL, type Role } from '@/lib/tenant';
@@ -38,16 +38,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
             <span className="adm-brand-mark">{wsName.trim().charAt(0).toUpperCase() || 'W'}</span>
             <span><b>{wsName}</b><span>{roleLabel}</span></span>
           </div>
-          <nav className="adm-nav" aria-label="Workspace">
-            {nav.map((g) => (
-              <div key={g.group}>
-                <div className="adm-nav-group">{g.group}</div>
-                {g.items.map(([label, href]) => (
-                  <Link key={href} href={href}>{label}</Link>
-                ))}
-              </div>
-            ))}
-          </nav>
+          <SidebarNav nav={nav} />
           <div className="adm-side-foot">
             {/* Workspace console footer is intentionally minimal — Sign out only.
                 Operator/super-admin surfaces (/platform, /dashboard, /admin) keep
