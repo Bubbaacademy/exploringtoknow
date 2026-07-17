@@ -1,8 +1,35 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-07-15 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-07-16 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `68575b2` (`68575b290734e91e2fa333e2a41dbcb8dc8f4c6b`) (Phase 2B/3A — Internal BubbaAffiliate Intake
+**Production HEAD: `a267905` (`a26790578f9b0b6bc2846e185db7fd8fea719190`) (Phase 2B/3A QA — Sidebar Active-State Fix + intake
+empty-state copy — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:f26a4cf6…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
+Small QA follow-up to the internal intake command center: the `/app` workspace sidebar now **highlights the nav item matching
+the current route** (previously nothing was reliably active). The sidebar Links were extracted into a client component
+(`apps/web/src/app/app/_nav.tsx` — `usePathname` + `aria-current="page"`) that marks active via a **longest segment-aware
+prefix** match, so: **`/app/bubbaaffiliate` highlights Intake Overview**, **`/app/bubbaaffiliate/seller-submissions` (and its
+`/[id]` detail) highlights Seller Submissions**, **`/app/bubbaaffiliate/creator-applications` (and its `/[id]` detail) highlights
+Creator Applications** — while existing active behavior is preserved (`/app` → Command Center, `/app/ads` → Ads Studio,
+`/app/performance` → Attribution & Reports, `/app/products` → Offers, and `/app/products` never false-matches
+`/app/product-requests`). One CSS rule added for the active style (`.adm-nav a[aria-current="page"]` in `dashboard.css`).
+**Empty-state copy lightly improved** (copy only): the seller-submissions empty state now mentions submissions come from
+`bubbaaffiliate.com/sellers`, and the creator-applications empty state mentions applications come from
+`bubbaaffiliate.com/creators`. **Purely UI/copy — 5 files (`_nav.tsx` new, `layout.tsx`, `dashboard.css`,
+`bubbaaffiliate/_list.tsx`, plus this doc); NO schema, migration, DB, env, provider, credential, OAuth, token,
+connection-record, Google Ads, Meta Ads, Caddy, public-gateway, or intake-API change.** Merged to `main` via PR #5 (`a1b0eb8`
+under merge `a267905`). Delivered to the VPS by git bundle over SSH (SHA256-verified; `git bundle verify` passed), working tree
+fast-forwarded `68575b2 → a267905`, deployed with the standard `infra/server/deploy-app.sh` (**app-only**). **Verified live:**
+build passed (deployed image `f26a4cf6`; deploy script's stale-image guard passed — running == freshly built); migrate ran as an
+observable **no-op** (`migrations up to date`, 26 → 26); **only `etk-app` was force-recreated** (`--no-deps`) → **healthy**;
+**worker/Postgres/Caddy NOT restarted** (unchanged `StartedAt 2026-07-14T00:22:20Z`) and **no Caddy config changed**; `GET
+https://exploringtoknow.com/api/health` → HTTP 200 `{"status":"ok","service":"web","missingEnv":[]}`; the three internal intake
+routes load (auth-gated, `307 → /login` unauthenticated), and `/app/ads` + `/app/performance` still load. The corrected
+active-state ships in the deployed image and is build-verified; the visible highlight renders client-side inside the
+authenticated `/app` shell (confirm on sign-in). Pre-deploy: isolated VPS/Linux **build-only** validation of `a1b0eb8` passed
+(throwaway image `etk-web:phase2b3a-sidebar-validate`, isolated `git archive` extraction, real rebuild — typecheck + lint +
+`next build` green, cleaned up; live app/DB untouched).
+**Prior — `68575b2` (`68575b290734e91e2fa333e2a41dbcb8dc8f4c6b`) (Phase 2B/3A — Internal BubbaAffiliate Intake
 Management — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:7cc8045a…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
 Phase 2B/3A adds an **internal BubbaAffiliate intake command center** at `/app/bubbaaffiliate`, inside the authenticated `/app`
@@ -191,11 +218,13 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `68575b2` (Phase 2B/3A internal-intake merge, PR #4;
-built & deployed; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`;
-backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin `Bubbaacademy/exploringtoknow`
-holds `main` @ `68575b2`; the VPS has no GitHub remote (updated via git bundle over SSH). Rollback points: before Phase 2B/3A
-`745d8a6` (prior production HEAD; Phase 1C — app-only rollback, redeploy that commit with `deploy-app.sh`); before Phase 1C
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `a267905` (Phase 2B/3A QA sidebar-active-fix merge, PR #5;
+app-only build & deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` +
+`www`; backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
+`Bubbaacademy/exploringtoknow` holds `main` @ `a267905`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: before the sidebar fix `68575b2` (prior production HEAD; Phase 2B/3A internal intake — app-only rollback,
+redeploy that commit with `deploy-app.sh`); before Phase 2B/3A `745d8a6` (Phase 1C — app-only rollback, redeploy that commit
+with `deploy-app.sh`); before Phase 1C
 `432c502` (Phase 1B/2A) — for a Caddy-only rollback, restore the `.bak-*` file and `caddy reload`; before Phase
 1B/2A `2daa0f2` (Phase 1A); before Phase 1A `ace3cea`; before blocked-state fix `eb8e91b`; before Phase 33 `c7da882`; before
 legal/brand `8fccef5`; before Phase 32 `2993976`. Worker fix baseline `c158c5f` unchanged. (Prod has ETK + 1 retained test
