@@ -185,6 +185,36 @@ img { max-width: 100%; height: auto; display: block; }
 .cover:hover .cover-cta { color: var(--brand-ink); }
 .cover-row { display: flex; align-items: center; gap: 12px; }
 
+/* ---- Explore Picks strip (catalog-style editorial picks) ---------------- */
+.picks-strip {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr);
+  gap: 18px; overflow-x: auto; scroll-snap-type: x proximity;
+  padding-bottom: 6px; margin: 0 -4px; padding-left: 4px; padding-right: 4px;
+  scrollbar-width: thin;
+}
+.pick-card {
+  scroll-snap-align: start; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+  overflow: hidden; transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.pick-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
+.pick-card .pick-media { aspect-ratio: 4 / 3; background: linear-gradient(135deg, #eef2ef, #e7ece8); display: flex; align-items: center; justify-content: center; color: #9aa6a1; font-size: 12px; overflow: hidden; }
+.pick-card .pick-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .5s var(--ease); }
+.pick-card:hover .pick-media img { transform: scale(1.045); }
+.pick-card .pick-body { padding: 12px 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+.pick-card .pick-body h3 { font-family: var(--font-display); font-weight: 600; font-size: 15.5px; line-height: 1.3; letter-spacing: -.01em; margin: 0; color: var(--fg); }
+.pick-card:hover .pick-body h3 { color: var(--brand-ink); }
+@media (min-width: 900px) { .picks-strip { grid-auto-flow: initial; grid-template-columns: repeat(5, 1fr); overflow: visible; margin: 0; padding-left: 0; padding-right: 0; } }
+
+/* ---- Magazine section fallback placeholder ------------------------------ */
+.mag-ph {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  border: 1px dashed var(--line-strong); border-radius: var(--r-md); background: var(--surface-2);
+  padding: 22px 24px; color: var(--muted); font-size: 15px; line-height: 1.55;
+}
+.mag-ph a { font-weight: 650; color: var(--brand); white-space: nowrap; }
+.mag-ph a:hover { color: var(--brand-ink); }
+
 /* ---- Category chips ----------------------------------------------------- */
 .cat-chips { display: flex; flex-wrap: wrap; gap: 12px; }
 .cat-chip {
