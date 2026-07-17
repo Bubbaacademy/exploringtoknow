@@ -64,16 +64,13 @@ export default async function HomePage() {
             </p>
             <div className="hero-actions">
               <Link href="/explore" className="btn btn-lg">Read the latest guides</Link>
-              <Link href="/request-product" className="btn btn-ghost btn-lg">Request a Review</Link>
+              <Link href="/buying-guides" className="btn btn-ghost btn-lg">Browse buying guides</Link>
             </div>
             <div className="hero-trust">
               <span>Manually researched</span>
               <span>Human-reviewed</span>
               <span>No sponsored rankings</span>
             </div>
-            <p className="hero-saas">
-              For brands &amp; publishers: <Link href="/signup">build your own content-commerce workspace →</Link>
-            </p>
           </div>
         </div>
       </section>
@@ -176,23 +173,6 @@ export default async function HomePage() {
                 <p>{s.d}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Request a review */}
-      <section className="section">
-        <div className="container">
-          <div className="promo">
-            <div className="promo-inner">
-              <span className="eyebrow">For readers &amp; brands</span>
-              <h2>Want a specific product reviewed?</h2>
-              <p>Submit a product and our editors will consider it for a hands-on guide. Every request is reviewed by a human — nothing is published automatically.</p>
-              <div className="hero-actions">
-                <Link href="/request-product" className="btn btn-accent btn-lg">Request a Review</Link>
-                <Link href="/categories" className="btn btn-ghost btn-lg">Explore categories</Link>
-              </div>
-            </div>
           </div>
         </div>
       </section>
