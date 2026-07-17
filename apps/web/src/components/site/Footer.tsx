@@ -2,11 +2,10 @@ import Link from 'next/link';
 import { AFFILIATE_DISCLOSURE, SITE_NAME } from '@/lib/public';
 import { Brand } from './Brand';
 import { NewsletterSignup } from './NewsletterSignup';
-import { PRIMARY_NAV, CTA, ABOUT_NAV, LEGAL_NAV, TOPICS_HREF, SEARCH_HREF, LOGIN_HREF, SIGNUP_HREF, saasCta } from '@/lib/nav';
+import { PRIMARY_NAV, ABOUT_NAV, LEGAL_NAV, TOPICS_HREF, SEARCH_HREF, LOGIN_HREF } from '@/lib/nav';
 
 export function Footer() {
   const year = 2026;
-  const cta = saasCta(process.env.PUBLIC_SIGNUP_ENABLED === 'true');
   return (
     <footer className="site-footer">
       <div className="container">
@@ -24,21 +23,11 @@ export function Footer() {
             <Link href="/">Home</Link>
             <Link href={TOPICS_HREF}>Topics</Link>
             {PRIMARY_NAV.map((l) => <Link key={l.href} href={l.href}>{l.label}</Link>)}
+            <Link href={SEARCH_HREF}>Search</Link>
           </div>
           <div className="footer-col">
             <h4>Company</h4>
             {ABOUT_NAV.map((l) => <Link key={l.href} href={l.href}>{l.label}</Link>)}
-          </div>
-          <div className="footer-col">
-            <h4>Get involved</h4>
-            <Link href={CTA.href}>{CTA.label}</Link>
-            <Link href={SEARCH_HREF}>Search</Link>
-          </div>
-          <div className="footer-col">
-            <h4>For businesses</h4>
-            <Link href={SIGNUP_HREF}>Create your workspace</Link>
-            <Link href={SIGNUP_HREF}>{cta.label}</Link>
-            <Link href={LOGIN_HREF}>Log in</Link>
           </div>
         </div>
 
@@ -50,7 +39,7 @@ export function Footer() {
 
         <div className="footer-bottom">
           <span>© {year} {SITE_NAME}. All rights reserved.</span>
-          <span className="meta">Independently reviewed · Reader-supported · <Link href="/affiliate-disclosure">Affiliate disclosure</Link></span>
+          <span className="meta">Independently reviewed · Reader-supported · <Link href="/affiliate-disclosure">Affiliate disclosure</Link> · <Link href={LOGIN_HREF} className="footer-staff">Staff login</Link></span>
         </div>
       </div>
     </footer>
