@@ -183,6 +183,7 @@ export function SiteNav({ groups }: { groups: TopicGroup[] }) {
           </div>
         </div>
 
+        <Link href="/" className="etk-navlink">Home</Link>
         {PRIMARY_NAV.map((l) => (
           <Link key={l.href} href={l.href} className="etk-navlink">{l.label}</Link>
         ))}
@@ -244,6 +245,7 @@ export function SiteNav({ groups }: { groups: TopicGroup[] }) {
           <SearchForm id="etk-mobile-search" onSubmitNavigate={() => setDrawerOpen(false)} />
 
           <nav className="etk-drawer-nav" aria-label="Mobile">
+            <Link href="/" className="etk-drawer-link" onClick={() => setDrawerOpen(false)}>Home</Link>
             {PRIMARY_NAV.map((l) => (
               <Link key={l.href} href={l.href} className="etk-drawer-link" onClick={() => setDrawerOpen(false)}>{l.label}</Link>
             ))}
