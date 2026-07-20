@@ -1,8 +1,40 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-07-16 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-07-20 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `a267905` (`a26790578f9b0b6bc2846e185db7fd8fea719190`) (Phase 2B/3A QA — Sidebar Active-State Fix + intake
+**Production HEAD: `73b1238` (`73b1238dd53f16904ad29d9d85f990976cccdce5`) (Phase 2D — ExploringToKnow Magazine Front Page —
+DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:5e14c2b6…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
+Phase 2D rebuilds the **public ExploringToKnow homepage as an editorial magazine front page** (media/publishing layer;
+`bubbaaffiliate.com` stays the separate business gateway, `/app` the internal operator/editorial console). **New homepage
+sections**, all reusing existing article/category data via existing read helpers (no new data/schema): a stronger **editorial
+hero** ("Explore smarter. Buy better. Know before you choose."), a **Cover Story** feature, a **Worth Reading Now / Trending**
+grid, an **Explore Picks** editorial strip, six **magazine category sections** (Home & Living, Beauty & Style, Tech & Everyday
+Gear, Family & Pets, Food & Kitchen, Buying Guides), a **Browse by category** chip cloud, a "how every guide is made" trust
+block, and the **newsletter** signup. Articles are deduped across sections; thin sections show **graceful editorial
+placeholders** (never fabricated content). Public **nav** gains a **Home** link and stays magazine/category-focused (Topics ·
+Home · Buying Guides · Product Reviews · Explore Picks · Search). **Public SaaS/workspace/business CTAs remain removed** (no
+Start Free Trial, no Request a Review, no "content-commerce workspace", no public Log in in the header); **Staff Login remains
+low-visibility in the footer only**. `/login` and `/app` remain fully functional (auth-gated). **Purely public UI/copy/nav — 3
+files (`apps/web/src/app/(site)/page.tsx`, `apps/web/src/app/(site)/site.css`, `apps/web/src/components/site/SiteNav.tsx`); NO
+schema, migration, DB, env, provider, credential, OAuth, token, Google Ads, Meta Ads, Caddy/domain, BubbaAffiliate gateway,
+ContactMessages, or intake-API change.** Builds on the Phase 2C public reposition (`f8aeefe`, the immediate prior production
+HEAD). Merged to `main` via PR #7 (`8c4872d` under merge `73b1238`). Delivered to the VPS by git bundle over SSH
+(SHA256-verified; `git bundle verify` passed), working tree fast-forwarded `f8aeefe → 73b1238`, deployed with the standard
+`infra/server/deploy-app.sh` (**app-only**). **Verified live:** build passed (deployed image `5e14c2b6`; stale-image guard
+passed — running == freshly built); migrate ran as an observable **no-op** (`migrations up to date`, 26 → 26); **only `etk-app`
+was force-recreated** (`--no-deps`) → **healthy**; **worker/Postgres/Caddy were NOT restarted** (unchanged `StartedAt
+2026-07-14T00:22:20Z`) and **no Caddy config changed**; `GET https://exploringtoknow.com/api/health` → HTTP 200; homepage `/`
+→ 200 rendering the magazine front page (editorial hero, Cover Story, Worth Reading Now, all six category sections, Browse by
+category verified in live HTML); header shows **Home** with **no public Log in** (count 0); Start Free Trial / Request a Review /
+"content-commerce workspace" / My Workspace all **absent**; **Staff Login** present low-visibility in the footer; `/login` → 200
+and `/app` → 307 → /login (auth-gated); `bubbaaffiliate.com/`, `/sellers`, `/creators` all **200 (unchanged)**. **Content note:**
+production currently has only ~3 published articles, so the **Explore Picks** strip and the six category sections presently
+render their **graceful placeholders** (the Cover Story + Trending grid consume the available articles) — these sections fill in
+automatically as more content is published; the magazine structure is fully live. Pre-deploy: isolated VPS/Linux **build-only**
+validation of `8c4872d` passed (throwaway image `etk-web:phase2d-validate`, isolated `git archive` extraction, real rebuild —
+typecheck + lint + `next build` green, 44/44 static pages, cleaned up; live app/DB untouched).
+**Prior — `a267905` (`a26790578f9b0b6bc2846e185db7fd8fea719190`) (Phase 2B/3A QA — Sidebar Active-State Fix + intake
 empty-state copy — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:f26a4cf6…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
 Small QA follow-up to the internal intake command center: the `/app` workspace sidebar now **highlights the nav item matching
@@ -218,12 +250,13 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `a267905` (Phase 2B/3A QA sidebar-active-fix merge, PR #5;
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `73b1238` (Phase 2D magazine front-page merge, PR #7;
 app-only build & deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` +
 `www`; backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `a267905`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: before the sidebar fix `68575b2` (prior production HEAD; Phase 2B/3A internal intake — app-only rollback,
-redeploy that commit with `deploy-app.sh`); before Phase 2B/3A `745d8a6` (Phase 1C — app-only rollback, redeploy that commit
+`Bubbaacademy/exploringtoknow` holds `main` @ `73b1238`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: before Phase 2D `f8aeefe` (prior production HEAD; Phase 2C public-magazine reposition — app-only rollback,
+redeploy that commit with `deploy-app.sh`); before Phase 2C `a267905` (Phase 2B/3A QA sidebar fix); before the sidebar fix
+`68575b2` (Phase 2B/3A internal intake); before Phase 2B/3A `745d8a6` (Phase 1C — app-only rollback, redeploy that commit
 with `deploy-app.sh`); before Phase 1C
 `432c502` (Phase 1B/2A) — for a Caddy-only rollback, restore the `.bak-*` file and `caddy reload`; before Phase
 1B/2A `2daa0f2` (Phase 1A); before Phase 1A `ace3cea`; before blocked-state fix `eb8e91b`; before Phase 33 `c7da882`; before
