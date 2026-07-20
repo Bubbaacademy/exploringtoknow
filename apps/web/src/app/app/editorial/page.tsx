@@ -1,5 +1,5 @@
 import { requireWorkspace, wsList, wsCount } from '@/lib/workspace';
-import { TopBar, Section, Stat, Card, Empty, StatusBadge, WsLink, fmtDate } from '../_ui';
+import { TopBar, Section, Stat, Card, Empty, StatusBadge, EditorialStatusBadge, WsLink, fmtDate } from '../_ui';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +46,7 @@ export default async function EditorialPage() {
           <div className="adm-cols">
             <Stat label="Requests waiting" value={reqWaiting} tone={reqWaiting > 0 ? 'attn' : undefined} />
             <Stat label="Drafts" value={drafts} />
-            <Stat label="Ready for review" value={review} tone={review > 0 ? 'attn' : undefined} />
+            <Stat label="In review" value={review} tone={review > 0 ? 'attn' : undefined} />
             <Stat label="Published" value={published} tone="good" />
             <Stat label="Generation runs" value={runs} />
           </div>
@@ -70,11 +70,11 @@ export default async function EditorialPage() {
             )) : <Empty>No products yet — they appear here after an editor approves a request.</Empty>}
           </Card>
         </Section>
-        <Section title="In the queue">
-          <Card title="Drafts & ready-for-review">
+        <Section title="In the queue" action={<WsLink href="/app/articles">Open the article desk</WsLink>}>
+          <Card title="Drafts & in review">
             {reviewDocs.length ? reviewDocs.map((a) => (
-              <div key={String(a.id)} className="adm-row"><span className="t">{(a.title as string) || '(untitled)'}</span><StatusBadge status={String(a.editorialStatus)} /></div>
-            )) : <Empty>Nothing in the editorial queue yet. Intake a seller offer to begin.</Empty>}
+              <div key={String(a.id)} className="adm-row"><span className="t">{(a.title as string) || '(untitled)'}</span><EditorialStatusBadge status={String(a.editorialStatus)} /></div>
+            )) : <Empty>Nothing in the editorial queue yet. Start an article request to begin — an editor reviews every step.</Empty>}
           </Card>
         </Section>
         <Section title="Recent generation runs">
