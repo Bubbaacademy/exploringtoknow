@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_NAME, SITE_URL } from '@/lib/public';
-import { CTA } from '@/lib/nav';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,8 +52,8 @@ export default function AffiliateDisclosurePage() {
 
         <h2>Questions</h2>
         <p>
-          If anything here isn’t clear, or you’d like a product reviewed, you can always
-          {' '}<Link href={CTA.href}>request a review</Link>.
+          If anything here isn’t clear, you can <Link href="/contact">contact us</Link> and an editor will get back
+          to you.
         </p>
       </div>
 

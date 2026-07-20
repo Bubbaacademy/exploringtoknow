@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_NAME, SITE_URL } from '@/lib/public';
-import { CTA } from '@/lib/nav';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,15 +53,16 @@ export default function AboutPage() {
           with permission. We do not use paid AI image-generation services to fabricate product imagery.
         </p>
 
-        <h2>Request a review</h2>
+        <h2>How we choose what to cover</h2>
         <p>
-          Want a specific product covered? Anyone can <Link href={CTA.href}>request a review</Link>. Every request
-          is read by an editor before any guide is created or published.
+          Our editors decide what to cover based on what readers are actually trying to choose between — not on who
+          is paying. Every guide is researched and reviewed by a person before it is published, and nothing is
+          published automatically.
         </p>
       </div>
 
       <div className="doc-cta">
-        <Link href={CTA.href} className="btn btn-accent">{CTA.label}</Link>
+        <Link href="/explore-picks" className="btn btn-accent">Explore more guides</Link>
         <Link href="/categories" className="btn btn-ghost">Browse topics</Link>
       </div>
     </article>

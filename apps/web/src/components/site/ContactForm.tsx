@@ -64,7 +64,7 @@ export function ContactForm() {
       <button className="btn btn-accent btn-lg btn-block" type="submit" disabled={state === 'sending'} aria-busy={state === 'sending'}>
         {state === 'sending' ? 'Sending…' : 'Send message'}
       </button>
-      <p className="hint" style={{ marginTop: 12, textAlign: 'center' }}>We typically reply to genuine inquiries. Suggesting a product? You can also use the <a href="/request-product">request form</a>.</p>
+      <p className="hint" style={{ marginTop: 12, textAlign: 'center' }}>We typically reply to genuine inquiries.</p>
     </form>
   );
 }

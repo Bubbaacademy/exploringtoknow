@@ -21,7 +21,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly' as const,
       priority: 0.6,
     })),
-    { url: `${SITE_URL}/request-product`, changeFrequency: 'monthly', priority: 0.4 },
+    // `/request-product` and `/signup` are intentionally absent: both are
+    // unlinked, noindexed operational routes, not public magazine surface.
     { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${SITE_URL}/editorial-policy`, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${SITE_URL}/affiliate-disclosure`, changeFrequency: 'yearly', priority: 0.3 },

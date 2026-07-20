@@ -2,9 +2,11 @@
  * Shared navigation configuration for the public site.
  *
  * - Primary nav links + magazine section links (see `lib/sections.ts`).
- * - `CTA` ("Request a Review") is a reader-facing editorial entry point. As of
- *   Phase 2E it is NO LONGER rendered on the magazine section or category pages;
- *   it remains available to the trust/editorial pages that still reference it.
+ * - There is NO public call-to-action. Phase 2F removed the last "Request a
+ *   Review" CTA from the public magazine: ExploringToKnow reads as an
+ *   independent publication, so public pages link only to more editorial
+ *   content. The `/request-product` route still exists and still works, but it
+ *   is unlinked and noindexed — it is not promoted as public magazine surface.
  * - Topic (category) grouping for the Topics mega menu. The grouping is ONLY a
  *   presentation map keyed by category slug — the categories themselves always
  *   come from the real database (see `listActiveCategories`). Any active category
@@ -33,9 +35,6 @@ export const PRIMARY_NAV: NavLink[] = [
  * can never drift apart.
  */
 export const SECTION_LINKS: NavLink[] = VERTICAL_SECTIONS.map((s) => ({ label: s.title, href: `/${s.slug}` }));
-
-/** The ONE primary call-to-action. Label is standardized everywhere. */
-export const CTA: NavLink = { label: 'Request a Review', href: '/request-product' };
 
 /**
  * Internal/staff login entry point. The public magazine chrome intentionally does

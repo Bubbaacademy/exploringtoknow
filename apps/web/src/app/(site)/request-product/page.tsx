@@ -4,10 +4,18 @@ import { RequestProductForm } from '@/components/site/RequestProductForm';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Unlinked, noindexed submission route (Phase 2F). The page and its intake path
+ * are unchanged and fully functional at the direct URL, but ExploringToKnow's
+ * public magazine surface no longer promotes or links to it, and it is excluded
+ * from the sitemap — the public site reads as an independent publication, not a
+ * submission funnel.
+ */
 export const metadata: Metadata = {
   title: `Request a product review — ${SITE_NAME}`,
   description: 'Submit a product for editorial review. Every request is reviewed by an editor before any article is created or published.',
   alternates: { canonical: `${SITE_URL}/request-product` },
+  robots: { index: false, follow: false },
 };
 
 export default async function RequestProductPage() {

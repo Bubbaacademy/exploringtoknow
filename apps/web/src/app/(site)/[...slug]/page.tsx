@@ -11,7 +11,6 @@ import {
   ARTICLE_AFFILIATE_DISCLOSURE,
   type Doc,
 } from '@/lib/public';
-import { CTA } from '@/lib/nav';
 import { AffiliateCTA } from '@/components/site/AffiliateCTA';
 import { ArticleCard } from '@/components/site/ArticleCard';
 import { ReadingProgress } from '@/components/site/ReadingProgress';
@@ -165,7 +164,7 @@ export default async function ArticlePage({ params }: Args) {
             ) : (
               <Link href="/categories" className="btn btn-ghost">Browse all topics</Link>
             )}
-            <Link href={CTA.href} className="btn btn-accent">{CTA.label}</Link>
+            <Link href="/explore-picks" className="btn btn-accent">Explore more guides</Link>
           </div>
         </section>
 
