@@ -58,7 +58,7 @@ export default async function ConfirmPage({ searchParams }: Args) {
             </>
           )}
           <div className="empty-panel-actions">
-            <Link href="/explore" className="btn btn-accent">Explore guides</Link>
+            <Link href="/explore-picks" className="btn btn-accent">Explore guides</Link>
             <Link href="/" className="btn btn-ghost">Back to home</Link>
           </div>
         </div>

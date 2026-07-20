@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Brand } from './Brand';
-import { PRIMARY_NAV, TOPICS_HREF, SEARCH_HREF, type TopicGroup } from '@/lib/nav';
+import { PRIMARY_NAV, SECTION_LINKS, TOPICS_HREF, SEARCH_HREF, type TopicGroup } from '@/lib/nav';
 
 /* ---- icons (inline, no runtime font/icon dependency) ---- */
 function SearchIcon() {
@@ -178,6 +178,10 @@ export function SiteNav({ groups }: { groups: TopicGroup[] }) {
               ))}
             </div>
             <div className="etk-mega-foot">
+              {/* Magazine sections — stable public routes, never raw category slugs. */}
+              {SECTION_LINKS.map((s) => (
+                <Link key={s.href} href={s.href} className="etk-viewall">{s.label}</Link>
+              ))}
               <Link href={TOPICS_HREF} className="etk-viewall">View all topics →</Link>
             </div>
           </div>
@@ -251,6 +255,15 @@ export function SiteNav({ groups }: { groups: TopicGroup[] }) {
             ))}
             <Link href={TOPICS_HREF} className="etk-drawer-link" onClick={() => setDrawerOpen(false)}>All Topics</Link>
           </nav>
+
+          <div className="etk-drawer-topics">
+            <div className="etk-drawer-heading">Magazine sections</div>
+            <nav className="etk-drawer-nav" aria-label="Magazine sections">
+              {SECTION_LINKS.map((s) => (
+                <Link key={s.href} href={s.href} className="etk-drawer-link" onClick={() => setDrawerOpen(false)}>{s.label}</Link>
+              ))}
+            </nav>
+          </div>
 
           <div className="etk-drawer-topics">
             <div className="etk-drawer-heading">Browse by topic</div>
