@@ -14,13 +14,17 @@ export default async function MediaPage() {
   ]);
   return (
     <>
-      <TopBar title="Media" sub="Images in your workspace. Listing is scoped to you; uploads stay private to your workspace." />
+      <TopBar title="Media" sub="Images available to the magazine. An article's hero image is set on the article itself in Payload /admin." />
       <div className="adm-content">
         <div style={{ marginBottom: 16 }}>
-          <ComingSoon>Direct media upload is coming next. Images are added with offer submissions, with permission confirmation — no AI-generated imagery.</ComingSoon>
+          <ComingSoon>Direct upload from this console is coming next; images are uploaded in Payload <b>/admin</b> today. Every image is a real photograph used with permission — no AI-generated product imagery. Alt text is required for accessibility and is worth filling in before an article goes live.</ComingSoon>
         </div>
         <Card title={`${docs.length} image${docs.length === 1 ? '' : 's'}`}>
-          <DataTable head={['Alt text', 'Filename', 'Source', 'Added']} rows={rows} empty="No media yet. Images are added with your product submissions." />
+          <DataTable
+            head={['Alt text', 'Filename', 'Source', 'Added']}
+            rows={rows}
+            empty="No media yet. Images are uploaded in Payload /admin, or arrive with a product submission."
+          />
         </Card>
       </div>
     </>
