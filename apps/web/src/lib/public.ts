@@ -404,7 +404,8 @@ export async function listPublishedArticlesBySectionCategories(
   });
   if (!cats.docs.length) return { articles: [], categories: [] };
 
-  const ids = cats.docs.map((c) => c.id);
+  const catDocs: Doc[] = cats.docs;
+  const ids = catDocs.map((c) => c.id);
   const [res, counts] = await Promise.all([
     payload.find({
       collection: 'articles',
@@ -413,18 +414,17 @@ export async function listPublishedArticlesBySectionCategories(
       limit: opts.limit ?? 48,
       depth: 1,
     }),
-    Promise.all(cats.docs.map((c) => countPublishedInCategory(c.id))),
+    Promise.all(catDocs.map((c) => countPublishedInCategory(c.id))),
   ]);
 
   // Preserve the editorial order declared in the section map, then surface the
   // categories that actually have published content first.
   const order = new Map(slugs.map((s, i) => [s, i]));
-  const enriched: Array<Doc & { articleCount: number }> = cats.docs
-    .map((c, i) => ({ ...c, articleCount: counts[i] ?? 0 }))
-    .sort((a, b) =>
-      (b.articleCount > 0 ? 1 : 0) - (a.articleCount > 0 ? 1 : 0)
-      || (order.get(String(a.slug)) ?? 999) - (order.get(String(b.slug)) ?? 999),
-    );
+  const enriched: Array<Doc & { articleCount: number }> = catDocs.map((c, i) => ({ ...c, articleCount: counts[i] ?? 0 }));
+  enriched.sort((a, b) =>
+    (b.articleCount > 0 ? 1 : 0) - (a.articleCount > 0 ? 1 : 0)
+    || (order.get(String(a.slug)) ?? 999) - (order.get(String(b.slug)) ?? 999),
+  );
 
   return { articles: res.docs, categories: enriched };
 }
