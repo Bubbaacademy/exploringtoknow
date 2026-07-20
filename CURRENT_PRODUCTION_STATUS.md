@@ -2,7 +2,64 @@
 
 _Updated: 2026-07-20 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `73b1238` (`73b1238dd53f16904ad29d9d85f990976cccdce5`) (Phase 2D — ExploringToKnow Magazine Front Page —
+**Production HEAD: `aed2444` (`aed244476f44c23644e1b0023193140f3ed2df94`) (Phase 2E — ExploringToKnow Magazine Section
+Pages — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:43fbcac3…`) healthy; payload_migrations 26 (→ after=26, `migrations up to date`, no new
+migration).**
+Phase 2E gives the public magazine **real editorial section pages**, so ExploringToKnow reads as a complete publication
+rather than a homepage. **Eight public section routes, all verified 200 live:** `/home-living`, `/beauty-style`, `/tech`,
+`/family-pets`, `/food-kitchen`, `/buying-guides`, `/product-reviews`, `/explore-picks`. **URL canonicalization:** the
+previously live `/reviews` and `/explore` were renamed to their canonical public names and kept as **permanent 308
+redirects** (`/reviews` → `/product-reviews`, `/explore` → `/explore-picks`, both verified live with `Location`) declared in
+`apps/web/next.config.ts` — one canonical URL per section, existing links and search equity preserved. The two rules match
+paths served only by the magazine; **`middleware.ts` (which owns host-aware gateway rewrites) was NOT touched** and the
+`bubbaaffiliate.com` gateway exposes only `/`, `/sellers`, `/creators`, `/pricing`, `/how-it-works`, so gateway routing
+cannot be affected. **Section mapping layer** (`apps/web/src/lib/sections.ts`): public section routes are stable,
+human-readable URLs **deliberately decoupled from DB category slugs** (operational taxonomy that may change). Every
+`categorySlugs` entry was verified against the **committed seed migration `20260614_214148`** (not guessed, no DB query);
+every `types` entry is a real `Articles.type` option. Sections are exported as **named constants** so each route binds
+statically — a typo is a compile error, not a render-time failure. Nav links point only at real app-router files, **never at
+a raw category slug**, so a taxonomy change cannot 404 the nav. **Content reuse — no fabricated records:** verticals resolve
+slugs → active categories → published articles via the new read-only helper `listPublishedArticlesBySectionCategories`
+(published-gated, reuses `countPublishedInCategory`); listing sections reuse the existing `listPublishedArticlesByTypes`; a
+missing/deactivated slug simply contributes nothing instead of throwing. **Thin sections degrade honestly** — a feature card
+without a grid, or a "More {Section} guides are coming soon" panel explaining the human-review gate; topic chips only ever
+show categories with `articleCount > 0`, so a chip never leads to an empty page. **Homepage + nav:** the homepage now
+consumes the shared section map instead of its own duplicate copy (front page and section pages cannot drift), and "View all
+→" opens the real section page rather than a raw `/category/<slug>` link; the Topics mega menu and mobile drawer gained a
+magazine-sections row; the sitemap emits the canonical section URLs and **omits the retired paths** (verified live: all eight
+present, `/reviews` and `/explore` absent). **Public CTA cleanup:** the **"Request a Review" CTA was removed** from the
+magazine section and category pages. **Purely public UI / routing / copy — 22 files** (new `lib/sections.ts`,
+`components/site/MagazineSection.tsx`, 7 section routes; modified `lib/public.ts`, `lib/nav.ts`, `SiteNav.tsx`, `sitemap.ts`,
+`next.config.ts`, homepage, `category/[slug]`, + 4 link updates); **zero new CSS** (reuses existing site classes); **NO
+schema, migration, DB, env, provider, credential, OAuth, token, Google Ads, Meta Ads, Caddy, domain-routing, middleware,
+BubbaAffiliate gateway, ContactMessages, intake-API, or `/app` change.** Builds on the Phase 2D magazine front page
+(`73b1238`, the immediate prior production HEAD). Merged to `main` via **PR #8** (`317b116` feature + `6fa63ad` typecheck fix,
+under merge `aed2444`). Delivered to the VPS by git bundle over SSH (SHA256 matched both ends; `git bundle verify` passed),
+working tree fast-forwarded `73b1238 → aed2444` (verified ancestor, clean fast-forward), deployed with the standard
+`infra/server/deploy-app.sh` (**app-only**, no `SKIP_MIGRATE`). **Verified live:** build passed (deployed image `43fbcac3`;
+stale-image guard passed — running == freshly built); migrate ran as an observable **no-op** (`migrations up to date`, 26);
+**only `etk-app` was force-recreated** (`--no-deps`) → **healthy**; **Postgres, worker and Caddy were NOT restarted**
+(unchanged `StartedAt 2026-07-14T00:22:20Z`) and the **live Caddyfile hash was byte-identical before and after**
+(`707a062de883706bd14d7bb43808ff96`, no config change, no reload); `GET https://exploringtoknow.com/api/health` → HTTP 200
+`{"status":"ok","service":"web","missingEnv":[]}`; homepage `/` → 200; **all eight section routes → 200**; both redirects →
+**308** with correct `Location`; `/search` → 200; `/login` → 200; `/app` → **307 → /login** (auth-gated). **Public-surface
+scan of the homepage + all eight section pages returned count 0 for every one of:** "Request a Review", "Start Free Trial",
+"My Workspace", "content-commerce workspace", "BubbaAffiliate", "Become a Creator", "Submit Your Offer", "free trial";
+**public header Log in count 0**; **Staff Login present low-visibility in the footer only**. `bubbaaffiliate.com/`,
+`/sellers`, `/creators` all **200 (unchanged)**. **Content note:** production still has only ~3 published articles, so most
+section pages currently render their **graceful "coming soon" placeholders** (verified on `/tech`) — the magazine structure
+is fully live and sections fill in automatically as content is published. **⚠️ Slug reservation:** the static section routes
+now **reserve the slugs** `tech`, `home-living`, `beauty-style`, `family-pets`, `food-kitchen`, `buying-guides`,
+`product-reviews` and `explore-picks`. A published article using one of these exact slugs would be shadowed by its section
+page (articles render at root-level `/{slug}` via the `[...slug]` catch-all, and static routes win). **Do not use these exact
+slugs for article pages.** Pre-deploy: isolated VPS/Linux **build-only** validation passed (throwaway image
+`etk-web:phase2e-validate`, isolated bare-repo + `git archive` extraction to `/tmp`, real rebuild — typecheck + lint +
+`next build` green, all 8 routes and both 308 rules confirmed in the built `routes-manifest.json`, cleaned up; live app/DB
+untouched). The **first validation build correctly FAILED** typecheck (`Property 'slug' does not exist` in `lib/public.ts` —
+a chained `.map().sort()` inferring from Payload's narrowly-typed `find()` result), fixed in `6fa63ad` and re-validated green
+— the same gate that caught the Phase 1C `noUncheckedIndexedAccess` error.
+**Prior — `73b1238` (`73b1238dd53f16904ad29d9d85f990976cccdce5`) (Phase 2D — ExploringToKnow Magazine Front Page —
 DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:5e14c2b6…`) healthy; payload_migrations 26 (before=26 → after=26, no new migration).**
 Phase 2D rebuilds the **public ExploringToKnow homepage as an editorial magazine front page** (media/publishing layer;
@@ -219,7 +276,7 @@ Brand Kit `/app/brand` (Phase 22) all unchanged. No binary upload yet. Email + b
 ## Live now — all green
 | Component | Status |
 |---|---|
-| Public site — https://exploringtoknow.com | UP |
+| Public site — https://exploringtoknow.com | UP (magazine front page + 8 section pages) |
 | /api/health | `ok` |
 | /admin (Payload) | accessible; first admin user created |
 | Next.js web container (etk-app) | healthy |
@@ -250,11 +307,13 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `73b1238` (Phase 2D magazine front-page merge, PR #7;
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `aed2444` (Phase 2E magazine section-pages merge, PR #8;
 app-only build & deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` +
 `www`; backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `73b1238`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: before Phase 2D `f8aeefe` (prior production HEAD; Phase 2C public-magazine reposition — app-only rollback,
+`Bubbaacademy/exploringtoknow` holds `main` @ `aed2444`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: before Phase 2E `73b1238` (prior production HEAD; Phase 2D magazine front page — app-only rollback, redeploy
+that commit with `deploy-app.sh`; note this also restores `/reviews` + `/explore` as pages and removes the 308 redirects);
+before Phase 2D `f8aeefe` (Phase 2C public-magazine reposition — app-only rollback,
 redeploy that commit with `deploy-app.sh`); before Phase 2C `a267905` (Phase 2B/3A QA sidebar fix); before the sidebar fix
 `68575b2` (Phase 2B/3A internal intake); before Phase 2B/3A `745d8a6` (Phase 1C — app-only rollback, redeploy that commit
 with `deploy-app.sh`); before Phase 1C
