@@ -2,7 +2,58 @@
 
 _Updated: 2026-07-20 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `aed2444` (`aed244476f44c23644e1b0023193140f3ed2df94`) (Phase 2E — ExploringToKnow Magazine Section
+**Production HEAD: `eabf8b3` (`eabf8b3d5d61652763bda27ab2a8ec31ab6c0d82`) (Phase 2F — ExploringToKnow Deep Public Page
+Polish — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:65c8e1cb…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+no new migration).**
+Phase 2F polished the **remaining public ExploringToKnow deep pages** so the entire public site reads as **one consistent
+editorial magazine** rather than a SaaS / workspace / seller / creator / business-intake site. **Public deep pages verified
+live (all 200):** `/about`, `/editorial-policy`, `/affiliate-disclosure`, `/privacy`, `/terms`, `/contact`, a **real article
+page** (`/tired-of-bra-lines-…`, forbidden-CTA count 0) and a **real category page** (`/category/appliances`). **The last
+"Request a Review" CTAs were removed from the public magazine surface:** `/about` — the request block became **"How we choose
+what to cover"** (editorial independence) with an **"Explore more guides"** link; `/editorial-policy` — corrections now route
+to `/contact`, the intake-promoting "Reader requests" block became **"How coverage is decided"**, footer link **"Read more
+buying guides"**; `/affiliate-disclosure` — "request a review" became **"contact us"**; **article pages** — end-of-article CTA
+became **"Explore more guides"**; `/contact` + `ContactForm` — request-form pointers removed. The **`CTA` export in
+`lib/nav.ts` was deleted outright** (zero consumers remain), so the public magazine now has **no call-to-action at all** —
+only passive editorial links. **Two operational routes were demoted off the public magazine surface** (not deleted, not
+broken): **`/request-product`** and **`/signup`** now carry **`robots: noindex, nofollow`** (verified live) and are **removed
+from the sitemap** (verified: 0 occurrences each); both still return **200 at their direct URLs** and remain fully
+functional — the intake path, `SignupForm` and the signup API are **UNCHANGED**. `/signup` had been **publicly crawlable with
+a canonical URL** serving "content-commerce workspace" / "Free N-day trial" / "No credit card" / "Request early access"
+marketing **inside the magazine chrome**; it is now noindexed and reframed as neutral account setup. `/login` — the "New here?
+Create a workspace" link removed; **`/login` itself still works (200) and is `noindex, nofollow`**. **Homepage 200** and **all
+eight magazine section pages still 200** (`/home-living`, `/beauty-style`, `/tech`, `/family-pets`, `/food-kitchen`,
+`/buying-guides`, `/product-reviews`, `/explore-picks`); **`/reviews` still 308 → `/product-reviews`** and **`/explore` still
+308 → `/explore-picks`**; `/search` and `/categories` 200; **`/app` → 307 → /login** (auth-gated); **Staff Login present
+exactly once per page, footer-only and low-visibility**. **Live forbidden-CTA scan across 17 public pages returned count 0 for
+every one of:** "Request a Review", "Request early access" / "Request Access", "Start Free Trial" / "free trial", "Create a
+workspace" / "Create my workspace", "My Workspace", "content-commerce", "BubbaAffiliate", "Become a Creator", "Submit Your
+Offer", and **public header Log in**. **Purely public copy/metadata — 11 files** (`about`, `editorial-policy`,
+`affiliate-disclosure`, `[...slug]`, `contact`, `request-product`, `signup`, `sitemap.ts`, `ContactForm.tsx`,
+`LoginForm.tsx`, `lib/nav.ts`); **zero CSS, no new dependencies, no new intake form, no new CTA, no fabricated content**;
+**NO schema, migration, DB, env, provider, credential, OAuth, token, Google Ads, Meta Ads, Caddy, domain-routing,
+middleware, BubbaAffiliate gateway, ContactMessages, intake-API, or `/app` change.** Merged to `main` via **PR #9**
+(`c6c95e7` under merge `eabf8b3`). Delivered to the VPS by git bundle over SSH (SHA256 matched both ends; `git bundle verify`
+passed), working tree fast-forwarded `aed2444 → eabf8b3` (verified ancestor, clean fast-forward), deployed with the standard
+`infra/server/deploy-app.sh` (**app-only**, no `SKIP_MIGRATE`). **Verified live:** build passed (`✓ Compiled successfully`;
+deployed image `65c8e1cb`; stale-image guard passed — running == freshly built); migrate ran as an observable **no-op**
+(`migrations up to date`, before=26 → after=26; live count independently confirmed **26**); **only `etk-app` was
+force-recreated** (`--no-deps`) → **healthy**; **Postgres, worker and Caddy were NOT restarted** (unchanged `StartedAt
+2026-07-14T00:22:20Z`) and the **live Caddyfile hash was byte-identical before and after**
+(`707a062de883706bd14d7bb43808ff96`, no config change, no reload); `GET https://exploringtoknow.com/api/health` → HTTP 200
+`{"status":"ok","service":"web","missingEnv":[]}`; `bubbaaffiliate.com/`, `/sellers`, `/creators` all **200 (unchanged)**.
+**Follow-up note:** if a stricter cleanup is wanted later, `/request-product` and `/signup` can be removed or moved to their
+own non-magazine layout — they are currently **noindex/nofollow, unlinked and unpromoted**, reachable only by direct URL.
+Two deliberate, approved carve-outs remain behind that noindex: `/request-product` still renders `<h1>Request a Review</h1>`
+and `SignupForm` still shows a "Create my workspace" button — neither appears on any indexed magazine page (the 17-page live
+scan is clean). Pre-deploy: isolated VPS/Linux **build-only** validation of `c6c95e7` passed (throwaway image
+`etk-web:phase2f-validate`, isolated bare-repo + `git archive` extraction to `/tmp`, real rebuild — typecheck + lint +
+`next build` green; all 27 `(site)` routes compiled, all 8 section pages present, both 308 rules confirmed in the built
+`routes-manifest.json`, `index:!1` confirmed in the compiled `/signup` + `/request-product` bundles with `/about` correctly
+still indexable, and compiled-bundle scans of `/about`, `/editorial-policy`, `/affiliate-disclosure`, `/contact` and
+`[...slug]` returning 0 forbidden-string hits; cleaned up; live app/DB untouched).
+**Prior — `aed2444` (`aed244476f44c23644e1b0023193140f3ed2df94`) (Phase 2E — ExploringToKnow Magazine Section
 Pages — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:43fbcac3…`) healthy; payload_migrations 26 (→ after=26, `migrations up to date`, no new
 migration).**
@@ -307,11 +358,14 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `aed2444` (Phase 2E magazine section-pages merge, PR #8;
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `eabf8b3` (Phase 2F deep public page polish merge, PR #9;
 app-only build & deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` +
 `www`; backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `aed2444`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: before Phase 2E `73b1238` (prior production HEAD; Phase 2D magazine front page — app-only rollback, redeploy
+`Bubbaacademy/exploringtoknow` holds `main` @ `eabf8b3`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: **before Phase 2F `aed2444`** (prior production HEAD; Phase 2E magazine section pages — app-only rollback,
+redeploy that commit with `deploy-app.sh`; note this also restores the public "Request a Review" CTAs on the trust/article
+pages and un-noindexes `/request-product` + `/signup`);
+before Phase 2E `73b1238` (Phase 2D magazine front page — app-only rollback, redeploy
 that commit with `deploy-app.sh`; note this also restores `/reviews` + `/explore` as pages and removes the 308 redirects);
 before Phase 2D `f8aeefe` (Phase 2C public-magazine reposition — app-only rollback,
 redeploy that commit with `deploy-app.sh`); before Phase 2C `a267905` (Phase 2B/3A QA sidebar fix); before the sidebar fix
