@@ -8,19 +8,26 @@ import {
   SITE_URL,
   type Doc,
 } from '@/lib/public';
-import { CTA } from '@/lib/nav';
+import { SECTION_EXPLORE_PICKS as SECTION, VERTICAL_SECTIONS } from '@/lib/sections';
 import { ArticleCard } from '@/components/site/ArticleCard';
 import { TopicChips } from '@/components/site/TopicChips';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: `Explore — ${SITE_NAME}`,
-  description: 'Discover ExploringToKnow — featured guides, the latest reviews, and topics worth exploring. Independent, human-reviewed, never auto-published.',
-  alternates: { canonical: `${SITE_URL}/explore` },
+  title: `${SECTION.title} — ${SITE_NAME}`,
+  description: SECTION.description,
+  alternates: { canonical: `${SITE_URL}/explore-picks` },
+  openGraph: {
+    title: `${SECTION.title} — ${SITE_NAME}`,
+    description: SECTION.description,
+    type: 'website',
+    url: `${SITE_URL}/explore-picks`,
+  },
 };
 
-function EntryCards() {
+/** Entry points into the magazine's editorial verticals + listing sections. */
+function SectionEntryCards() {
   return (
     <div className="entry-cards">
       <Link href="/buying-guides" className="entry-card">
@@ -29,17 +36,17 @@ function EntryCards() {
         <p>In-depth guides that compare options and explain what actually matters.</p>
         <span className="entry-card-cta">Explore guides →</span>
       </Link>
-      <Link href="/reviews" className="entry-card">
-        <span className="eyebrow">Tested &amp; considered</span>
+      <Link href="/product-reviews" className="entry-card">
+        <span className="eyebrow">Considered, not sponsored</span>
         <h3>Product Reviews</h3>
-        <p>Honest, hands-on reviews — no sponsored rankings, no hype.</p>
+        <p>Honest, independent reviews — no sponsored rankings, no hype.</p>
         <span className="entry-card-cta">Read reviews →</span>
       </Link>
     </div>
   );
 }
 
-export default async function ExplorePage() {
+export default async function ExplorePicksPage() {
   const [featured, latest, cats] = await Promise.all([
     listPublishedArticles({ featured: true, limit: 1 }),
     listPublishedArticles({ limit: 13 }),
@@ -56,9 +63,9 @@ export default async function ExplorePage() {
       <section className="section">
         <div className="container">
           <div className="hub-head">
-            <span className="eyebrow">Discover</span>
-            <h1>Explore ExploringToKnow</h1>
-            <p className="hub-head-desc">Featured guides, the latest reviews, and topics worth exploring — all manually researched and human-reviewed.</p>
+            <span className="eyebrow">{SECTION.eyebrow}</span>
+            <h1>{SECTION.title}</h1>
+            <p className="hub-head-desc">{SECTION.description}</p>
           </div>
 
           {/* Featured / newest */}
@@ -72,7 +79,7 @@ export default async function ExplorePage() {
               <div className="cover-body">
                 <span className="eyebrow">{featured.length ? 'Featured guide' : 'Latest guide'}</span>
                 {coverCat ? <span className="cat">{coverCat.name as string}</span> : null}
-                <h3>{cover.title as string}</h3>
+                <h2>{cover.title as string}</h2>
                 {cover.excerpt ? <p>{String(cover.excerpt).slice(0, 220)}</p> : null}
                 <span className="cover-cta">Read the guide →</span>
               </div>
@@ -80,8 +87,8 @@ export default async function ExplorePage() {
           ) : (
             <div className="empty-panel">
               <span className="eyebrow">Coming soon</span>
-              <h2>Fresh guides are on the way</h2>
-              <p>Nothing is published until a human editor has reviewed it. Explore topics below or request a review.</p>
+              <h2>Fresh picks are on the way</h2>
+              <p>Nothing is published until a human editor has reviewed it. Browse the magazine sections below in the meantime.</p>
             </div>
           )}
         </div>
@@ -103,9 +110,29 @@ export default async function ExplorePage() {
         </section>
       ) : null}
 
+      {/* Magazine sections — always available, never depends on article volume */}
+      <section className="section" style={{ paddingTop: grid.length ? 0 : undefined }}>
+        <div className="container">
+          <div className="section-head">
+            <div className="section-title">
+              <span className="eyebrow">Read by section</span>
+              <h2>Explore the magazine</h2>
+            </div>
+          </div>
+          <div className="cat-chips">
+            {VERTICAL_SECTIONS.map((s) => (
+              <Link key={s.slug} href={`/${s.slug}`} className="cat-chip">
+                <span className="dot" aria-hidden="true">{s.title.trim().charAt(0)}</span>
+                {s.title}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Featured topics (editorial curation — only when categories are flagged featured) */}
       {featuredCats.length ? (
-        <section className="section" style={{ paddingTop: grid.length ? 0 : undefined }}>
+        <section className="section" style={{ paddingTop: 0 }}>
           <div className="container">
             <div className="section-head">
               <div className="section-title">
@@ -119,7 +146,7 @@ export default async function ExplorePage() {
       ) : null}
 
       {/* Browse by topic */}
-      <section className="section" style={{ paddingTop: (grid.length || featuredCats.length) ? 0 : undefined }}>
+      <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
           <div className="section-head">
             <div className="section-title">
@@ -135,24 +162,7 @@ export default async function ExplorePage() {
       {/* Entry points */}
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
-          <EntryCards />
-        </div>
-      </section>
-
-      {/* Request a review */}
-      <section className="section" style={{ paddingTop: 0 }}>
-        <div className="container">
-          <div className="promo">
-            <div className="promo-inner">
-              <span className="eyebrow">For readers &amp; brands</span>
-              <h2>Want a specific product reviewed?</h2>
-              <p>Submit a product and our editors will consider it for a hands-on guide. Every request is reviewed by a human — nothing is published automatically.</p>
-              <div className="hero-actions">
-                <Link href={CTA.href} className="btn btn-accent btn-lg">{CTA.label}</Link>
-                <Link href="/categories" className="btn btn-ghost btn-lg">Explore topics</Link>
-              </div>
-            </div>
-          </div>
+          <SectionEntryCards />
         </div>
       </section>
     </>

@@ -128,7 +128,7 @@ export function RequestProductForm({ categories }: { categories: Category[] }) {
           <h2>Request submitted</h2>
           <p>{message}</p>
           <div className="empty-panel-actions">
-            <a href="/explore" className="btn btn-ghost">Explore guides</a>
+            <a href="/explore-picks" className="btn btn-ghost">Explore guides</a>
             <button type="button" className="btn btn-accent" onClick={() => { setState('idle'); setMessage(''); }}>Submit another</button>
           </div>
         </div>

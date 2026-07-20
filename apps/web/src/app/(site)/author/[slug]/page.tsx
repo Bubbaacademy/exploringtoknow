@@ -83,7 +83,7 @@ export default async function AuthorPage({ params }: Args) {
                 <h2>No published guides yet</h2>
                 <p>This author’s published work will appear here.</p>
                 <div className="empty-panel-actions">
-                  <Link href="/explore" className="btn btn-accent">Explore the magazine</Link>
+                  <Link href="/explore-picks" className="btn btn-accent">Explore the magazine</Link>
                 </div>
               </div>
             }

@@ -10,7 +10,6 @@ import {
   SITE_NAME,
   SITE_URL,
 } from '@/lib/public';
-import { CTA } from '@/lib/nav';
 import { ArticleCard } from '@/components/site/ArticleCard';
 import { TopicChips } from '@/components/site/TopicChips';
 
@@ -125,7 +124,7 @@ async function CategoryEmptyState({ currentSlug, categoryName }: { currentSlug: 
       ) : null}
       <div className="empty-panel-actions">
         <Link href="/categories" className="btn btn-ghost">Browse all topics</Link>
-        <Link href={CTA.href} className="btn btn-accent">{CTA.label}</Link>
+        <Link href="/explore-picks" className="btn btn-accent">Explore the magazine</Link>
       </div>
     </div>
   );

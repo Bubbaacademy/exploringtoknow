@@ -11,6 +11,7 @@ import {
   SITE_URL,
   type Doc,
 } from '@/lib/public';
+import { VERTICAL_SECTIONS } from '@/lib/sections';
 import { ArticleCard } from '@/components/site/ArticleCard';
 import { NewsletterSignup } from '@/components/site/NewsletterSignup';
 
@@ -29,16 +30,11 @@ const STEPS = [
   { n: '3', t: 'Human editorial review', d: 'Nothing is published until an editor has reviewed it. No auto-publishing, no sponsored rankings.' },
 ];
 
-// Curated magazine sections → real seeded category slugs (presentation map only).
-// Unknown/new categories are never dropped — they still surface via the Topics
-// menu and the "Browse by category" chips below.
-const MAGAZINE_SECTIONS: { title: string; slugs: string[] }[] = [
-  { title: 'Home & Living', slugs: ['home-kitchen', 'appliances', 'tools-home-improvement', 'outdoors-garden-patio', 'industrial-professional'] },
-  { title: 'Beauty & Style', slugs: ['beauty-personal-care', 'clothing-shoes-accessories', 'jewelry-watches', 'sleep-wellness'] },
-  { title: 'Tech & Everyday Gear', slugs: ['tech-electronics', 'office-school-business', 'automotive', 'books-media-entertainment'] },
-  { title: 'Family & Pets', slugs: ['baby-kids', 'pet-supplies', 'toys-games', 'health-fitness'] },
-  { title: 'Food & Kitchen', slugs: ['food-grocery'] },
-];
+// Curated magazine sections now come from the single shared section map
+// (`lib/sections.ts`), which also backs the real section pages — so the homepage
+// and the section pages can never disagree about what belongs where. Unknown/new
+// categories are never dropped: they still surface via the Topics menu and the
+// "Browse by category" chips below.
 
 const catOf = (a: Doc | undefined | null): Doc | null =>
   a && typeof a.category === 'object' ? (a.category as Doc) : null;
@@ -89,21 +85,16 @@ export default async function HomePage() {
   picks.forEach((a) => usedIds.add(a.id));
 
   // Bucket remaining REAL articles into the magazine category sections.
-  const catSlugs = new Set(cats.map((c) => c.slug as string));
   const bucket: Record<string, Doc[]> = {};
   for (const a of pool) {
     if (usedIds.has(a.id)) continue;
     const slug = catOf(a)?.slug as string | undefined;
     if (!slug) continue;
-    const sec = MAGAZINE_SECTIONS.find((s) => s.slugs.includes(slug));
+    const sec = VERTICAL_SECTIONS.find((s) => (s.categorySlugs ?? []).includes(slug));
     if (!sec) continue;
     const list = (bucket[sec.title] ??= []);
     if (list.length < 3) { list.push(a); usedIds.add(a.id); }
   }
-  const sectionLink = (slugs: string[]): string => {
-    const slug = slugs.find((x) => catSlugs.has(x));
-    return slug ? `/category/${slug}` : '/categories';
-  };
 
   // Buying Guides magazine block (type-based, deduped).
   const buyingGuides = guides.filter((a) => !usedIds.has(a.id)).slice(0, 3);
@@ -134,7 +125,7 @@ export default async function HomePage() {
               manually researched, AI-assisted in the drafting, and human-reviewed before anything goes live.
             </p>
             <div className="hero-actions">
-              <Link href="/explore" className="btn btn-lg">Read the latest guides</Link>
+              <Link href="/explore-picks" className="btn btn-lg">Read the latest guides</Link>
               <Link href="/buying-guides" className="btn btn-ghost btn-lg">Browse buying guides</Link>
             </div>
             <div className="hero-trust">
@@ -182,7 +173,7 @@ export default async function HomePage() {
                 <span className="eyebrow">Worth reading now</span>
                 <h2>Trending guides</h2>
               </div>
-              <Link href="/explore" className="section-link">Explore more →</Link>
+              <Link href="/explore-picks" className="section-link">Explore more →</Link>
             </div>
             <div className="grid">{trending.map((a) => <ArticleCard key={String(a.id)} article={a} />)}</div>
           </div>
@@ -198,7 +189,7 @@ export default async function HomePage() {
                 <span className="eyebrow">Editorial picks</span>
                 <h2>Explore Picks</h2>
               </div>
-              <Link href="/explore" className="section-link">See all picks →</Link>
+              <Link href="/explore-picks" className="section-link">See all picks →</Link>
             </div>
             <div className="picks-strip">
               {picks.map((a) => <PickCard key={String(a.id)} article={a} />)}
@@ -207,9 +198,10 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {/* Magazine category sections */}
-      {MAGAZINE_SECTIONS.map((s, i) => {
+      {/* Magazine category sections — "View all" now opens the real section page */}
+      {VERTICAL_SECTIONS.map((s, i) => {
         const items = bucket[s.title] ?? [];
+        const href = `/${s.slug}`;
         return (
           <section className="section" key={s.title} style={{ paddingTop: i === 0 ? undefined : 0 }}>
             <div className="container">
@@ -218,14 +210,14 @@ export default async function HomePage() {
                   <span className="eyebrow">Magazine</span>
                   <h2>{s.title}</h2>
                 </div>
-                <Link href={sectionLink(s.slugs)} className="section-link">View all →</Link>
+                <Link href={href} className="section-link">View all →</Link>
               </div>
               {items.length ? (
                 <div className="grid">{items.map((a) => <ArticleCard key={String(a.id)} article={a} />)}</div>
               ) : (
                 <div className="mag-ph">
-                  <span>Fresh {s.title} guides are on the way — browse related topics in the meantime.</span>
-                  <Link href={sectionLink(s.slugs)}>Browse topics →</Link>
+                  <span>Fresh {s.title} guides are on the way — browse the section in the meantime.</span>
+                  <Link href={href}>Open {s.title} →</Link>
                 </div>
               )}
             </div>

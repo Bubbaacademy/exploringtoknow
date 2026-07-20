@@ -83,7 +83,7 @@ export default async function SearchPage({ searchParams }: Args) {
                 <p>Try different keywords, or browse our topics instead.</p>
                 <div className="empty-panel-actions">
                   <Link href="/categories" className="btn btn-ghost">Browse all topics</Link>
-                  <Link href="/explore" className="btn btn-accent">Explore guides</Link>
+                  <Link href="/explore-picks" className="btn btn-accent">Explore guides</Link>
                 </div>
               </div>
             }

@@ -381,6 +381,54 @@ export async function listPublishedArticlesByTypes(types: string[], opts: { limi
   return res.docs;
 }
 
+/**
+ * Published articles for a magazine section backed by one or more REAL category
+ * slugs (Phase 2E). Resolves slugs → active category records first, so a slug that
+ * does not exist (or was deactivated) simply contributes nothing instead of
+ * throwing or 404-ing the section. Returns the resolved categories alongside the
+ * articles so the page can render honest topic chips for that section only.
+ *
+ * Read-only: published-gated, no writes, no schema dependency beyond existing fields.
+ */
+export async function listPublishedArticlesBySectionCategories(
+  slugs: string[],
+  opts: { limit?: number } = {},
+): Promise<{ articles: Doc[]; categories: Array<Doc & { articleCount: number }> }> {
+  if (!slugs.length) return { articles: [], categories: [] };
+  const payload = await client();
+  const cats = await payload.find({
+    collection: 'categories',
+    where: { and: [{ slug: { in: slugs } }, { active: { equals: true } }] },
+    limit: 100,
+    depth: 0,
+  });
+  if (!cats.docs.length) return { articles: [], categories: [] };
+
+  const ids = cats.docs.map((c) => c.id);
+  const [res, counts] = await Promise.all([
+    payload.find({
+      collection: 'articles',
+      where: { and: [PUBLISHED_WHERE, { category: { in: ids } }] },
+      sort: '-editorialPublishedAt',
+      limit: opts.limit ?? 48,
+      depth: 1,
+    }),
+    Promise.all(cats.docs.map((c) => countPublishedInCategory(c.id))),
+  ]);
+
+  // Preserve the editorial order declared in the section map, then surface the
+  // categories that actually have published content first.
+  const order = new Map(slugs.map((s, i) => [s, i]));
+  const enriched: Array<Doc & { articleCount: number }> = cats.docs
+    .map((c, i) => ({ ...c, articleCount: counts[i] ?? 0 }))
+    .sort((a, b) =>
+      (b.articleCount > 0 ? 1 : 0) - (a.articleCount > 0 ? 1 : 0)
+      || (order.get(String(a.slug)) ?? 999) - (order.get(String(b.slug)) ?? 999),
+    );
+
+  return { articles: res.docs, categories: enriched };
+}
+
 export const SEARCH_MAX_QUERY = 100;
 export const SEARCH_MIN_QUERY = 2;
 export const SEARCH_LIMIT = 24;
