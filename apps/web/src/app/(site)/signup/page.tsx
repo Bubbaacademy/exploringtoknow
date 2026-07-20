@@ -5,10 +5,18 @@ import { SignupForm } from '@/components/site/SignupForm';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Unlinked, noindexed account-setup route (Phase 2F). This is an operational
+ * surface, not public magazine content: it is excluded from the sitemap, carries
+ * no public marketing framing, and is no longer linked from `/login`. The form
+ * and the signup API are UNCHANGED — account creation still works exactly as
+ * before for anyone sent here directly.
+ */
 export const metadata: Metadata = {
-  title: `Start your workspace — ${SITE_NAME}`,
-  description: 'Create an AI-assisted content-commerce workspace for your brand. You review and approve everything — nothing publishes automatically.',
+  title: `Account setup — ${SITE_NAME}`,
+  description: 'Internal account setup for ExploringToKnow operators and editorial staff.',
   alternates: { canonical: `${SITE_URL}/signup` },
+  robots: { index: false, follow: false },
 };
 
 export default function SignupPage() {
@@ -18,17 +26,12 @@ export default function SignupPage() {
     <section className="section">
       <div className="container" style={{ maxWidth: 720 }}>
         <div className="request-head">
-          <span className="eyebrow">Get started</span>
-          <h1>Create your content-commerce workspace</h1>
+          <span className="eyebrow">Account setup</span>
+          <h1>Set up your account</h1>
           <p className="request-lede">
-            Launch an AI-assisted publication for your brand. You review and approve everything —
-            nothing is generated or published without you. No hype, no fake claims.
+            Account setup for ExploringToKnow operators and editorial staff. Nothing is generated or published
+            without a human review.
           </p>
-          <ul className="request-trust">
-            <li>Free {days}-day trial</li>
-            <li>No credit card</li>
-            <li>You stay in control</li>
-          </ul>
         </div>
 
         {enabled ? (
@@ -36,11 +39,10 @@ export default function SignupPage() {
         ) : (
           <div className="form">
             <div className="empty-panel" role="status">
-              <span className="eyebrow">Early access</span>
-              <h2>Signups aren’t open yet</h2>
-              <p>We’re onboarding founding workspaces by invitation. Tell us about your brand and we’ll be in touch.</p>
+              <span className="eyebrow">Not open</span>
+              <h2>Account setup isn’t open</h2>
+              <p>Accounts are arranged directly with the ExploringToKnow team. If you already have one, sign in below.</p>
               <div className="empty-panel-actions">
-                <a href="/contact" className="btn btn-accent">Request early access</a>
                 <a href="/login" className="btn btn-ghost">Sign in</a>
               </div>
             </div>

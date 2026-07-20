@@ -35,7 +35,6 @@ export function LoginForm() {
       <button className="btn btn-accent btn-lg btn-block" type="submit" disabled={state === 'sending'} aria-busy={state === 'sending'}>
         {state === 'sending' ? 'Signing in…' : 'Sign in'}
       </button>
-      <p className="hint" style={{ marginTop: 12, textAlign: 'center' }}>New here? <a href="/signup">Create a workspace</a>.</p>
     </form>
   );
 }

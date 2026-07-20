@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_NAME, SITE_URL } from '@/lib/public';
-import { CTA } from '@/lib/nav';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,20 +59,20 @@ export default function EditorialPolicyPage() {
 
         <h2>Corrections</h2>
         <p>
-          We’re human, and we fix mistakes. If you spot an error or something that’s out of date, let us know via a
-          {' '}<Link href={CTA.href}>review request</Link> and we’ll review it.
+          We’re human, and we fix mistakes. If you spot an error or something that’s out of date, you can
+          {' '}<Link href="/contact">contact us</Link> and an editor will review it.
         </p>
 
-        <h2>Reader requests</h2>
+        <h2>How coverage is decided</h2>
         <p>
-          Readers can suggest products for us to cover. Every request is read by an editor; submitting a request
-          never guarantees coverage and never triggers automatic publishing.
+          What we cover is an editorial decision, made by editors on the merits of the topic — never sold, and never
+          triggered automatically. Commercial relationships do not buy coverage, placement, or ranking.
         </p>
       </div>
 
       <div className="doc-cta">
         <Link href="/affiliate-disclosure" className="btn btn-ghost">Affiliate disclosure</Link>
-        <Link href={CTA.href} className="btn btn-accent">{CTA.label}</Link>
+        <Link href="/explore-picks" className="btn btn-accent">Read more buying guides</Link>
       </div>
     </article>
   );

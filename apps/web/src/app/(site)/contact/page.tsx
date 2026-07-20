@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { SITE_NAME, SITE_URL } from '@/lib/public';
 import { ContactForm } from '@/components/site/ContactForm';
 
@@ -38,9 +37,6 @@ export default function ContactPage() {
             </div>
           ))}
         </div>
-        <p className="hint" style={{ margin: '8px 0 0' }}>
-          Looking to submit a product with photos? The <Link href="/request-product">Request a Review</Link> form is the fastest path.
-        </p>
       </div>
       <ContactForm />
     </section>
