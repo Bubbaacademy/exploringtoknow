@@ -2,7 +2,71 @@
 
 _Updated: 2026-07-20 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `11fa577` (`11fa57790ce766ca0d13a818dbc06b4b61e21dc8`) (Phase 2I — Payload CMS Editorial Editing
+**Production HEAD: `03a6ce1` (`03a6ce165e64d0701a72520c48b8a69d51deaa4a`) (Phase 2J — Public Article Reading Experience
+Polish — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:f501891f…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+**no new migration**).**
+Phase 2J polishes the **public article reading experience** on the ExploringToKnow magazine. **Presentation only — existing
+article body rendering and stored content were NOT changed, no article text was generated, and no content was fabricated.**
+**Scope note for future readers:** this page was already well built before 2J (breadcrumbs, category label, deck, byline with
+conditional "Updated", hero + caption, TOC, conditional affiliate disclosure, related grid, newsletter; end-of-article CTAs
+already cleaned in Phase 2F), so 2J is a **targeted polish pass, not a redesign** — the wins below are specific.
+**A REAL LAYOUT BUG WAS FIXED.** `.article-hero` was declared **twice** in `site.css`; the later rule overrode only
+`display`/`margin`/`padding`, so `aspect-ratio: 16/9` and `overflow: hidden` from the first declaration **still applied to the
+`<figure>`** — which wraps both the 16:9 media box **and** the `<figcaption>`. The result: **any article with an image
+caption had that caption clipped** by the figure's own overflow box. The stale declaration was removed (its
+`.article-hero img` selector was already dead, since images had moved inside `.article-hero-media`) and a comment records why
+the figure must not carry aspect-ratio/overflow. **Verified in the SERVED CSS post-deploy: `.article-hero{` now appears
+exactly ONCE** (previously two conflicting declarations). **Article kicker is live:** the header gained a kicker row pairing
+the **category link** with a new **article-type chip** ("Buying Guide", "Review", "Explainer", …), each omitted individually
+when the record does not carry it. Type labels come from a new reader-facing `PUBLIC_ARTICLE_TYPE_LABEL` map in
+`lib/sections.ts` (presentation only — the collection's `type` values are never modified). **Hero image** now loads
+**eagerly at high priority with async decoding** (it is the page's largest paint element and was previously unhinted), and
+the **no-image placeholder** is styled to read as intentional and marked `aria-hidden` since it carries no reader
+information. **Reader navigation** back up to the magazine: the article's topic → the **listing its format belongs to**
+(Product Reviews / Buying Guides, resolved via a new `listingForArticleType()` helper in `lib/sections.ts` so it can **never
+point at a route that does not exist**, returning null and falling back rather than guessing) → Explore Picks. **Editorial
+links only — no request, signup, workspace or promotional CTA.** **Related/continue-reading labelling is cleaner:** the
+section previously announced itself to screen readers as "Related guides" while visibly displaying "Continue Exploring";
+those now agree. **Metadata/OG/Twitter improvements are live:** OpenGraph gained `siteName`, `publishedTime`, `modifiedTime`,
+`authors` and `section`, and a **Twitter card** was added using `summary_large_image` only when an image actually exists —
+**every value read from fields already on the record; anything absent is omitted rather than invented.** **Deliberately left
+alone:** prose typography (already 18px/1.78 on a 720px measure with a proper heading scale) and the 640px mobile rules
+(padding, deck size, TOC collapse, full-width buttons already handled) — churning working CSS would add risk without value.
+**Purely public presentation — 3 code files** (`app/(site)/[...slug]/page.tsx`, `app/(site)/site.css`, `lib/sections.ts`);
+**NO schema, migration, DB write, Payload collection, `/admin`, env, provider, credential, OAuth, token, Google Ads, Meta Ads,
+Caddy, domain-routing, middleware, BubbaAffiliate gateway, ContactMessages, intake-API, package/lockfile, or `/app` |
+`/dashboard` change.** **Delivery — FAST-FORWARD, not a PR merge** (as with Phases 2H and 2I): the validated branch
+`phase-2j-public-article-reading-polish` was fast-forwarded onto `main`, so **`03a6ce1` is an ordinary single-parent commit**
+(`parents=2e4708c`) and there is **no PR-merge commit for Phase 2J**. Delivered to the VPS by git bundle over SSH (SHA256
+matched both ends; `git bundle verify` passed), working tree fast-forwarded `11fa577 → 03a6ce1` (verified ancestor, clean
+fast-forward), deployed with the standard `infra/server/deploy-app.sh` (**app-only**, no Caddy update, no full
+`docker compose up`, no manual DB change). **Verified live (16/16 checks passed, nothing failed):** build passed
+(`✓ Compiled successfully`; deployed image `f501891f`; stale-image guard passed and the **running image was confirmed
+byte-equal to `etk-web:latest`**); migrate ran as an observable **no-op** (`migrations up to date`, before=26 → after=26);
+**only `etk-app` was recreated** (`--no-deps`, `StartedAt 2026-07-21T21:18:40Z`) → **healthy**; **Postgres, worker and Caddy
+were NOT restarted** (all unchanged at `StartedAt 2026-07-14T00:22:20Z`) and the **live Caddyfile hash was byte-identical**
+(`707a062de883706bd14d7bb43808ff96`). **Live DB re-inspected to prove the schema is untouched:** `payload_migrations` = **26**,
+`articles` table still **39 columns**, `enum_articles_editorial_status` still `draft,ready_for_review,published,rejected`.
+`GET https://exploringtoknow.com/api/health` → **200**; Payload **`/admin` → 200**; **homepage 200**; **all eight public
+magazine section pages 200**; **three REAL article pages 200** (slugs resolved from the live sitemap, not assumed); `/login`
+**200**; `/app`, `/app/articles`, `/dashboard`, `/dashboard/content` all **307 → /login**; **`/reviews` still 308 →
+`/product-reviews`** and **`/explore` still 308 → `/explore-picks`**; `bubbaaffiliate.com/`, `/sellers`, `/creators` all
+**200 (unchanged)** and `POST bubbaaffiliate.com/api/bubbaaffiliate/intake` → **400 on empty body** (still wired +
+validating). **Confirmed in the RUNNING container:** the kicker/category/type logic and `fetchPriority` are in the compiled
+article bundle; `publishedTime`, `modifiedTime`, `summary_large_image` and `siteName` are present; `.article-kicker` and
+`.article-type` are in the served CSS. **A live scan of a real article's HTML returned count 0 for every one of:** "Request a
+Review", "Start Free Trial", "free trial", "Create workspace", "My Workspace", "Request Access", "BubbaAffiliate", "seller",
+"creator" — while the new UI ("article-kicker", "article-type", "Continue Exploring", "Explore more guides") **was confirmed
+rendering in that live HTML**. **Operator visual confirmation: PASSED.** **Caption-fix note:** the duplicate CSS rule is
+provably gone from the served stylesheet, but whether any currently-published article actually sets `images.caption` was not
+determinable remotely — if none do today, the fix is **latent-correct** and worth re-confirming the next time a captioned
+article publishes. Pre-deploy: isolated VPS/Linux **build-only** validation of `03a6ce1` passed (throwaway image
+`etk-web:p2j-validate`, isolated bare-repo + `git archive` extraction to `/tmp`, real rebuild — typecheck + lint +
+`next build` green, confirming `fetchPriority` types cleanly on React 19.2; all 27 `(site)` routes compiled including the
+article template and the eight section pages; all Phase 2J markers present and the duplicate hero rule already gone in the
+built CSS; cleaned up; **production untouched throughout validation**).
+**Prior — `11fa577` (`11fa57790ce766ca0d13a818dbc06b4b61e21dc8`) (Phase 2I — Payload CMS Editorial Editing
 Polish — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:f394c374…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 **no new migration**).**
@@ -591,12 +655,17 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `11fa577` (Phase 2I Payload CMS editorial editing
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `03a6ce1` (Phase 2J public article reading experience
 polish; **fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build & deploy; no
 migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup retained at
 `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `11fa577`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: **before Phase 2I `ee19ee9`** (prior production HEAD; Phase 2H Editorial Ops dashboard — app-only rollback,
+`Bubbaacademy/exploringtoknow` holds `main` @ `03a6ce1`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: **before Phase 2J `11fa577`** (prior production HEAD; Phase 2I Payload CMS editorial editing polish —
+app-only rollback, redeploy that commit with `deploy-app.sh`; ⚠️ this reverts the public article header/hero/metadata **and
+REINTRODUCES the duplicate `.article-hero` CSS rule that clips image captions**. Public-presentation only — no schema, data,
+or routing effect. Note `2e4708c` — the Phase 2I docs commit and the immediate parent of `03a6ce1` — is **app-code-identical**
+to `11fa577`, differing only in `CURRENT_PRODUCTION_STATUS.md`, so either commit restores the same running state);
+**before Phase 2I `ee19ee9`** (Phase 2H Editorial Ops dashboard — app-only rollback,
 redeploy that commit with `deploy-app.sh`; this restores the previous `Articles.ts` field layout and labels — **Payload-admin
 UX only, no schema, data, or public-surface effect**. Note `b689d5d` — the Phase 2H docs commit and the immediate parent of
 `11fa577` — is **app-code-identical** to `ee19ee9`, differing only in `CURRENT_PRODUCTION_STATUS.md`, so either commit
