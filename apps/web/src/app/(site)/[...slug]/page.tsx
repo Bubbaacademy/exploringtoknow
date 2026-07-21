@@ -11,6 +11,7 @@ import {
   ARTICLE_AFFILIATE_DISCLOSURE,
   type Doc,
 } from '@/lib/public';
+import { PUBLIC_ARTICLE_TYPE_LABEL, listingForArticleType } from '@/lib/sections';
 import { AffiliateCTA } from '@/components/site/AffiliateCTA';
 import { ArticleCard } from '@/components/site/ArticleCard';
 import { ReadingProgress } from '@/components/site/ReadingProgress';
@@ -30,15 +31,35 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const og = (a.openGraph ?? {}) as Doc;
   const ogImg = mediaUrl(a.images?.og) || mediaUrl(og.image) || mediaUrl(a.images?.hero) || undefined;
   const url = `${SITE_URL}/${a.slug}`;
+  const title = (seo.metaTitle || a.title) as string;
+  const description = (seo.metaDescription || a.excerpt || undefined) as string | undefined;
+  // Article metadata is enriched ONLY from fields that already exist on the
+  // record — publish/update timestamps, byline and category. Anything absent is
+  // simply omitted rather than invented.
+  const cat = typeof a.category === 'object' ? (a.category as Doc) : null;
+  const auth = typeof a.author === 'object' ? (a.author as Doc) : null;
+  const published = a.editorialPublishedAt ? new Date(a.editorialPublishedAt as string).toISOString() : undefined;
+  const modified = a.updatedAt ? new Date(a.updatedAt as string).toISOString() : undefined;
   return {
-    title: seo.metaTitle || a.title,
-    description: seo.metaDescription || a.excerpt || undefined,
+    title,
+    description,
     alternates: { canonical: seo.canonical || url },
     openGraph: {
-      title: og.title || a.title,
-      description: og.description || a.excerpt || undefined,
+      title: (og.title || a.title) as string,
+      description: (og.description || a.excerpt || undefined) as string | undefined,
       type: 'article',
       url,
+      siteName: SITE_NAME,
+      images: ogImg ? [ogImg] : undefined,
+      publishedTime: published,
+      modifiedTime: modified,
+      authors: auth?.name ? [auth.name as string] : undefined,
+      section: cat?.name ? (cat.name as string) : undefined,
+    },
+    twitter: {
+      card: ogImg ? 'summary_large_image' : 'summary',
+      title,
+      description,
       images: ogImg ? [ogImg] : undefined,
     },
   };
@@ -58,6 +79,11 @@ export default async function ArticlePage({ params }: Args) {
   const hero = mediaUrl(a.images?.hero);
   const heroAlt = (a.images?.heroAlt as string) || (a.title as string);
   const affiliate = getArticleAffiliate(a);
+  // Editorial format label + the listing it belongs to. Both degrade to null on
+  // an unmapped/absent type; nothing is guessed.
+  const articleType = String(a.type ?? '');
+  const typeLabel = PUBLIC_ARTICLE_TYPE_LABEL[articleType] ?? null;
+  const listing = listingForArticleType(articleType);
   const { nodes, toc, readingMinutes } = await renderArticle(a);
   const related = await relatedArticles(a, 3);
   const url = `${SITE_URL}/${a.slug}`;
@@ -114,8 +140,15 @@ export default async function ArticlePage({ params }: Args) {
             <span aria-current="page">{a.title as string}</span>
           </nav>
 
-          {category ? (
-            <Link href={`/category/${category.slug}`} className="article-cat">{category.name as string}</Link>
+          {/* Kicker: the topic this belongs to, plus the editorial format. Both
+              are omitted individually when the record does not carry them. */}
+          {category || typeLabel ? (
+            <div className="article-kicker">
+              {category ? (
+                <Link href={`/category/${category.slug}`} className="article-cat">{category.name as string}</Link>
+              ) : null}
+              {typeLabel ? <span className="article-type">{typeLabel}</span> : null}
+            </div>
           ) : null}
 
           <h1>{a.title as string}</h1>
@@ -138,9 +171,14 @@ export default async function ArticlePage({ params }: Args) {
           </div>
         </header>
 
+        {/* Hero. The media wrapper owns the 16:9 box, so the caption below it is
+            never clipped. The image is this page's largest paint, so it loads
+            eagerly at high priority rather than lazily. */}
         <figure className="article-hero">
           <div className="article-hero-media">
-            {hero ? <img src={hero} alt={heroAlt} /> : <span>ExploringToKnow</span>}
+            {hero
+              ? <img src={hero} alt={heroAlt} loading="eager" fetchPriority="high" decoding="async" />
+              : <span aria-hidden="true">ExploringToKnow</span>}
           </div>
           {a.images?.caption ? <figcaption className="figcaption">{a.images.caption as string}</figcaption> : null}
         </figure>
@@ -157,6 +195,9 @@ export default async function ArticlePage({ params }: Args) {
 
         <AffiliateCTA article={a} placement="conclusion" />
 
+        {/* Reader paths back up to the magazine: this article's topic, the
+            listing its format belongs to (when one maps), then the picks hub.
+            Editorial navigation only — no promotional calls to action. */}
         <section className="article-end" aria-label="Keep exploring">
           <div className="article-end-actions">
             {category ? (
@@ -164,12 +205,15 @@ export default async function ArticlePage({ params }: Args) {
             ) : (
               <Link href="/categories" className="btn btn-ghost">Browse all topics</Link>
             )}
+            {listing ? (
+              <Link href={listing.href} className="btn btn-ghost">All {listing.label}</Link>
+            ) : null}
             <Link href="/explore-picks" className="btn btn-accent">Explore more guides</Link>
           </div>
         </section>
 
         {related.length ? (
-          <section className="related" aria-label="Related guides">
+          <section className="related" aria-label="Continue exploring">
             <div className="section-head">
               <div className="section-title">
                 <span className="eyebrow">Keep reading</span>

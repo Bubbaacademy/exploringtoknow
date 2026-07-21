@@ -139,3 +139,31 @@ export const MAGAZINE_SECTIONS: MagazineSection[] = [
  * router, so a nav link can never 404 against an unverified category slug.
  */
 export const VERTICAL_SECTIONS = MAGAZINE_SECTIONS.filter((s) => s.kind === 'category');
+
+/**
+ * Reader-facing labels for the existing `Articles.type` option set. Presentation
+ * only — the values are the collection's own and are never modified here.
+ */
+export const PUBLIC_ARTICLE_TYPE_LABEL: Record<string, string> = {
+  how_to: 'How-To',
+  buying_guide: 'Buying Guide',
+  review: 'Review',
+  comparison: 'Comparison',
+  best_list: 'Best List',
+  faq: 'FAQ',
+  problem_solution: 'Problem / Solution',
+  educational: 'Explainer',
+};
+
+/**
+ * The magazine listing an article of a given type belongs to, so a reader can
+ * step from one article back up to the feed it came from. Mirrors the `types`
+ * declared on the listing sections above; anything unmapped returns null and the
+ * caller falls back to the category or topic hub — it never guesses a route.
+ */
+export function listingForArticleType(type: string): { label: string; href: string } | null {
+  const t = String(type || '');
+  if (SECTION_PRODUCT_REVIEWS.types?.includes(t)) return { label: SECTION_PRODUCT_REVIEWS.title, href: `/${SECTION_PRODUCT_REVIEWS.slug}` };
+  if (SECTION_BUYING_GUIDES.types?.includes(t)) return { label: SECTION_BUYING_GUIDES.title, href: `/${SECTION_BUYING_GUIDES.slug}` };
+  return null;
+}

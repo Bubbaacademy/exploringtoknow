@@ -277,8 +277,10 @@ img { max-width: 100%; height: auto; display: block; }
 .breadcrumbs a:hover { color: var(--brand-ink); }
 .article h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(32px, 4.8vw, 46px); line-height: 1.1; letter-spacing: -.022em; margin: 8px 0 14px; }
 .article .lead { font-size: 20px; line-height: 1.55; color: var(--fg-soft); margin: 0 0 4px; }
-.article-hero { aspect-ratio: 16 / 9; border-radius: var(--r-lg); overflow: hidden; background: linear-gradient(135deg, #eef2ef, #e7ece8); margin: 24px 0 6px; display: flex; align-items: center; justify-content: center; color: #9aa6a1; box-shadow: var(--shadow-sm); }
-.article-hero img { width: 100%; height: 100%; object-fit: cover; }
+/* NOTE: the hero figure itself is laid out below (see ".article-hero" in the
+   article-page block). It must NOT carry aspect-ratio/overflow, or the
+   <figcaption> is clipped by the figure's own 16:9 box — the media wrapper
+   ".article-hero-media" owns the aspect ratio instead. */
 .figcaption { font-size: 13px; color: var(--muted); margin: 8px 2px 0; text-align: center; }
 
 .prose { font-size: 18px; line-height: 1.78; color: var(--fg-soft); }
@@ -524,13 +526,26 @@ img { max-width: 100%; height: auto; display: block; }
 .article-byline time { color: var(--muted); }
 
 /* Hero (figure with media box + caption below) */
+/* Hero figure: layout only. The media wrapper owns the aspect ratio and the
+   clipping, so the caption below it is never cut off. */
 .article-hero { margin: 22px 0 6px; padding: 0; display: block; }
 .article-hero-media {
   aspect-ratio: 16 / 9; border-radius: var(--r-lg); overflow: hidden;
   background: linear-gradient(135deg, #eef2ef, #e7ece8);
   display: flex; align-items: center; justify-content: center; color: #9aa6a1; box-shadow: var(--shadow-sm);
 }
-.article-hero-media img { width: 100%; height: 100%; object-fit: cover; }
+.article-hero-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Graceful no-image state: the placeholder wordmark reads as intentional. */
+.article-hero-media > span {
+  font-family: var(--font-display); font-size: 15px; letter-spacing: .04em; text-transform: uppercase; opacity: .75;
+}
+
+/* Article type chip — sits beside the category label in the header. */
+.article-kicker { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 2px 0 4px; }
+.article-type {
+  display: inline-block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; background: var(--surface-2);
+}
 
 /* In-article affiliate disclosure */
 .article-disclosure {
