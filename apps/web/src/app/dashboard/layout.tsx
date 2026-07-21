@@ -11,7 +11,7 @@ export const metadata = { robots: { index: false, follow: false } };
 export const dynamic = 'force-dynamic';
 
 const NAV: Array<{ group: string; items: Array<[string, string]> }> = [
-  { group: 'Overview', items: [['Dashboard', '/dashboard']] },
+  { group: 'Overview', items: [['Dashboard', '/dashboard'], ['Editorial Ops', '/dashboard/content']] },
   { group: 'Insights', items: [['Analytics', '/dashboard/analytics'], ['System Health', '/dashboard/health']] },
   { group: 'Editorial', items: [['Articles', '/admin/collections/articles'], ['Authors', '/admin/collections/authors'], ['Categories', '/admin/collections/categories']] },
   { group: 'Intake', items: [['Product Requests', '/admin/collections/product-requests'], ['Contact Inbox', '/admin/collections/contact-messages'], ['Newsletter', '/admin/collections/newsletter-subscribers']] },
