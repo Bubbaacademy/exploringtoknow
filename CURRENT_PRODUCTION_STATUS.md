@@ -2,7 +2,52 @@
 
 _Updated: 2026-07-20 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `56bc9c1` (`56bc9c13e7d690bfae378cf1af979790291faf43`) (Phase 2G — ExploringToKnow Content Publishing
+**Production HEAD: `b3ac495` (`b3ac495e7809698ce0e93808b698189b336346a9`) (Phase 2G-QA — ExploringToKnow Editorial Copy
+Cleanup — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:5c19ce6a…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+no new migration).**
+Phase 2G-QA was a **one-line internal editorial copy cleanup** — a QA follow-up to Phase 2G. The `/app/editorial` "Next:"
+hint still carried stale seller-intake language, which is wrong for the ExploringToKnow magazine desk (an editorial workflow,
+not a seller funnel). **Changed the `/app/editorial` fallback copy from `'Intake a seller offer to start the pipeline.'` to
+`'Create or review an article draft in Payload /admin.'`** — pointing an editor at where article work actually starts,
+consistent with Phase 2G's framing that article editing lives in Payload **/admin** while this console tracks the publishing
+workflow. This is the **fallback branch** of `nextAction`, shown only when nothing is waiting (no pending requests **and** no
+drafts in review); the other two branches are unchanged. **Purely copy — ONE string literal in ONE file**
+(`apps/web/src/app/app/editorial/page.tsx`): no control flow, data fetching, query, routing, component, import, or styling
+change; the conditional structure and every `wsCount`/`wsList` call are byte-identical. A full scan of the four ETK editorial
+surfaces (`/app/articles`, `/app/editorial`, `/app/categories`, `/app/media`) for "seller offer", "seller submission",
+"intake a seller", "submit your offer", "creator application", "BubbaAffiliate", "start free trial" and "request access" now
+returns **clean**; the remaining `workspace` matches on those pages are **code identifiers** (`requireWorkspace`, `wsList`,
+`ws.scope`), not user-visible copy, and were deliberately left alone since renaming them would be a functional change.
+**`/app/bubbaaffiliate` was intentionally NOT touched** — it manages real seller submissions and creator applications, so its
+seller/creator wording is correct there. **NO schema, migration, DB, Payload collection, `(payload)/admin`, env, provider,
+credential, OAuth, token, Google Ads, Meta Ads, Caddy, domain-routing, middleware, BubbaAffiliate gateway, ContactMessages,
+intake-API, or public-site change.** Merged to `main` via **PR #11** (`9f46497` under merge `b3ac495`). Delivered to the VPS
+by git bundle over SSH (SHA256 matched both ends; `git bundle verify` passed), working tree fast-forwarded
+`56bc9c1 → b3ac495` (verified ancestor, clean fast-forward), deployed with the standard `infra/server/deploy-app.sh`
+(**app-only**). **Verified live:** build passed (`✓ Compiled successfully`; deployed image `5c19ce6a`; stale-image guard
+passed — running == freshly built); migrate ran as an observable **no-op** (`migrations up to date`, before=26 → after=26;
+live count independently confirmed **26**); **only `etk-app` was force-recreated** (`--no-deps`) → **healthy**; **Postgres,
+worker and Caddy were NOT restarted** (unchanged `StartedAt 2026-07-14T00:22:20Z`) and the **live Caddyfile hash was
+byte-identical** (`707a062de883706bd14d7bb43808ff96`, no config change, no reload). **Copy assertion made against the RUNNING
+container artifact:** the old string `"Intake a seller offer to start the pipeline."` → **count 0 (GONE)**, the new string
+`"Create or review an article draft in Payload /admin."` → **count 1 (LIVE)**, and a broader sweep of `editorial/page.js` for
+`intake a seller` / `seller offer` / `seller submission` → **0 (clean)**. `GET https://exploringtoknow.com/api/health` → HTTP
+200 `{"status":"ok","service":"web","missingEnv":[]}`; homepage, `/search`, `/categories`, `/login` **200**; **all eight
+public section pages 200**; all six trust/legal pages (`/about`, `/editorial-policy`, `/affiliate-disclosure`, `/privacy`,
+`/terms`, `/contact`) **200**; **`/reviews` still 308 → `/product-reviews`** and **`/explore` still 308 → `/explore-picks`**;
+**`/app/editorial` remains auth-gated → 307 → /login when signed out**, as do `/app`, **`/app/articles`, `/app/categories`
+and `/app/media`** (all deployed and working); Payload **`/admin` 200 — still the editing path**; `bubbaaffiliate.com/`,
+`/sellers`, `/creators` all **200 (unchanged)** and `POST bubbaaffiliate.com/api/bubbaaffiliate/intake` → **400 on empty
+body** (still wired + validating, not 404/500). **Visibility caveat:** because the changed string is the *nothing-pending*
+fallback, a signed-in editor will **not** see it whenever a request is waiting or a draft is in review — the other two
+branches render instead. The running-container grep above is the authoritative proof it deployed; a signed-in look only shows
+which branch currently applies. Pre-deploy: isolated VPS/Linux **build-only** validation of `9f46497` passed (throwaway image
+`etk-web:p2gqa-validate`, isolated bare-repo + `git archive` extraction to `/tmp`, real rebuild — typecheck + lint +
+`next build` green; all four ETK editorial routes compiled, new copy present ×1 and old copy gone (0) in the compiled
+`editorial/page.js`, all eight public section pages + `/login` compiled, both the public gateway and the internal
+`/app/bubbaaffiliate` intake console compiled, both 308 rules intact; cleaned up; live app/DB untouched).
+**Prior — `56bc9c1` (`56bc9c13e7d690bfae378cf1af979790291faf43`) (Phase 2G — ExploringToKnow Content Publishing
 Workflow Polish — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:510ffe19…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 no new migration).**
@@ -415,11 +460,14 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `56bc9c1` (Phase 2G content publishing workflow merge,
-PR #10; app-only build & deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `b3ac495` (Phase 2G-QA editorial copy cleanup merge,
+PR #11; app-only build & deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves
 `bubbaaffiliate.com` + `www`; backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `56bc9c1`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: **before Phase 2G `eabf8b3`** (prior production HEAD; Phase 2F deep public page polish — app-only rollback,
+`Bubbaacademy/exploringtoknow` holds `main` @ `b3ac495`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: **before Phase 2G-QA `56bc9c1`** (prior production HEAD; Phase 2G content publishing workflow — app-only
+rollback, redeploy that commit with `deploy-app.sh`; this restores the stale seller-offer string on `/app/editorial` —
+cosmetic only, no functional impact);
+**before Phase 2G `eabf8b3`** (Phase 2F deep public page polish — app-only rollback,
 redeploy that commit with `deploy-app.sh`; internal-console-only revert, no public-surface effect);
 **before Phase 2F `aed2444`** (Phase 2E magazine section pages — app-only rollback,
 redeploy that commit with `deploy-app.sh`; note this also restores the public "Request a Review" CTAs on the trust/article
