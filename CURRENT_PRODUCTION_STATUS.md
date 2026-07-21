@@ -2,7 +2,64 @@
 
 _Updated: 2026-07-20 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `eabf8b3` (`eabf8b3d5d61652763bda27ab2a8ec31ab6c0d82`) (Phase 2F — ExploringToKnow Deep Public Page
+**Production HEAD: `56bc9c1` (`56bc9c13e7d690bfae378cf1af979790291faf43`) (Phase 2G — ExploringToKnow Content Publishing
+Workflow Polish — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:510ffe19…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+no new migration).**
+Phase 2G improved the **internal `/app` editorial workflow surfaces** so the team can run ExploringToKnow as a magazine.
+**Internal console UI/copy only — the public magazine is untouched by this phase.** **Updated `/app` routes deployed:**
+`/app/articles`, `/app/editorial`, `/app/categories`, `/app/media` (all verified **307 → /login** when signed out).
+**`/app/articles` now has clearer editorial columns:** **Title** (with the article **slug** on a second line), **Category**,
+**Type**, **Editorial status**, **Public** (**Live / Not public**), **Updated**, and **Published** — plus a desk overview
+(Published / In review / Drafts / Total, computed from rows already fetched, **no extra queries**) and a status legend.
+Sorted by **newest edit** (`-updatedAt`) rather than creation date. **The old misleading Date-column behaviour was fixed:**
+the table previously rendered a single "Date" column as `editorialPublishedAt || createdAt`, so an **unpublished draft
+displayed its creation date under a column editors read as "published"**. Updated and Published are now **separate columns**,
+and **Published shows "—" unless the article is truly published**. **Public state is derived from
+`editorialStatus === 'published'`**, mirroring `PUBLISHED_WHERE` in `lib/public.ts` — the single public-visibility gate — so
+the console and the public site can never disagree, and an editor never has to infer publication from a date. **Real
+editorial statuses remain exactly four — `draft`, `ready_for_review`, `published`, `rejected` — and NO fake "Archived" status
+was added** (it does not exist in the collection; the legend documents the real four and states that only **Published** is
+public and a human sets it). New presentation-only label maps + `EditorialStatusBadge` / `PublicStateBadge` are **additive**
+in `app/_ui.tsx`; the existing `StatusBadge` is unchanged and still used for product and generation-run states. **Copy
+reframed from seller-intake to editorial:** the Articles action became **"Start an article request"** (same route
+`/app/product-requests`, no behaviour change, **no seller/creator functionality added**); `/app/editorial` uses "In review",
+the editorial badge, an "Open the article desk" link, and an empty state that no longer says "intake a seller offer";
+`/app/categories` and `/app/media` helper copy now explains what the data means for publishing (a category is required to
+publish, only **active** categories appear in public topic menus, alt text matters before an article goes live) and points at
+Payload **/admin** for editing. **Article editing remains in Payload `/admin`** (verified live, HTTP 200) — **no new native
+`/app` article editor was created**, and **`/dashboard/content` remains a stub** for a future phase. **Purely internal
+console — 6 files** (`app/_ui.tsx`, `app/articles/page.tsx`, `app/editorial/page.tsx`, `app/categories/page.tsx`,
+`app/media/page.tsx`, plus **one** added CSS rule `.adm-table .adm-cellsub` in the shared `.adm-*` design layer
+`dashboard/dashboard.css`); **no new dependencies, no AI generation, no new approval system, NO Payload collection change, NO
+`(payload)/admin` change**; **NO schema, migration, DB, env, provider, credential, OAuth, token, Google Ads, Meta Ads, Caddy,
+domain-routing, middleware, BubbaAffiliate gateway, ContactMessages, intake-API, or public-site change.** Merged to `main` via
+**PR #10** (`f43d3ed` under merge `56bc9c1`). Delivered to the VPS by git bundle over SSH (SHA256 matched both ends; `git
+bundle verify` passed), working tree fast-forwarded `eabf8b3 → 56bc9c1` (verified ancestor, clean fast-forward), deployed with
+the standard `infra/server/deploy-app.sh` (**app-only**). **Verified live:** build passed (`✓ Compiled successfully`; deployed
+image `510ffe19`; stale-image guard passed — running == freshly built); migrate ran as an observable **no-op**
+(`migrations up to date`, before=26 → after=26; live count independently confirmed **26**); **only `etk-app` was
+force-recreated** (`--no-deps`) → **healthy**; **Postgres, worker and Caddy were NOT restarted** (unchanged `StartedAt
+2026-07-14T00:22:20Z`) and the **live Caddyfile hash was byte-identical** (`707a062de883706bd14d7bb43808ff96`, no config
+change, no reload); `GET https://exploringtoknow.com/api/health` → HTTP 200 `{"status":"ok","service":"web","missingEnv":[]}`;
+**homepage 200**; **all eight public section pages 200**; **`/reviews` still 308 → `/product-reviews`** and **`/explore` still
+308 → `/explore-picks`**; `/search`, `/categories`, `/login` 200; `/app` and all four editorial routes **307 → /login**;
+Payload `/admin` **200**; `bubbaaffiliate.com/`, `/sellers`, `/creators` all **200 (unchanged)** and `POST
+bubbaaffiliate.com/api/bubbaaffiliate/intake` → **400 on empty body** (still wired + validating, not 404/500). **The new logic
+was confirmed inside the RUNNING container's compiled bundles** (not merely the built image): `articles/page.js` contains
+"Editorial statuses", "Desk overview", "Start an article request", `adm-cellsub`; the shared chunks carry the
+`PublicStateBadge` labels **"Not public"**, "In review", "Rejected"; the retired strings **"New seller submission"** and
+**"Intake a seller offer"** are **gone (count 0)**; `.adm-cellsub` is present in the served CSS. **Verification caveat:**
+`/app` is auth-gated, so these checks prove the code is **deployed** — the seven columns, Live/Not-public badges and slug line
+should be confirmed with a **signed-in look** at `/app/articles` (same situation as the Phase 2B/3A sidebar fix). **Real-data
+note:** production has only ~3 published articles, so most rows will show **"—" under Published** and **"Not public"** — that
+is the corrected behaviour, not a regression (previously those rows showed a creation date that read as a publish date).
+Pre-deploy: isolated VPS/Linux **build-only** validation of `f43d3ed` passed (throwaway image `etk-web:phase2g-validate`,
+isolated bare-repo + `git archive` extraction to `/tmp`, real rebuild — typecheck + lint + `next build` green; all 19 `/app`
+routes compiled including the four editorial ones, all 27 `(site)` routes and the eight public section pages compiled,
+`/login`, `/bubbaaffiliate`, `/dashboard`, `/platform` compiled, both 308 rules intact in the built `routes-manifest.json`;
+cleaned up; live app/DB untouched).
+**Prior — `eabf8b3` (`eabf8b3d5d61652763bda27ab2a8ec31ab6c0d82`) (Phase 2F — ExploringToKnow Deep Public Page
 Polish — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:65c8e1cb…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 no new migration).**
@@ -358,11 +415,13 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `eabf8b3` (Phase 2F deep public page polish merge, PR #9;
-app-only build & deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` +
-`www`; backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `eabf8b3`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: **before Phase 2F `aed2444`** (prior production HEAD; Phase 2E magazine section pages — app-only rollback,
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `56bc9c1` (Phase 2G content publishing workflow merge,
+PR #10; app-only build & deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves
+`bubbaaffiliate.com` + `www`; backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
+`Bubbaacademy/exploringtoknow` holds `main` @ `56bc9c1`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: **before Phase 2G `eabf8b3`** (prior production HEAD; Phase 2F deep public page polish — app-only rollback,
+redeploy that commit with `deploy-app.sh`; internal-console-only revert, no public-surface effect);
+**before Phase 2F `aed2444`** (Phase 2E magazine section pages — app-only rollback,
 redeploy that commit with `deploy-app.sh`; note this also restores the public "Request a Review" CTAs on the trust/article
 pages and un-noindexes `/request-product` + `/signup`);
 before Phase 2E `73b1238` (Phase 2D magazine front page — app-only rollback, redeploy
