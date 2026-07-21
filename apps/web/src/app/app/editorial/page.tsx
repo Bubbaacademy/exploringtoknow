@@ -25,7 +25,7 @@ export default async function EditorialPage() {
   if (review > 0) warnings.push(['Article drafts ready for your review', review]);
   const nextAction = reqWaiting > 0
     ? `${reqWaiting} request${reqWaiting === 1 ? '' : 's'} awaiting editorial review.`
-    : (review > 0 ? `${review} draft${review === 1 ? '' : 's'} ready for your review.` : 'Intake a seller offer to start the pipeline.');
+    : (review > 0 ? `${review} draft${review === 1 ? '' : 's'} ready for your review.` : 'Create or review an article draft in Payload /admin.');
   return (
     <>
       <TopBar
