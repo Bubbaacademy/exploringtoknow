@@ -2,7 +2,70 @@
 
 _Updated: 2026-07-20 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `b3ac495` (`b3ac495e7809698ce0e93808b698189b336346a9`) (Phase 2G-QA — ExploringToKnow Editorial Copy
+**Production HEAD: `ee19ee9` (`ee19ee95d26716a01e6e44ea113aaa00f185b554`) (Phase 2H — ExploringToKnow Editorial Ops
+Dashboard — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:f9d7a57b…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+no new migration).**
+Phase 2H replaces the `/dashboard/content` stub (*"Placeholder view. Implemented in a later phase."*) with a real
+**ExploringToKnow Editorial Ops dashboard** — the operating overview for running the magazine. **It is deliberately NOT an
+editor: Payload `/admin` remains the real editing path** for article body, SEO, images, categories and publication status,
+and the page **never writes** (reads only, verified — no create/update/delete anywhere). **`/dashboard/content` is
+super-admin gated** (the `/dashboard` layout enforces `requireSuperAdmin()` and marks the tree `noindex`) and **redirects
+307 → /login when signed out** (verified live, as does `/dashboard` itself). **What the page shows:** a **publishing
+overview** (Published, In review, Drafts, Rejected, Total articles, Categories, Media); a **"How publishing works"** panel
+stating the rules plainly — **Draft → In review → Published**, only **Published** is public, publishing is **manual and
+human-reviewed**, **AI may assist drafting but nothing publishes automatically**, and **Rejected** is the real fourth state;
+**"Where work happens"** action cards linking to Payload **articles / categories / media**, the `/app` article desk, the
+public homepage (new tab) and system health; a **"Recently edited"** queue of the 10 most recently edited articles (title +
+slug, category, type, editorial status, **public state Live / Not public**, updated date, and published date **only when
+truly published**); and an **"Operating surfaces"** reference map. **The surfaces panel is explicitly labelled a link map
+that does NOT probe anything**, pointing at `/dashboard/health` for live checks — it never implies a health signal it did not
+measure — and carries a note that **BubbaAffiliate is a separate product** managed outside ExploringToKnow editorial.
+**Data sources are all existing and read-only:** `getAdminOverview()` for the counts it exposes; `client()` +
+`payload.find({ limit: 0 })` for the **Rejected** and **Total** counts it does not; `payload.find(sort:'-updatedAt', depth:1)`
+for the queue; and **`MAGAZINE_SECTIONS` from `lib/sections`** (Phase 2E) for the section route list, so the dashboard cannot
+drift from the real public routes. **Shared editorial vocabulary consolidated:** the status/type labels and
+`EditorialStatusBadge` / `PublicStateBadge` added in Phase 2G lived in `app/_ui.tsx`, but that file already imports from and
+re-exports `dashboard/_components`; rather than duplicate them they now live in **`dashboard/_components`** (the shared
+`.adm-*` design layer) and **`app/_ui.tsx` re-exports them** — the same idiom that file already uses for
+Section/Stat/Card/Badge/StatusBadge. Single source of truth, correct dependency direction, and **byte-identical behaviour for
+every existing `/app` consumer** (confirmed live post-deploy: `/app/articles` still carries "Editorial statuses", "Desk
+overview", "Start an article request"; `/app/editorial` still carries "Create or review an article draft"). Also adds
+**"Editorial Ops" to the dashboard Overview nav** — the route was previously unreachable except by direct URL. **Purely
+internal dashboard — 4 files** (`dashboard/content/page.tsx`, `dashboard/_components.tsx`, `dashboard/layout.tsx`,
+`app/_ui.tsx`); **no new collections, no new dependencies, zero CSS added** (reuses existing `.adm-*` classes); **NO schema,
+migration, DB write, Payload collection, `/admin` customization, env, provider, credential, OAuth, token, Google Ads, Meta
+Ads, Caddy, domain-routing, middleware, BubbaAffiliate gateway, ContactMessages, intake-API, or public-site change.**
+**Delivery note — this deploy was a FAST-FORWARD, not a PR merge** (the first in this project): the validated branch
+`phase-2h-etk-editorial-ops-dashboard` was fast-forwarded onto `main`, so **`ee19ee9` is an ordinary single-parent commit**
+(`parents=143283a`) rather than a merge commit, and there is **no PR-merge commit for Phase 2H**. Delivered to the VPS by git
+bundle over SSH (SHA256 matched both ends; `git bundle verify` passed), working tree fast-forwarded `b3ac495 → ee19ee9`
+(verified ancestor, clean fast-forward), deployed with the standard `infra/server/deploy-app.sh` (**app-only**, no Caddy
+update, no full `docker compose up`). **Verified live (19/19 checks passed, nothing failed):** build passed
+(`✓ Compiled successfully`; deployed image `f9d7a57b`; stale-image guard passed — running == freshly built); migrate ran as an
+observable **no-op** (`migrations up to date`, before=26 → after=26; live count independently confirmed **26**); **only
+`etk-app` was recreated** (`--no-deps`, `StartedAt 2026-07-21T16:40:39Z`) → **healthy**; **Postgres, worker and Caddy were NOT
+restarted** (all unchanged at `StartedAt 2026-07-14T00:22:20Z` — the `etk-postgres Running/Waiting/Healthy` lines in the
+deploy log are the migrate step's dependency health-check, not a restart) and the **live Caddyfile hash was byte-identical**
+(`707a062de883706bd14d7bb43808ff96`, no config change, no reload). `GET https://exploringtoknow.com/api/health` → **200**
+`{"status":"ok","service":"web","missingEnv":[]}`; **`/dashboard` and `/dashboard/content` → 307 → /login**; Payload
+**`/admin` → 200**; **homepage 200**; **all eight public magazine section pages 200**; `/login` **200**; `/app`,
+`/app/articles`, `/app/editorial`, `/app/categories`, `/app/media` all **307 → /login**; `bubbaaffiliate.com/`, `/sellers`,
+`/creators` all **200 (unchanged)** and `POST bubbaaffiliate.com/api/bubbaaffiliate/intake` → **400 on empty body** (still
+wired + validating). **Confirmed inside the RUNNING container:** the old stub string `"Placeholder view"` → **0 (gone)**, and
+`Editorial Ops`, `Publishing overview`, `How publishing works`, `Recently edited`, `Operating surfaces`, `nothing publishes
+automatically` all present (`not the editor` ×2); the `PublicStateBadge` labels ("Not public") resolve from the **shared
+chunks** (`7620.js`, `8455.js`) rather than the page bundle, as expected now that the vocabulary lives in
+`dashboard/_components`. **Operator visual check: PASSED** (signed-in super-admin confirmation of the rendered dashboard).
+**Real-data note:** production still has only ~3 published articles, so several stats read low (Rejected likely **0**) and
+most "Recently edited" rows show **"—" under Published** with **"Not public"** — that is correct behaviour, not a regression.
+Pre-deploy: isolated VPS/Linux **build-only** validation of `ee19ee9` passed (throwaway image `etk-web:p2h-validate`,
+isolated bare-repo + `git archive` extraction to `/tmp`, real rebuild — typecheck + lint + `next build` green; **all 13
+required assertions** met: `/dashboard` + `/dashboard/content` compiled, all four `/app` editorial routes compiled, all 27
+`(site)` routes + eight section pages + `/login` compiled, public gateway + `/app/bubbaaffiliate` + `(payload)/admin`
+compiled, both 308 rules intact, old stub gone and all new content markers present; cleaned up; **production untouched
+throughout validation** — HEAD, image, container `StartedAt` and Caddy hash all unchanged).
+**Prior — `b3ac495` (`b3ac495e7809698ce0e93808b698189b336346a9`) (Phase 2G-QA — ExploringToKnow Editorial Copy
 Cleanup — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:5c19ce6a…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 no new migration).**
@@ -460,11 +523,17 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `b3ac495` (Phase 2G-QA editorial copy cleanup merge,
-PR #11; app-only build & deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves
-`bubbaaffiliate.com` + `www`; backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `b3ac495`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: **before Phase 2G-QA `56bc9c1`** (prior production HEAD; Phase 2G content publishing workflow — app-only
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `ee19ee9` (Phase 2H Editorial Ops dashboard;
+**fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build & deploy; no migration,
+26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup retained at
+`/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
+`Bubbaacademy/exploringtoknow` holds `main` @ `ee19ee9`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: **before Phase 2H `b3ac495`** (prior production HEAD; Phase 2G-QA editorial copy cleanup — app-only
+rollback, redeploy that commit with `deploy-app.sh`; this restores the `/dashboard/content` stub and moves the editorial
+vocabulary back into `app/_ui.tsx` — internal-console only, no public-surface or schema effect. Note `143283a` — the
+Phase 2G-QA docs commit, the immediate parent of `ee19ee9` — is **app-code-identical** to `b3ac495`, differing only in
+`CURRENT_PRODUCTION_STATUS.md`, so either commit restores the same running state);
+**before Phase 2G-QA `56bc9c1`** (Phase 2G content publishing workflow — app-only
 rollback, redeploy that commit with `deploy-app.sh`; this restores the stale seller-offer string on `/app/editorial` —
 cosmetic only, no functional impact);
 **before Phase 2G `eabf8b3`** (Phase 2F deep public page polish — app-only rollback,
