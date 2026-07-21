@@ -2,7 +2,75 @@
 
 _Updated: 2026-07-20 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `ee19ee9` (`ee19ee95d26716a01e6e44ea113aaa00f185b554`) (Phase 2H — ExploringToKnow Editorial Ops
+**Production HEAD: `11fa577` (`11fa57790ce766ca0d13a818dbc06b4b61e21dc8`) (Phase 2I — Payload CMS Editorial Editing
+Polish — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:f394c374…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+**no new migration**).**
+Phase 2I improves the **real article editing surface — Payload `/admin`** — for ExploringToKnow magazine editors.
+**Admin/CMS-only: `apps/web/src/collections/Articles.ts` is the ONLY code file changed** (plus this status doc). No schema,
+no migration, no publishing-logic change: the `hooks` and `access` blocks are **byte-identical** to the prior version.
+**Six presentational editorial sections** now organise the editor — *Publication control*, *Article identity*,
+*Category & media*, *Content* (expanded) and *SEO & social*, *Internal & pipeline* (collapsed by default). **The publish gate
+is now unmistakable**, which was the single most confusable thing in this collection (both `status` and `editorialStatus`
+have a "published" option, but only one controls visibility): `editorialStatus` is relabelled **"Editorial status (controls
+public visibility)"** with its four options stating their effect — **"Draft — not public"**, **"In review — not public"**,
+**"Published — LIVE on the public magazine"**, **"Rejected — not public"** — while the AI field is relabelled **"Pipeline
+status (NOT public visibility)"** and says plainly that "Published (pipeline)" does NOT mean the article is live. **No
+"Archived" status was invented** — the collection has exactly those four. **Published-date behaviour is now documented
+honestly:** the `beforeChange` hook stamps `editorialPublishedAt` on first publish but **never clears it**, so an article
+moved back to Draft keeps a stale date; rather than change publishing behaviour in a polish phase, the field description now
+states that a date there **does not by itself mean the article is public — only Editorial status decides that** (matching how
+`/app/articles` and `/dashboard/content` already render it). Further guidance added: **slug** warns that changing it breaks
+existing links and lists the **eight reserved magazine section slugs**; **article type** explains which public listing each
+format feeds; **category** states it is required to publish; **hero alt text** is called out for accessibility; SEO/social
+fields document their fallbacks; and **rich body blocks** explain they REPLACE the markdown source when non-empty.
+`Categories` and `Media` collections were inspected and **deliberately left unchanged** to keep the schema-risk surface
+minimal.
+**WHY THIS IS SCHEMA-SAFE — verified, not assumed.** Fields are wrapped in Payload `collapsible` sections, which are
+**presentational**: a collapsible has **no `name`**, so its subfields are stored flat on the parent exactly as if the wrapper
+were absent. Static diff against the prior commit confirmed **58 field names, 28 select option values and 10 defaultValues
+all IDENTICAL**, and every collapsible unnamed. The `editorialStatus` values in particular back the Postgres enum
+`enum_articles_editorial_status` and are load-bearing for `PUBLISHED_WHERE` in `lib/public.ts` — only their **labels**
+changed. **Empirical drift proof:** a throwaway Postgres on an isolated Docker network had **all 26 committed migrations
+applied** (count verified 26), then Payload's migration generator was run twice under identical conditions — once against the
+**prior deployed** `Articles.ts` and once against the **Phase 2I** version. Both emitted **877 lines**, and the statement
+**sets are IDENTICAL**; the only raw-diff delta was the *emission order* of two `ADD COLUMN` statements (`publish_priority`
+numeric, `editorial_notes` varchar) which moved because those fields were relocated between sections — same statements, same
+types. The collapsibles produced **zero columns**. **Conclusion: Phase 2I contributes zero schema delta.** ⚠️ **Note for
+future collection work:** the repo carries only **6 `.json` migration snapshots for 26 migrations** (newest `20260614`, twelve
+behind), so a naive `payload migrate:create` diffs against a **stale baseline** and emits a large bogus migration for
+unrelated collections — which is exactly why the differential method above was required. **Anyone changing a collection
+should expect this and use a differential comparison, not a single generate.** Regenerating the snapshots deserves its own
+phase.
+**Delivery — FAST-FORWARD, not a PR merge** (as with Phase 2H): the validated branch
+`phase-2i-payload-editorial-editing-polish` was fast-forwarded onto `main`, so **`11fa577` is an ordinary single-parent
+commit** (`parents=b689d5d`) and there is **no PR-merge commit for Phase 2I**. Delivered to the VPS by git bundle over SSH
+(SHA256 matched both ends; `git bundle verify` passed), working tree fast-forwarded `ee19ee9 → 11fa577` (verified ancestor,
+clean fast-forward), deployed with the standard `infra/server/deploy-app.sh` (**app-only**, no Caddy update, no manual DB
+change, no full `docker compose up`). **Verified live:** build passed (`✓ Compiled successfully`; deployed image
+`f394c374`; stale-image guard passed and the **running image was confirmed byte-equal to `etk-web:latest`**); migrate ran as
+an observable **no-op** (`migrations up to date`, before=26 → after=26); **only `etk-app` was recreated** (`--no-deps`,
+`StartedAt 2026-07-21T20:05:29Z`) → **healthy**; **Postgres, worker and Caddy were NOT restarted** (all unchanged at
+`StartedAt 2026-07-14T00:22:20Z`) and the **live Caddyfile hash was byte-identical** (`707a062de883706bd14d7bb43808ff96`).
+**The LIVE DATABASE was inspected directly to prove the schema is untouched:** `payload_migrations` = **26**, the `articles`
+table still has **39 columns**, and `enum_articles_editorial_status` still reads exactly
+**`draft,ready_for_review,published,rejected`** — the enum backing public visibility is intact, so relabelling its options
+changed nothing that `PUBLISHED_WHERE` depends on. `GET https://exploringtoknow.com/api/health` → **200**; Payload
+**`/admin` → 200**; **homepage 200**; **all eight public magazine section pages 200**; `/search`, `/categories`, `/about`
+**200**; **`/reviews` still 308 → `/product-reviews`** and **`/explore` still 308 → `/explore-picks`**; `/login` **200**;
+`/app`, `/app/articles`, `/app/editorial`, `/dashboard`, `/dashboard/content` all **307 → /login**; `bubbaaffiliate.com/`,
+`/sellers`, `/creators` all **200 (unchanged)** and `POST bubbaaffiliate.com/api/bubbaaffiliate/intake` → **400 on empty
+body** (still wired + validating). **Confirmed inside the RUNNING container** (chunk `3608.js`): all six section labels plus
+"Draft — not public", "Published — LIVE on the public magazine", "Pipeline status (NOT public visibility)" and the
+published-date caveat. **Operator manual acceptance: PASSED** (signed-in Payload `/admin` review of the rendered editor).
+**NO schema, migration, DB, env, provider, credential, OAuth, token, Google Ads, Meta Ads, Caddy, domain-routing, middleware,
+public-routing, BubbaAffiliate gateway, ContactMessages, intake-API, package/lockfile, or `/app`-route change. No AI
+generation, no auto-publish, no new approval automation.** Pre-deploy: isolated VPS/Linux **build-only** validation of
+`11fa577` passed (throwaway image `etk-web:p2i-validate` + build-stage image for the drift probe, isolated bare-repo +
+`git archive` extraction to `/tmp`, real rebuild — typecheck + lint + `next build` green), plus the throwaway-Postgres drift
+proof above; **all throwaway resources torn down** (container, isolated network, both images, pulled `postgres:16-alpine`,
+temp files) and **production untouched throughout validation**.
+**Prior — `ee19ee9` (`ee19ee95d26716a01e6e44ea113aaa00f185b554`) (Phase 2H — ExploringToKnow Editorial Ops
 Dashboard — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:f9d7a57b…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 no new migration).**
@@ -523,12 +591,17 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `ee19ee9` (Phase 2H Editorial Ops dashboard;
-**fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build & deploy; no migration,
-26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup retained at
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `11fa577` (Phase 2I Payload CMS editorial editing
+polish; **fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build & deploy; no
+migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup retained at
 `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `ee19ee9`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: **before Phase 2H `b3ac495`** (prior production HEAD; Phase 2G-QA editorial copy cleanup — app-only
+`Bubbaacademy/exploringtoknow` holds `main` @ `11fa577`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: **before Phase 2I `ee19ee9`** (prior production HEAD; Phase 2H Editorial Ops dashboard — app-only rollback,
+redeploy that commit with `deploy-app.sh`; this restores the previous `Articles.ts` field layout and labels — **Payload-admin
+UX only, no schema, data, or public-surface effect**. Note `b689d5d` — the Phase 2H docs commit and the immediate parent of
+`11fa577` — is **app-code-identical** to `ee19ee9`, differing only in `CURRENT_PRODUCTION_STATUS.md`, so either commit
+restores the same running state);
+**before Phase 2H `b3ac495`** (Phase 2G-QA editorial copy cleanup — app-only
 rollback, redeploy that commit with `deploy-app.sh`; this restores the `/dashboard/content` stub and moves the editorial
 vocabulary back into `app/_ui.tsx` — internal-console only, no public-surface or schema effect. Note `143283a` — the
 Phase 2G-QA docs commit, the immediate parent of `ee19ee9` — is **app-code-identical** to `b3ac495`, differing only in
