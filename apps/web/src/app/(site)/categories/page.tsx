@@ -35,7 +35,14 @@ export default async function CategoriesPage() {
           <div key={g.title} className="hub-group">
             <h2 className="hub-group-title">{g.title}</h2>
             <div className="topic-grid">
-              {g.items.map((c) => {
+              {/* Within each editorial group, topics that actually have published
+                  guides come first — a reader browsing should reach real content
+                  before "Coming soon" placeholders. Ordering only; nothing is
+                  hidden, and every active category still appears. */}
+              {[...g.items]
+                .sort((a, b) => (countBySlug.get(b.slug) ?? 0) - (countBySlug.get(a.slug) ?? 0)
+                  || a.name.localeCompare(b.name))
+                .map((c) => {
                 const n = countBySlug.get(c.slug) ?? 0;
                 const desc = descBySlug.get(c.slug);
                 return (

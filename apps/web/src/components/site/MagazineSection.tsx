@@ -95,13 +95,22 @@ export async function MagazineSectionPage({ section }: { section: Section }) {
 
   return (
     <>
-      {/* Section hero + description */}
+      {/* Section hero + description. The count is the REAL number of published
+          articles in this section and is shown only when there is at least one —
+          a "0 guides" line would be noise, and the empty state already says it. */}
       <section className="section">
         <div className="container">
           <div className="hub-head">
             <span className="eyebrow">{section.eyebrow}</span>
             <h1>{section.title}</h1>
             <p className="hub-head-desc">{section.description}</p>
+            {articles.length ? (
+              <p className="hub-head-meta">
+                {articles.length} published {articles.length === 1 ? 'guide' : 'guides'}
+                {chips.length ? <> · {chips.length} {chips.length === 1 ? 'topic' : 'topics'}</> : null}
+                {' '}· Independently researched, human-reviewed
+              </p>
+            ) : null}
           </div>
 
           {feature

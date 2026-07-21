@@ -21,10 +21,18 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const c = await getActiveCategory(slug);
   if (!c) return { title: 'Not found', robots: { index: false } };
   const seo = (c.seo ?? {}) as { seoTitle?: string; seoDescription?: string };
+  const title = seo.seoTitle || `${c.name} — ${SITE_NAME}`;
+  const description = seo.seoDescription || c.description || `Independent ${c.name} buying guides and reviews from ${SITE_NAME}.`;
+  const url = `${SITE_URL}/category/${c.slug}`;
+  // Social preview uses the category's own hero/image when one is set; omitted
+  // entirely otherwise rather than substituting an unrelated image.
+  const ogImg = mediaUrl(c.heroImage) || mediaUrl(c.image) || undefined;
   return {
-    title: seo.seoTitle || `${c.name} — ${SITE_NAME}`,
-    description: seo.seoDescription || c.description || `Independent ${c.name} buying guides and reviews from ${SITE_NAME}.`,
-    alternates: { canonical: `${SITE_URL}/category/${c.slug}` },
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title, description, type: 'website', url, siteName: SITE_NAME, images: ogImg ? [ogImg] : undefined },
+    twitter: { card: ogImg ? 'summary_large_image' : 'summary', title, description, images: ogImg ? [ogImg] : undefined },
   };
 }
 

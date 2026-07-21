@@ -205,6 +205,14 @@ img { max-width: 100%; height: auto; display: block; }
 .pick-card .pick-body h3 { font-family: var(--font-display); font-weight: 600; font-size: 15.5px; line-height: 1.3; letter-spacing: -.01em; margin: 0; color: var(--fg); }
 .pick-card:hover .pick-body h3 { color: var(--brand-ink); }
 @media (min-width: 900px) { .picks-strip { grid-auto-flow: initial; grid-template-columns: repeat(5, 1fr); overflow: visible; margin: 0; padding-left: 0; padding-right: 0; } }
+/* Same orphaned-track problem as `.grid`: the fixed 5-track layout leaves blank
+   columns when fewer than five picks are published. Match the real count. */
+@media (min-width: 900px) {
+  .picks-strip:has(> :last-child:nth-child(1)) { grid-template-columns: minmax(0, 280px); }
+  .picks-strip:has(> :last-child:nth-child(2)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .picks-strip:has(> :last-child:nth-child(3)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .picks-strip:has(> :last-child:nth-child(4)) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 
 /* ---- Magazine section fallback placeholder ------------------------------ */
 .mag-ph {
@@ -621,6 +629,8 @@ img { max-width: 100%; height: auto; display: block; }
 .hub-head { max-width: 720px; margin-bottom: 28px; }
 .hub-head h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(30px, 4vw, 44px); line-height: 1.08; letter-spacing: -.022em; margin: 8px 0 12px; color: var(--fg); }
 .hub-head-desc { font-size: clamp(16px, 2vw, 18px); line-height: 1.6; color: var(--muted); margin: 0; }
+/* Honest section meta line — real counts only, rendered only when non-zero. */
+.hub-head-meta { font-size: 13px; color: var(--muted-2); margin: 14px 0 0; letter-spacing: .01em; }
 
 .empty-panel {
   border: 1px solid var(--line); background: var(--surface); border-radius: var(--r-lg);
@@ -665,6 +675,24 @@ img { max-width: 100%; height: auto; display: block; }
 
 /* ---- Chip count (browse-by-topic) -------------------------------------- */
 .cat-chip .chip-count { margin-left: 4px; min-width: 20px; padding: 1px 7px; border-radius: var(--r-pill); background: var(--brand-tint); color: var(--brand); font-size: 12px; font-weight: 700; }
+
+/* ---- Balanced listing grids at low article counts -----------------------
+   `.grid` uses auto-fill, which KEEPS empty tracks. With one or two published
+   articles on a wide screen the cards sit orphaned in the first track while the
+   rest of the row is blank, which reads as broken rather than sparse. Quantity
+   queries (:has + :nth-last-child) give thin listings a deliberate shape and
+   leave full grids completely untouched. The magazine frequently runs thin per
+   section, so this is the common case here, not an edge case.
+   Progressive enhancement: browsers without :has() simply keep the old
+   auto-fill behaviour — nothing breaks. Mobile (<=640px) is already a single
+   column and is intentionally not affected. */
+@media (min-width: 641px) {
+  .grid:has(> :last-child:nth-child(1)) { grid-template-columns: minmax(0, 560px); }
+  .grid:has(> :last-child:nth-child(2)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .grid:has(> :last-child:nth-child(3)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 
 /* ---- Explore: entry-point cards ---------------------------------------- */
 .entry-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
