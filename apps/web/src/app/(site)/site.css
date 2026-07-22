@@ -921,3 +921,30 @@ img { max-width: 100%; height: auto; display: block; }
   .secdir { grid-template-columns: 1fr; gap: 14px; }
   .secdir-card { padding: 20px 20px 18px; }
 }
+
+/* ============================================================================
+   PHASE 2M — Public magazine visual polish. Additive only.
+   ========================================================================== */
+
+/* ---- Tinted closing band ------------------------------------------------
+   After the hero, the homepage was one uniform run of sections on the same
+   paper background with no banding or rules — visually monotonous for a
+   magazine. This gives the closing trust block its own tinted surface with
+   hairline rules, so the page ends on a deliberate note instead of simply
+   stopping. Full-bleed by design: the tint spans the viewport while the inner
+   `.container` keeps the text on the existing measure.
+
+   Scoped to `.section-band` only — no existing `.section` is affected, so
+   article, category and listing pages are untouched. `.section + .section`
+   already zeroes the top padding, which would collapse the tint against the
+   preceding block, so the padding is restored explicitly (the sibling selector
+   is required to out-weigh that rule; it also appears later in the file).
+   No `margin-top` here on purpose: the previous `.section` already contributes
+   its own bottom padding, and adding a margin would double the gap. */
+.section-band {
+  background: var(--surface-2);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding-top: var(--section-pad);
+}
+.section + .section-band { padding-top: var(--section-pad); }

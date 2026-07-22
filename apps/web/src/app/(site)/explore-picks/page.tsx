@@ -4,6 +4,7 @@ import {
   listPublishedArticles,
   listActiveCategoriesWithCounts,
   mediaUrl,
+  excerptText,
   SITE_NAME,
   SITE_URL,
   type Doc,
@@ -80,7 +81,7 @@ export default async function ExplorePicksPage() {
                 <span className="eyebrow">{featured.length ? 'Featured guide' : 'Latest guide'}</span>
                 {coverCat ? <span className="cat">{coverCat.name as string}</span> : null}
                 <h2>{cover.title as string}</h2>
-                {cover.excerpt ? <p>{String(cover.excerpt).slice(0, 220)}</p> : null}
+                {cover.excerpt ? <p>{excerptText(cover.excerpt, 220)}</p> : null}
                 <span className="cover-cta">Read the guide →</span>
               </div>
             </Link>

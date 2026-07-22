@@ -4,6 +4,7 @@ import {
   listPublishedArticlesByTypes,
   listActiveCategoriesWithCounts,
   mediaUrl,
+  excerptText,
   type Doc,
 } from '@/lib/public';
 import type { MagazineSection as Section } from '@/lib/sections';
@@ -39,7 +40,7 @@ function SectionFeature({ article, label }: { article: Doc; label: string }) {
         <span className="eyebrow">{label}</span>
         {cat ? <span className="cat">{cat.name as string}</span> : null}
         <h2>{article.title as string}</h2>
-        {article.excerpt ? <p>{String(article.excerpt).slice(0, 220)}</p> : null}
+        {article.excerpt ? <p>{excerptText(article.excerpt, 220)}</p> : null}
         <span className="cover-cta">Read the guide →</span>
       </div>
     </Link>
@@ -54,8 +55,10 @@ async function SectionEmpty({ section }: { section: Section }) {
   const withContent = (await listActiveCategoriesWithCounts()).filter((c) => c.articleCount > 0).slice(0, 10);
   return (
     <div className="empty-panel">
-      <span className="eyebrow">Coming soon</span>
-      <h2>More {section.title} guides are coming soon</h2>
+      {/* One statement, not two: the eyebrow previously said "Coming soon" directly
+          above a heading that also ended "…are coming soon". */}
+      <span className="eyebrow">In progress</span>
+      <h2>{section.title} is being written now</h2>
       <p>
         Our editors are researching and writing this section now. Nothing is published until a human has
         reviewed it — so this space stays empty rather than filled with anything we have not checked.

@@ -9,6 +9,7 @@ import {
   countPublishedByTypes,
   countPublishedArticles,
   mediaUrl,
+  excerptText,
   SITE_NAME,
   SITE_URL,
   type Doc,
@@ -187,12 +188,6 @@ export default async function HomePage() {
     .sort((a, b) => (b.count > 0 ? 1 : 0) - (a.count > 0 ? 1 : 0));
   const liveSections = directory.filter((d) => d.count > 0).length;
 
-  // The directory is the one block that ALWAYS renders, so it cannot assume a
-  // feed above it. With zero published articles every preceding block is absent
-  // and a hard-coded `paddingTop: 0` would collapse it against the hero.
-  const hasFeedAbove =
-    Boolean(cover) || trending.length > 0 || picks.length >= 2
-    || previewSections.length > 0 || buyingGuides.length > 0;
 
   // Topic chips: every active category still appears on /categories, but the front
   // page leads with the topics that actually have published guides so a reader's
@@ -265,7 +260,7 @@ export default async function HomePage() {
               <div className="cover-body">
                 {coverCat ? <span className="cat">{coverCat.name as string}</span> : null}
                 <h3>{cover.title as string}</h3>
-                {cover.excerpt ? <p>{String(cover.excerpt).slice(0, 220)}</p> : null}
+                {cover.excerpt ? <p>{excerptText(cover.excerpt, 220)}</p> : null}
                 {coverDate ? <span className="cover-meta">Published {coverDate}</span> : null}
                 <span className="cover-cta">Read the guide →</span>
               </div>
@@ -341,8 +336,21 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {/* The magazine at a glance — all eight sections, with REAL counts. */}
-      <section className="section" style={{ paddingTop: hasFeedAbove ? 0 : undefined }}>
+      {/* Newsletter — deliberately mid-page. It previously sat as the FINAL block,
+          directly above the Footer's own newsletter, so the homepage rendered two
+          email inputs back to back. Placed here it can never be adjacent to the
+          footer unit (the directory, topics and trust blocks always follow) and it
+          doubles as a break in an otherwise uniform run of feeds. */}
+      <section className="section">
+        <div className="container">
+          <NewsletterSignup source="homepage" variant="section" />
+        </div>
+      </section>
+
+      {/* The magazine at a glance — all eight sections, with REAL counts.
+          The newsletter above always renders, so this block always has a section
+          above it and can safely collapse its top padding. */}
+      <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
           <div className="section-head">
             <div className="section-title">
@@ -381,8 +389,10 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {/* How every guide is made */}
-      <section className="section">
+      {/* How every guide is made — closes the page on a tinted band. The band is
+          the only surface change on an otherwise uniform run of sections, so it
+          reads as a deliberate editorial footer note rather than another feed. */}
+      <section className="section section-band">
         <div className="container">
           <div className="section-head">
             <div className="section-title">
@@ -399,13 +409,6 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Newsletter */}
-      <section className="section" style={{ paddingTop: 0 }}>
-        <div className="container">
-          <NewsletterSignup source="homepage" variant="section" />
         </div>
       </section>
     </>

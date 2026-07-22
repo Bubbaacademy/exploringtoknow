@@ -10,6 +10,29 @@ export async function client() {
 
 export type Doc = Record<string, any>;
 
+/**
+ * Trim an excerpt to a maximum length on a WORD boundary (Phase 2M).
+ *
+ * Card and feature excerpts were previously cut with a bare `String(x).slice(0, n)`,
+ * which severs the final word and appends nothing — live copy read "…how they beat
+ * common DI". This cuts back to the last space before the limit and appends a single
+ * ellipsis, and it does so ONLY when the text was actually shortened, so a short
+ * excerpt is returned untouched with no trailing "…" implying missing words.
+ *
+ * Pure presentation: no I/O, no stored value is modified — only how much of an
+ * existing excerpt is displayed. Whitespace is collapsed so a stray newline in the
+ * source cannot open a gap mid-sentence.
+ */
+export function excerptText(value: unknown, max: number): string {
+  const text = String(value ?? '').replace(/\s+/g, ' ').trim();
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(' ');
+  // Fall back to the hard cut only if there is no space to break on (e.g. one long token).
+  const trimmed = (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.!?-]+$/, '');
+  return `${trimmed}…`;
+}
+
 /** Resolve a Payload media relationship to a usable URL (or null). */
 export function mediaUrl(rel: unknown): string | null {
   if (rel && typeof rel === 'object' && typeof (rel as Doc).url === 'string') return (rel as Doc).url;
