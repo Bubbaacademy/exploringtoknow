@@ -2,7 +2,77 @@
 
 _Updated: 2026-07-20 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `03a6ce1` (`03a6ce165e64d0701a72520c48b8a69d51deaa4a`) (Phase 2J — Public Article Reading Experience
+**Production HEAD: `8046095` (`8046095252d814d78e5913ff9378ff6feacfba09`) (Phase 2K — Public Section / Category Page
+Polish — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:1e2016d3…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+**no new migration**).**
+Phase 2K polishes the **public section, category and listing experience** so it handles **sparse content** cleanly. **Public
+UI only — no stored content changed, NO fabricated articles and NO fabricated counts** (every number rendered derives from
+real published records). **Scope note:** as with 2J, these pages were already substantially built (per-section heros driven by
+`lib/sections`, category masthead with description + honest count, grouped topic hub with real per-topic counts, styled
+cards/chips/empty panels), so 2K is a **targeted polish pass, not a redesign**.
+**THE HEADLINE FIX — orphan blank tracks on thin listings.** `.grid` used `repeat(auto-fill, minmax(290px, 1fr))`, and
+**auto-fill KEEPS empty tracks**: with one or two published articles on a wide screen the cards sat orphaned in the first
+track while the rest of the row stayed blank, reading as broken rather than sparse. **Quantity queries**
+(`:has` + `:nth-last-child`) now give thin listings a deliberate shape — **1 article → a single 560px card, 2 → an even pair,
+3 → a full row at ≥1024px** — while full grids are completely untouched. **`.picks-strip` (Explore Picks) had the identical
+problem in the opposite direction:** its ≥900px layout is a fixed `repeat(5, 1fr)`, so three published picks left **two blank
+columns**; it now matches the real count for 1–4 picks. This matters because **the magazine genuinely runs thin per section
+today, so the sparse case is the COMMON case here, not an edge case.** Both changes are **progressive enhancement** —
+browsers without `:has()` keep the previous auto-fill behaviour and nothing breaks — and **mobile (≤640px) is already a
+single column and is deliberately unaffected**. **Section hero metadata line:** each section page now carries an honest meta
+line under its description — the **real** published-guide count, the number of topics with content, and the standing
+"Independently researched, human-reviewed" note — rendered **only when the section actually has articles** (a "0 guides" line
+would be noise, and the empty state already covers that case). **`/categories` is cleaner and prioritises topics with
+published guides:** within each editorial group, topics that actually have content now sort first so a browsing reader
+reaches real guides before "Coming soon" placeholders — **ordering only; nothing is hidden and every active category still
+appears**, still sourced from `listActiveCategoriesWithCounts()`. **`/category/[slug]` metadata remains safe:** it gains
+OpenGraph + a Twitter card (matching what section pages already had), with the social image taken from the category's **own**
+hero/image when set and **omitted entirely otherwise rather than substituting an unrelated image**. **Deliberately left
+alone:** the category page body, section page structure, `ArticleCard`/`ArticleGrid`, `TopicChips`, prose typography and the
+640px mobile rules — all already sound; churning them would add risk without value. **Purely public presentation — 4 code
+files** (`app/(site)/site.css`, `components/site/MagazineSection.tsx`, `app/(site)/categories/page.tsx`,
+`app/(site)/category/[slug]/page.tsx`); **NO schema, migration, DB write, Payload collection, env, provider, credential,
+OAuth, token, Google Ads, Meta Ads, Caddy, domain-routing, middleware, BubbaAffiliate gateway, ContactMessages, intake-API,
+sitemap, package/lockfile, or `/app` | `/dashboard` change.** **Delivery — FAST-FORWARD, not a PR merge** (as with Phases 2H,
+2I and 2J): the validated branch `phase-2k-public-section-category-polish` was fast-forwarded onto `main`, so **`8046095` is
+an ordinary single-parent commit** (`parents=dffb608`) and there is **no PR-merge commit for Phase 2K**. Delivered to the VPS
+by git bundle over SSH (SHA256 matched both ends; `git bundle verify` passed), working tree fast-forwarded
+`03a6ce1 → 8046095` (verified ancestor, clean fast-forward), deployed with the standard `infra/server/deploy-app.sh`
+(**app-only**, no Caddy update, no full `docker compose up`, no manual DB change). **Verified live (19/19 checks passed,
+nothing failed):** build passed (`✓ Compiled successfully`; deployed image `1e2016d3`; stale-image guard passed and the
+**running image was confirmed byte-equal to `etk-web:latest`**); migrate ran as an observable **no-op**
+(`migrations up to date`, before=26 → after=26); **only `etk-app` was recreated** (`--no-deps`, `StartedAt
+2026-07-22T01:42:47Z`) → **healthy**; **Postgres, worker and Caddy were NOT restarted** (all unchanged at `StartedAt
+2026-07-14T00:22:20Z`) and the **live Caddyfile hash was byte-identical** (`707a062de883706bd14d7bb43808ff96`). **Live DB
+re-inspected:** `payload_migrations` = **26**, `articles` still **39 columns**, `enum_articles_editorial_status` still
+`draft,ready_for_review,published,rejected`. `GET https://exploringtoknow.com/api/health` → **200**; Payload **`/admin` →
+200**; **homepage 200**; **all eight section pages 200**; **`/categories` 200**; **four REAL `/category/[slug]` pages 200**
+(`appliances`, `arts-crafts-hobbies`, `automotive`, `baby-kids`); **three REAL article pages 200** — category and article
+slugs resolved from the **live sitemap**, not assumed; `/login` **200**; `/app`, `/app/articles`, `/dashboard`,
+`/dashboard/content` all **307 → /login**; **`/reviews` still 308 → `/product-reviews`** and **`/explore` still 308 →
+`/explore-picks`**; `bubbaaffiliate.com/`, `/sellers`, `/creators` all **200 (unchanged)** and `POST
+bubbaaffiliate.com/api/bubbaaffiliate/intake` → **400 on empty body** (still wired + validating). **Confirmed in the RUNNING
+container: all 7 quantity rules are live** in the served CSS (3 × `.grid`, 4 × `.picks-strip`). ⚠️ **Verification gotcha for
+future readers:** the minifier rewrites `:nth-child(1)` to the semantically identical **`:first-child`**, and a naive grep
+with `[^)]*` fails on the nested parens in `:nth-child(2)` — a first scan appeared to show missing rules that were in fact
+present. **The fix is exercised on REAL data:** `/beauty-style` is currently the one populated section (2 grid cards), so the
+`:nth-child(2)` rule applies there and produces an even pair instead of an orphaned card in a 4-track row; its hero meta line
+reads **"3 published guides · 2 topics · Independently researched, human-reviewed"**, and the meta line is **correctly absent
+on all eight empty sections** — designed behaviour proven live. **Sitemap intact:** 8/8 section URLs, 23 `/category/*` URLs,
+`/categories` present, retired `/reviews` + `/explore` correctly **absent (0)**. **A forbidden-CTA scan across 7 public
+listing pages** (`/`, `/categories`, `/beauty-style`, `/buying-guides`, `/product-reviews`, `/explore-picks`,
+`/category/appliances`) **returned 0 hits** for every one of: "Request a Review", "Start Free Trial", "free trial", "Create
+workspace", "My Workspace", "Request Access", "BubbaAffiliate", "seller", "creator". **Operator visual confirmation: PASSED.**
+⚠️ **Latent-coverage note:** the **1-item grid rule** (`minmax(0, 560px)`) has **no live page exercising it today** — no
+section currently holds exactly one article — so it is shipped and correct but **unobserved in production** until content
+distribution changes (same situation as the Phase 2J caption fix). The **2-item rule IS live** on `/beauty-style`, so the
+mechanism itself is proven working. Pre-deploy: isolated VPS/Linux **build-only** validation of `8046095` passed (throwaway
+image `etk-web:p2k-validate`, isolated bare-repo + `git archive` extraction to `/tmp`, real rebuild — typecheck + lint +
+`next build` green; all 27 `(site)` routes compiled including the eight sections, `/categories`, `/category` and the article
+template; all 7 quantity rules, `.hub-head-meta`, category OpenGraph/Twitter present; both 308 rules and the sitemap route
+intact; cleaned up; **production untouched throughout validation**).
+**Prior — `03a6ce1` (`03a6ce165e64d0701a72520c48b8a69d51deaa4a`) (Phase 2J — Public Article Reading Experience
 Polish — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:f501891f…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 **no new migration**).**
@@ -655,12 +725,18 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `03a6ce1` (Phase 2J public article reading experience
-polish; **fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build & deploy; no
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `8046095` (Phase 2K public section/category polish;
+**fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build & deploy; no
 migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup retained at
 `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `03a6ce1`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: **before Phase 2J `11fa577`** (prior production HEAD; Phase 2I Payload CMS editorial editing polish —
+`Bubbaacademy/exploringtoknow` holds `main` @ `8046095`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: **before Phase 2K `03a6ce1`** (prior production HEAD; Phase 2J public article reading polish — app-only
+rollback, redeploy that commit with `deploy-app.sh`; ⚠️ this restores `auto-fill` grid behaviour, so **orphaned blank tracks
+return on thin listings** and Explore Picks again leaves blank columns; it also removes the section hero meta line, the
+`/categories` content-first ordering, and category OpenGraph/Twitter metadata. Public-presentation only — no schema, data, or
+routing effect. Note `dffb608` — the Phase 2J docs commit and the immediate parent of `8046095` — is **app-code-identical**
+to `03a6ce1`, differing only in `CURRENT_PRODUCTION_STATUS.md`, so either commit restores the same running state);
+**before Phase 2J `11fa577`** (Phase 2I Payload CMS editorial editing polish —
 app-only rollback, redeploy that commit with `deploy-app.sh`; ⚠️ this reverts the public article header/hero/metadata **and
 REINTRODUCES the duplicate `.article-hero` CSS rule that clips image captions**. Public-presentation only — no schema, data,
 or routing effect. Note `2e4708c` — the Phase 2I docs commit and the immediate parent of `03a6ce1` — is **app-code-identical**
