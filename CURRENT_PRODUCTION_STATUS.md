@@ -2,10 +2,89 @@
 
 _Updated: 2026-07-22 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `689d296` (`689d2968f0ede715c97d1851af51e97dd04b8c9a`) (Phase 2L — Public Homepage Magazine
+**Production HEAD: `82a8eb6` (`82a8eb6a50c8c90926b963002530fd9e571a626d`) (Phase 2M — Public Magazine Visual
 Polish — DEPLOYED & VERIFIED LIVE).
-App image `etk-web` (id `sha256:bd1aaabb…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+App image `etk-web` (id `sha256:090f2cdf…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 **no new migration**).**
+Phase 2M is a small, targeted **public magazine visual-polish** pass on top of the Phase 2L front page — **public
+presentation only, 6 code files**, no stored content changed and no article, count or image fabricated. **Four fixes:**
+**(A) THE HOMEPAGE ASKED FOR YOUR EMAIL TWICE.** The newsletter was the **final** homepage block, rendering directly above
+the Footer's own newsletter — two `type="email"` inputs back to back ("Practical buying advice, in your inbox" immediately
+followed by "Get the newsletter"), confirmed in the pre-deploy HTML. It now sits **mid-page, above the section directory**,
+so it can never be adjacent to the footer unit. **Proven live post-deploy by byte offset:** the mid-page newsletter
+(byte 18065) and the footer newsletter (byte 24781) are now **6,716 bytes / 4 `<section>` elements apart**, with all eight
+directory cards between them. Because the newsletter always renders, the Phase 2L `hasFeedAbove` padding guard became
+**provably always true** and was **removed rather than left as dead logic that reads like a live condition**. **(B) EXCERPTS
+TRUNCATED MID-WORD WITH NO ELLIPSIS.** Five call sites cut copy with a bare `String(x).slice(0, n)`, severing the final word
+and appending nothing — the live homepage read **"…how they beat common DI"**. A new **pure** helper `excerptText(value, max)`
+in `lib/public.ts` cuts back to the last space, strips dangling punctuation and appends a **single** ellipsis — and **only
+when the text was actually shortened**, so a short excerpt is returned untouched with no trailing "…" implying words that
+were never there (it collapses whitespace and falls back to a hard cut for one unbroken token). Applied at all five sites
+(`ArticleCard`, `MagazineSection` feature, `explore-picks` cover, homepage cover). **Unit-tested against 8 cases** including
+the live regression string, then **proven live:** `common DI<` → **0**, that excerpt now ends **"…beat common…"**, and the
+homepage carries exactly **2** ellipses — only on the genuinely-truncated excerpts, none on short copy. **(C) NO VISUAL
+RHYTHM.** After the hero the homepage was one uniform run of sections on the same paper background. The closing "How every
+guide is made" trust block now sits on a **tinted full-bleed band** (`.section-band`) with hairline rules, so the page ends
+on a deliberate note. **Scoped to the new class only — no existing `.section` rule is touched**, so article, category and
+listing pages are byte-identical. **(D) DUPLICATE "COMING SOON".** The section empty panel showed the eyebrow "Coming soon"
+directly above a heading ending "…are coming soon"; now one statement — **"In progress" / "{Section} is being written now"**
+(copy only; the explanatory paragraph, chips and actions are unchanged). Verified live on `/tech`: `guides are coming soon` →
+**0**, new copy present. **Two CSS bugs were caught and fixed during self-review BEFORE commit:** `.section-band + .site-footer`
+could never match (the Footer is a sibling of `<main>`, not of the sections) and a `margin-top` on the band would have
+stacked with the preceding section's bottom padding and doubled the gap — both removed. **Purely public presentation — 6 code
+files** (`app/(site)/page.tsx`, `app/(site)/site.css`, `app/(site)/explore-picks/page.tsx`, `components/site/ArticleCard.tsx`,
+`components/site/MagazineSection.tsx`, `lib/public.ts`). **`site.css` and `lib/public.ts` are both purely additive (0 deleted
+lines)** — no existing rule or helper was modified. **NO schema, migration, DB write, Payload collection, `/admin`, env,
+provider, credential, OAuth, token, Google Ads, Meta Ads, Caddy, domain-routing, middleware, BubbaAffiliate gateway,
+ContactMessages, intake-API, sitemap, package/lockfile, or `/app` | `/dashboard` change.** **Delivery — FAST-FORWARD, not a
+PR merge** (as with 2H–2L): the validated branch `phase-2m-public-magazine-visual-polish` was fast-forwarded onto `main`, so
+**`82a8eb6` is an ordinary single-parent commit** (`parents=beb09f1`) and there is **no PR-merge commit for Phase 2M**.
+Delivered to the VPS by git bundle over SSH (SHA256 matched both ends, `86115ce4…`; `git bundle verify` passed), working tree
+fast-forwarded `689d296 → 82a8eb6` (verified ancestor, clean fast-forward — the FF also replayed the two already-approved
+Phase 2L docs commits `765be87` + `beb09f1`, `CURRENT_PRODUCTION_STATUS.md` only, zero code impact), deployed with the
+standard `ROOT=/opt/exploringtoknow bash /opt/exploringtoknow/infra/server/deploy-app.sh` (**app-only**, no Caddy update, no
+full `docker compose up`, no manual DB change). **Verified live:** build passed (`✓ Compiled successfully`; deployed image
+`090f2cdf`; stale-image guard passed and the **running image was confirmed byte-equal to `etk-web:latest`**); migrate ran as
+an observable **no-op** (`migrations up to date`, before=26 → after=26); **only `etk-app` was recreated** (`--no-deps`,
+`StartedAt 2026-07-22T22:52:16Z`) → **healthy**; **Postgres, worker and Caddy were NOT restarted** (all unchanged at
+`StartedAt 2026-07-14T00:22:20Z`) and the **live Caddyfile hash was byte-identical** (`0f45cd67…`). **Live DB re-inspected:**
+`payload_migrations` = **26**, `articles` still **39 columns**, `enum_articles_editorial_status` still
+`draft,ready_for_review,published,rejected`. `GET https://exploringtoknow.com/api/health` → **200**; Payload **`/admin` →
+200**; **homepage 200**; **all eight section pages 200**; **`/categories` 200**; **`/search` 200**; **two REAL article pages
+200** and **two REAL `/category/[slug]` pages 200** (`appliances`, `baby-kids`) — slugs resolved from the **live sitemap**;
+`/login` **200**; `/app`, `/app/articles`, `/dashboard`, `/dashboard/content` all **307 → /login**; **`/reviews` still 308 →
+`/product-reviews`** and **`/explore` still 308 → `/explore-picks`**; **sitemap intact** (41 URLs, 8/8 sections, 23
+`/category/*`, retired `/reviews` + `/explore` absent). `bubbaaffiliate.com/`, `/sellers`, `/creators`, `/pricing`,
+`/how-it-works` all **200 (unchanged)** and `POST bubbaaffiliate.com/api/bubbaaffiliate/intake` → **400 on empty body** (still
+wired + validating; `/sellers` seller wording intact — correct there). **A forbidden-CTA scan across six public pages** (`/`,
+`/tech`, `/beauty-style`, `/categories`, `/explore-picks`, `/buying-guides`) **returned 0 hits** for every one of twelve
+terms including "Request a Review", "Start Free Trial", "free trial", "Create workspace", "My Workspace", "BubbaAffiliate",
+"content-commerce", "Submit Your Offer", "Become a Creator". **No public `Log in` in the header** (`>Log in<` → **0**) and
+**Staff Login is footer-only** — proven by byte offset (`footer-staff` at 27180, after `<footer>` at 24678). Pre-deploy:
+isolated VPS/Linux **build-only** validation of `82a8eb6` passed (throwaway image `etk-web:p2m-validate`, isolated bare-repo +
+`git archive` extraction to `/tmp`, real rebuild — `✓ Compiled successfully in 45s`, type-checking + linting clean, **44/44
+static pages**; all eight section pages + `[...slug]`, `category/[slug]`, `categories`, `search` compiled; `section-band` in
+the built CSS, new empty-state copy present and old copy 0, `hasFeedAbove` 0; **all Phase 2K/2L markers intact** —
+`grid:has` ×3, `picks-strip:has` ×4, `secdir` ×17, `hub-head-meta`, `article-kicker`; both 308 rules and the sitemap route
+intact; `NewsletterSignup` confirmed still wired into both the homepage and layout client chunks; cleaned up; **production
+untouched throughout validation**). ⚠️ **Local typecheck remains unusable on the Windows checkout** (the pnpm `node_modules`
+there cannot resolve `next`/`react`/`payload` types), so the **isolated VPS/Linux build is the authoritative gate** — the
+`excerptText` helper was additionally unit-tested locally under Node against 8 cases (all pass).
+**Operator browser visual check: PASSED.** Confirmed by the operator in Chrome against the deployed production site: the
+homepage now has **one** main newsletter sign-up mid-page rather than two adjacent email asks; the **footer newsletter is
+visually separate**; the **"How every guide is made" trust band reads cleanly** and the spacing into the footer looks good;
+the old repeated dashed placeholder panels are gone; **thin sections read "In progress"** rather than duplicate "coming soon";
+**card excerpts look clean with no visible mid-word break**; the **public header has no Log in link**; **Staff Login remains
+footer-only**; and the public magazine homepage looks visually acceptable. This brings Phase 2M to the same sign-off standard
+as Phases 2H–2L.
+⚠️ **Follow-up — a `[TEST]` article is still LIVE on the public homepage.** *"[TEST] FLANCCI LED Dimming Stickers — Do Tiny
+Lights Wreck Sleep?"* (slug `zzz-test-flancci-led-dimming-stickers`) is published and currently rendering in the "Most read"
+block. **This is a content/admin issue, to be fixed in Payload `/admin` by setting the article to Draft** — deliberately NOT
+filtered in code, since hiding genuinely-published content behind a hardcoded rule would be dishonest and would mask the same
+problem next time. (Also note the homepage now shows a real "Most read / What readers are reading" ranking, so first-party
+analytics data has begun accumulating since Phase 2L.)
+**Prior — `689d296` (`689d2968f0ede715c97d1851af51e97dd04b8c9a`) (Phase 2L — Public Homepage Magazine
+Polish — DEPLOYED & VERIFIED LIVE).
 Phase 2L turns the public homepage into the final magazine-style front page, now that article pages (2J) and section /
 category pages (2K) are polished. **Public presentation only — 3 code files; no stored content changed, NO fabricated
 articles and NO fabricated counts** (every number rendered derives from real published records).
@@ -826,12 +905,25 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `8046095` (Phase 2K public section/category polish;
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `82a8eb6` (Phase 2M public magazine visual polish;
 **fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build & deploy; no
-migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup retained at
+migration, 26 → 26). This line was **stale through Phases 2L–2M** — it read `8046095` (Phase 2K) because the earlier docs
+updates only prepended the top block and did not revise this section; corrected here to match the deployed HEAD. Live Caddy
+config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup retained at
 `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `8046095`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: **before Phase 2K `03a6ce1`** (prior production HEAD; Phase 2J public article reading polish — app-only
+`Bubbaacademy/exploringtoknow` holds `main` @ `82a8eb6`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: **before Phase 2M `689d296`** (Phase 2L public homepage magazine polish — app-only rollback, redeploy that
+commit with `deploy-app.sh`; ⚠️ this re-introduces the two visual defects 2M fixed — the homepage's back-to-back newsletter/
+footer email asks and the mid-word excerpt truncation — and removes the trust-band visual rhythm and the "In progress"
+empty-state copy. Public-presentation only — no schema, data, or routing effect. Note `765be87` and `beb09f1` — the Phase 2L
+docs commits between `689d296` and `82a8eb6` — are **app-code-identical** to `689d296`, differing only in
+`CURRENT_PRODUCTION_STATUS.md`, so any of the three restores the same running state);
+**before Phase 2L `8046095`** (Phase 2K public section/category polish — app-only rollback, redeploy that commit with
+`deploy-app.sh`; ⚠️ this reverts the homepage section directory and re-introduces the six dashed "coming soon" placeholders.
+Public-presentation only — no schema, data, or routing effect. Note `970920b` — the Phase 2K docs commit and the immediate
+parent of `689d296` — is **app-code-identical** to `8046095`, differing only in `CURRENT_PRODUCTION_STATUS.md`, so either
+commit restores the same running state);
+**before Phase 2K `03a6ce1`** (Phase 2J public article reading polish — app-only
 rollback, redeploy that commit with `deploy-app.sh`; ⚠️ this restores `auto-fill` grid behaviour, so **orphaned blank tracks
 return on thin listings** and Explore Picks again leaves blank columns; it also removes the section hero meta line, the
 `/categories` content-first ordering, and category OpenGraph/Twitter metadata. Public-presentation only — no schema, data, or
