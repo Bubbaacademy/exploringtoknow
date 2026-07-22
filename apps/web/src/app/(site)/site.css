@@ -852,3 +852,72 @@ img { max-width: 100%; height: auto; display: block; }
    ========================================================================== */
 .author-expertise { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .author-longbio { font-size: 16.5px; line-height: 1.7; color: var(--fg-soft); max-width: var(--maxw-prose); margin: 0 0 24px; }
+
+/* ============================================================================
+   PHASE 2L — Homepage final magazine polish. Additive only; every rule below is
+   a NEW class used by the front page. No Phase 1–8 rule is modified, so the
+   article, section and category pages are byte-identical in behaviour.
+   ========================================================================== */
+
+/* ---- Hero: tertiary reader link ----------------------------------------
+   A third *button* would crowd the hero (badly on mobile), but "browse topics"
+   deserves a place beside the two primary reader paths. A plain link keeps the
+   CTA row to two buttons while still offering the third route. */
+.hero-link { font-weight: 650; font-size: 15px; color: var(--brand); display: inline-flex; align-items: center; }
+.hero-link:hover { color: var(--brand-ink); }
+
+/* ---- Cover story: publication date --------------------------------------
+   Rendered only when the record actually carries editorialPublishedAt. */
+.cover .cover-meta { font-size: 13.5px; color: var(--muted-2); letter-spacing: .01em; }
+
+/* ---- Section directory: the eight magazine sections ----------------------
+   Replaces the old per-section `.mag-ph` banners on the homepage. Previously an
+   empty section produced its own dashed placeholder, so on thin content the front
+   page rendered SIX consecutive placeholders and read as unfinished. One
+   deliberate directory shows the whole magazine at a glance instead.
+
+   Column counts are explicit (4 / 2 / 1) rather than auto-fill precisely because
+   there are eight cards: every one of those divides 8 evenly, so the last row is
+   always full and the orphaned-track problem fixed for `.grid` in Phase 2K cannot
+   reappear here. */
+.secdir { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+@media (min-width: 900px) { .secdir { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.secdir-card {
+  display: flex; flex-direction: column; gap: 8px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 22px 22px 20px; box-shadow: var(--shadow-xs);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.secdir-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
+.secdir-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 19px; line-height: 1.24; letter-spacing: -.012em; margin: 2px 0 0; color: var(--fg); }
+.secdir-card:hover h3 { color: var(--brand-ink); }
+.secdir-card p { font-size: 14px; line-height: 1.55; color: var(--muted); margin: 0; }
+
+/* Honest status line. A real published count when the section has content; a
+   single quiet "In progress" when it does not — never a fabricated number. */
+.secdir-meta {
+  margin-top: auto; padding-top: 12px;
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12.5px; font-weight: 650; letter-spacing: .01em; color: var(--muted-2);
+}
+.secdir-meta::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); flex: 0 0 auto; }
+.secdir-card.has-content .secdir-meta { color: var(--brand); }
+.secdir-card.has-content .secdir-meta::before { background: var(--accent); }
+
+/* Shown only while at least one section is still thin. */
+.secdir-note { font-size: 13.5px; line-height: 1.6; color: var(--muted); margin: 18px 0 0; max-width: 640px; }
+.secdir-note em { font-style: normal; font-weight: 650; color: var(--fg-soft); }
+
+/* ---- Mobile polish ------------------------------------------------------
+   The hero CTA row is the one place the front page can crowd on a narrow screen:
+   two pill buttons plus a link wrap into a ragged block. Below 640px they become
+   full-width stacked targets, and the section directory drops to one column so
+   cards never squeeze to an unreadable width. */
+@media (max-width: 640px) {
+  .hero-actions { width: 100%; gap: 10px; }
+  .hero-actions .btn { width: 100%; }
+  .hero-link { width: 100%; padding-top: 2px; }
+  .secdir { grid-template-columns: 1fr; gap: 14px; }
+  .secdir-card { padding: 20px 20px 18px; }
+}

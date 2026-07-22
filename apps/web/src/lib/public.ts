@@ -382,6 +382,37 @@ export async function listPublishedArticlesByTypes(types: string[], opts: { limi
 }
 
 /**
+ * Count of PUBLISHED articles for one or more `type` values (Phase 2L).
+ * Read-only mirror of `countPublishedInCategory`, so a listing can state a REAL
+ * number without fetching — and therefore capping — the documents themselves.
+ * Returns 0 for an empty type list rather than counting everything.
+ */
+export async function countPublishedByTypes(types: string[]): Promise<number> {
+  if (!types.length) return 0;
+  const payload = await client();
+  const res = await payload.find({
+    collection: 'articles',
+    where: { and: [PUBLISHED_WHERE, { type: { in: types } }] },
+    limit: 0, depth: 0,
+  });
+  return res.totalDocs;
+}
+
+/**
+ * Total PUBLISHED articles across the magazine (Phase 2L). Read-only; used for the
+ * curated Explore Picks count, which spans every section rather than one taxonomy.
+ */
+export async function countPublishedArticles(): Promise<number> {
+  const payload = await client();
+  const res = await payload.find({
+    collection: 'articles',
+    where: { and: [PUBLISHED_WHERE] },
+    limit: 0, depth: 0,
+  });
+  return res.totalDocs;
+}
+
+/**
  * Published articles for a magazine section backed by one or more REAL category
  * slugs (Phase 2E). Resolves slugs → active category records first, so a slug that
  * does not exist (or was deactivated) simply contributes nothing instead of
