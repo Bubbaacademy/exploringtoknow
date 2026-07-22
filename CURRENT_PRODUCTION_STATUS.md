@@ -1,8 +1,109 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-07-20 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-07-22 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `8046095` (`8046095252d814d78e5913ff9378ff6feacfba09`) (Phase 2K — Public Section / Category Page
+**Production HEAD: `689d296` (`689d2968f0ede715c97d1851af51e97dd04b8c9a`) (Phase 2L — Public Homepage Magazine
+Polish — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:bd1aaabb…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+**no new migration**).**
+Phase 2L turns the public homepage into the final magazine-style front page, now that article pages (2J) and section /
+category pages (2K) are polished. **Public presentation only — 3 code files; no stored content changed, NO fabricated
+articles and NO fabricated counts** (every number rendered derives from real published records).
+**THE HEADLINE FIX — six consecutive "coming soon" placeholders on the front page.** The live homepage was scanned BEFORE
+coding and rendered **ONE article card followed by SIX dashed `.mag-ph` panels**. The cause was structural, not cosmetic:
+the page rendered a block for **all five `VERTICAL_SECTIONS` unconditionally**, each falling back to a placeholder banner,
+plus a sixth for Buying Guides — while `cover` and `trending` dedupe against the **same** 40-document pool, so on today's
+thin content (~3 published articles) every section bucket was **guaranteed empty**. The page read as unfinished rather than
+sparse. Section blocks now render **only when they genuinely have articles**, and all eight magazine sections are presented
+once, deliberately, in a new front-page **section directory**. Verified live post-deploy: **`mag-ph` → 0 and "are on the
+way" → 0** in the served HTML (both were 6× before).
+**The section directory (`.secdir`) shows all eight sections with REAL counts**, resolved three different honest ways:
+**category** sections sum the published counts of their **own** active categories (from `listActiveCategoriesWithCounts()`,
+exact — not inferred from the capped 40-doc pool); the two **listing** sections are counted by their real `Articles.type`
+values via a new read-only `countPublishedByTypes()`; and **Explore Picks**, being curated across the whole magazine, uses
+`countPublishedArticles()`. Sections with content sort first (**stable sort**, so the editorial order declared in
+`MAGAZINE_SECTIONS` is preserved inside each group) and **every section always renders** — nothing is hidden. Empty ones say
+**"In progress" once, inside a polished card**, instead of six dashed banners shouting across the page. **Explicit 4/2/1
+columns rather than auto-fill**: eight cards divide evenly at every breakpoint, so the orphaned-track bug class fixed for
+`.grid` in Phase 2K **cannot reappear here**. **Rendered live and cross-checked against reality:** Beauty & Style and
+Explore Picks show **"3 published guides"** — Beauty & Style's 3 **matches `/beauty-style`'s own `hub-head-meta`** — and the
+six "In progress" sections were **each fetched independently and genuinely render an `empty-panel` with no hub meta**, so
+the labels are provably truthful, not asserted. (Buying Guides and Product Reviews read "In progress" because **no
+published article currently carries their types** — correct behaviour, not a counting bug.)
+**Three honesty fixes.** The trending heading now **states the ranking actually in use** — "Most read / What readers are
+reading" **only** when `listMostReadArticles()` returned real first-party analytics, otherwise "Fresh off the desk / Latest
+guides & reviews"; it previously always said **"Trending guides"** even when the ranking was pure recency. The cover-story
+heading distinguishes a **genuinely featured** article ("The editors' pick") from merely the newest one ("The latest from
+the desk"), replacing the fixed editorial claim "The story worth your time". **Topic chips lead with categories that
+actually have published guides** and are capped at 14 — previously **all 23 active categories** rendered, ~19 of them dead
+ends; this is **ordering only**, every active category still appears on `/categories`.
+**Also:** hero states the magazine promise plainly with **reader-only CTAs** (Explore buying guides / Read product reviews /
+Browse all topics — all real routes), kept to **two buttons plus one link** so the mobile CTA row never crowds; the cover
+hero image loads at **high fetch priority** as the LCP element and degrades to an `aria-hidden` placeholder when absent; the
+cover shows its **real** publication date when the record carries one; the Explore Picks strip requires **2+ picks** before
+claiming a section; mobile ≤640px stacks the hero CTAs full-width and drops the directory to one column; homepage metadata
+gains OpenGraph `siteName` and a **`summary`** Twitter card — **deliberately with no image**, since the front page has no
+representative one and borrowing an unrelated article hero would misrepresent it.
+**Purely public presentation — 3 code files** (`app/(site)/page.tsx`, `app/(site)/site.css`, `lib/public.ts`).
+`site.css` is **purely additive (0 deleted lines)** and `lib/public.ts` gained **only** the two read-only counters above
+(both `find({ limit: 0, depth: 0 })` mirrors of the existing `countPublishedInCategory`) — **no existing helper was
+modified**. **NO schema, migration, DB write, Payload collection, `/admin`, env, provider, credential, OAuth, token, Google
+Ads, Meta Ads, Caddy, domain-routing, middleware, BubbaAffiliate gateway, ContactMessages, intake-API, sitemap,
+package/lockfile, or `/app` | `/dashboard` change.** **Delivery — FAST-FORWARD, not a PR merge** (as with 2H–2K): the
+validated branch `phase-2l-public-homepage-magazine-polish` was fast-forwarded onto `main`, so **`689d296` is an ordinary
+single-parent commit** (`parents=970920b`) and there is **no PR-merge commit for Phase 2L**. Delivered to the VPS by git
+bundle over SSH (SHA256 matched both ends, `d05a484f…`; `git bundle verify` passed), working tree fast-forwarded
+`8046095 → 689d296` (verified ancestor, clean fast-forward), deployed with the standard
+`ROOT=/opt/exploringtoknow bash /opt/exploringtoknow/infra/server/deploy-app.sh` (**app-only**, no Caddy update, no full
+`docker compose up`, no manual DB change). **Verified live:** build passed (`✓ Compiled successfully`; deployed image
+`bd1aaabb`; stale-image guard passed and the **running image was confirmed byte-equal to `etk-web:latest`**); migrate ran as
+an observable **no-op** (`migrations up to date`, before=26 → after=26); **only `etk-app` was recreated** (`--no-deps`,
+`StartedAt 2026-07-22T03:22:34Z`) → **healthy**; **Postgres, worker and Caddy were NOT restarted** (all unchanged at
+`StartedAt 2026-07-14T00:22:20Z`) and the **live Caddyfile hash was byte-identical** before and after. **Live DB
+re-inspected:** `payload_migrations` = **26**, `articles` still **39 columns**, `enum_articles_editorial_status` still
+`draft,ready_for_review,published,rejected`. `GET https://exploringtoknow.com/api/health` → **200**; Payload **`/admin` →
+200**; **homepage 200**; **all eight section pages 200**; **`/categories` 200**; **two REAL article pages 200** and
+**`/category/appliances` 200** — slugs resolved from the **live sitemap**, not assumed; `/login` **200**; `/app`,
+`/app/articles`, `/dashboard`, `/dashboard/content` all **307 → /login**; **`/reviews` still 308 → `/product-reviews`** and
+**`/explore` still 308 → `/explore-picks`**; **sitemap intact** (41 URLs, 8/8 sections, 23 `/category/*`, retired
+`/reviews` + `/explore` absent). `bubbaaffiliate.com/`, `/sellers`, `/creators`, `/pricing`, `/how-it-works` all **200
+(unchanged)** and `POST bubbaaffiliate.com/api/bubbaaffiliate/intake` → **400 on empty body** (still wired + validating).
+**A forbidden-CTA scan of the LIVE homepage HTML returned count 0 for every one of:** "Request a Review", "Request Access",
+"Start Free Trial", "Free Trial", "free trial", "Create workspace", "Create a workspace", "My Workspace", "BubbaAffiliate",
+"seller", "creator", "content-commerce" — while the new UI ("Explore every section", "Inside the magazine", `secdir`,
+"Explore buying guides", "Read product reviews", "Browse all topics") **was confirmed rendering in that live HTML**.
+**No public `Log in` in the header** (`>Log in<` → **0**) and **Staff login is footer-only** — the single link sits inside
+`</footer>` with class `footer-staff`.
+⚠️ **This deploy also carried the already-committed Phase 2K docs state.** The VPS tree was at `8046095` (the 2K *feature*
+commit) while `main` already had `970920b` (the 2K *docs* commit) on top, so the fast-forward replayed
+`8046095 → 970920b → 689d296` and updated this file on the VPS to its already-committed 2K content. **Documentation only,
+zero code impact.**
+⚠️ **Caddy hash note for future readers:** this session measured `0f45cd6735536cbc15da33acfe0f5311` on the **live**
+`/etc/caddy/Caddyfile` **inside the container**, whereas earlier entries record `707a062de883706bd14d7bb43808ff96` — the two
+refer to **different paths** (live container file vs. the repo/status-doc artifact), **not** a config change. The live hash
+was **byte-identical before and after** this deploy and Caddy was never restarted.
+⚠️ **Dead-CSS note:** `.mag-ph` **remains defined in `site.css` but is now unused by any component** (the homepage was its
+only consumer). It was left in place deliberately to keep `site.css` purely additive; **harmless — remove only in a future
+cleanup phase.**
+⚠️ **Local typecheck is NOT usable on the Windows checkout** and this will bite the next phase: the pnpm `node_modules`
+there cannot resolve `next` / `react` / `payload` types, producing **6643 errors on the PRISTINE tree** before any edit
+(6660 with Phase 2L — the +17 delta being purely additional JSX-element artifacts, **no new error class**). The
+**authoritative gate is the isolated VPS/Linux build**, which was green. Pre-deploy: isolated VPS/Linux **build-only**
+validation of `689d296` passed (throwaway image `etk-web:p2l-validate`, isolated bare-repo + `git archive` extraction to
+`/tmp`, real rebuild — `✓ Compiled successfully in 43s`, type-checking + linting clean, **44/44 static pages**;
+`next.config.ts` sets **no** `ignoreBuildErrors`/`ignoreDuringBuilds`, so the build is a **real** typecheck+lint gate; all
+eight section pages + `[...slug]`, `category/[slug]`, `categories`, `search` compiled; all Phase 2L CSS present
+(`secdir` ×17, `hero-link` ×3, `cover-meta` ×1) and **all Phase 2K quantity rules intact** (`grid:has` ×3,
+`picks-strip:has` ×4); Phase 2J article markers and Phase 2K section markers confirmed still present (the latter in shared
+chunk `9826.js`, since section routes are thin wrappers around `MagazineSectionPage`); both 308 rules and the sitemap route
+intact; cleaned up; **production untouched throughout validation** — HEAD, image, all four container `StartedAt` and the
+Caddy hash all re-verified unchanged).
+🔎 **Operator browser visual check: REQUESTED, NOT YET REPORTED.** Unlike Phases 2H–2K, this entry carries **no operator
+"PASSED" confirmation** — the deploy report was delivered with a visual-check list (desktop directory, hover states, mobile
+≤640px, the 4→2 column breakpoint at ~900px, cover-story heading variant, trending heading wording, topic chips,
+header/footer) and the result had not been reported back when this file was written. **Do not read this entry as visually
+signed off.**
+**Prior — `8046095` (`8046095252d814d78e5913ff9378ff6feacfba09`) (Phase 2K — Public Section / Category Page
 Polish — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:1e2016d3…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 **no new migration**).**
