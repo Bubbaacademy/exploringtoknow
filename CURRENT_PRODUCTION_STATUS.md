@@ -98,11 +98,11 @@ eight section pages + `[...slug]`, `category/[slug]`, `categories`, `search` com
 chunk `9826.js`, since section routes are thin wrappers around `MagazineSectionPage`); both 308 rules and the sitemap route
 intact; cleaned up; **production untouched throughout validation** — HEAD, image, all four container `StartedAt` and the
 Caddy hash all re-verified unchanged).
-🔎 **Operator browser visual check: REQUESTED, NOT YET REPORTED.** Unlike Phases 2H–2K, this entry carries **no operator
-"PASSED" confirmation** — the deploy report was delivered with a visual-check list (desktop directory, hover states, mobile
-≤640px, the 4→2 column breakpoint at ~900px, cover-story heading variant, trending heading wording, topic chips,
-header/footer) and the result had not been reported back when this file was written. **Do not read this entry as visually
-signed off.**
+**Operator browser visual check: PASSED.** Confirmed by the operator in a live browser against the deployed homepage and the
+key public magazine routes: the **six dashed placeholder panels are gone**; the **section directory renders correctly with
+real counts and "In progress" labels**; the public magazine layout reads clean; there is **no public `Log in` in the
+header**; **Staff Login remains footer-only**; and the key public pages load correctly. This confirms in a real browser what
+the post-deploy HTML scans asserted programmatically, and brings Phase 2L to the same sign-off standard as Phases 2H–2K.
 **Prior — `8046095` (`8046095252d814d78e5913ff9378ff6feacfba09`) (Phase 2K — Public Section / Category Page
 Polish — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:1e2016d3…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
