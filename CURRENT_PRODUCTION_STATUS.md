@@ -64,10 +64,47 @@ the authoritative gate** — it was green.
 **Operator browser visual check: PASSED.** Confirmed by the operator in Chrome against the deployed production site — the
 public magazine layout reads clean, the search and author pages render correctly, the public header has no Log in link, and
 Staff Login remains footer-only. This brings Phase 2N to the same sign-off standard as Phases 2H–2M.
-⚠️ **Follow-up — a `[TEST]` article is still LIVE on the public homepage.** *"[TEST] FLANCCI LED Dimming Stickers"*
-(slug `zzz-test-flancci-led-dimming-stickers`) is `Editorial status = Published` and rendering in the "Most read" block. The
-operator has confirmed this and will **set it to Draft in Payload `/admin`** — deliberately NOT filtered in code, since hiding
-genuinely-published content behind a hardcoded rule would be dishonest and would mask the same problem next time.
+✅ **Follow-up RESOLVED (2026-07-23) — the `[TEST]` article is no longer public.** The standing note below (that
+*"[TEST] FLANCCI LED Dimming Stickers"*, slug `zzz-test-flancci-led-dimming-stickers`, was still `Editorial status =
+Published` and rendering as the homepage cover) was closed out in **Phase 2O** — see the Phase 2O content-correction note
+immediately below. Deliberately NOT filtered in code; the fix was an operator content action in Payload `/admin`.
+
+**Phase 2O — Public Magazine Content Quality + Seed Cleanup (CONTENT/ADMIN CORRECTION — NO CODE, NO DEPLOY).
+Production HEAD unchanged at `1134b46` (Phase 2N); rollback point unchanged at `82a8eb6` (Phase 2M).**
+Phase 2O was a **content-quality re-check, not a code phase** — **no code change, no deploy, no build, no migration, no DB
+write by this session, no schema/Payload-collection/env/provider/credential/OAuth/token/Google Ads/Meta Ads/Caddy/middleware/
+domain-routing/BubbaAffiliate/ContactMessages/intake-API/sitemap/package-lockfile change, and no `/app` | `/dashboard`
+change.** The running app image (`sha256:6b19eb6d…`), `payload_migrations` (**26**) and all four container `StartedAt` values
+are untouched by Phase 2O. **The issue was purely content/admin state on the live magazine, corrected manually by the operator
+in Payload `/admin`, then verified by this session through PUBLIC SURFACES ONLY (no DB query, no admin-list assumption).**
+**What was wrong:** a pre-coding inspection found the **`[TEST]` FLANCCI article was still fully public** (returned 200 with a
+full render, was the homepage **cover story**, and appeared in the sitemap, search and the author count) — because public
+visibility is gated **solely** by `editorialStatus === 'published'` (`PUBLISHED_WHERE` in `lib/public.ts`) and native Payload
+drafting is **not** enabled on the Articles collection, so a 200 render proved `editorialStatus` was still `published`. **And a
+real article had been taken down by mistake:** the Phase 2M cover, *"Tired of Bra Lines and Show-Through? What Silicone Nipple
+Pasties Actually Do"*, was returning **404**. The likely cause was the two-"published"-fields confusion the Articles collection
+still carries — `editorialStatus` (the public gate) vs. the pipeline `status` field — i.e. the wrong article/field was changed.
+**Operator correction (Payload `/admin`, manual):** the **`[TEST]` FLANCCI article → Editorial status: "Draft — not public"**,
+and the **silicone-pasties article → Editorial status: "Published — LIVE"** (restored). **Public re-verification PASSED
+(2026-07-23, public surfaces only):** `[TEST]` direct URL **404**; `[TEST]` **absent from the sitemap**; **absent from the
+homepage** (no `[TEST]`); **absent from search** results for `sleep`/`led`; **excluded from the author count**; and the
+**silicone-pasties article returns 200, appears in the sitemap, and is the homepage cover story**. **The public magazine now
+renders correctly on exactly two real published articles** (silicone-pasties + `bright-leds-ruining-your-sleep`, both Sleep &
+Wellness): homepage = cover + one "Most read" card (Explore Picks strip correctly absent, needing 2+ leftover picks); **Beauty
+& Style** shows "2 published guides" (Sleep & Wellness maps there) and its post-feature grid now exercises the Phase 2K
+single-item 560px-card rule — **latent/unobserved until now** — with **nothing broken**; **Explore Picks** populated; the
+**other six sections render one honest empty / "In progress" panel each**; the **author page** reconciles (masthead "2 published
+guides" **and** two cards — both real articles attributed to the editorial-team author); **`/categories`** shows all 23 active
+categories with no test artifact; **search** works over the two-article set; and a **real article page** (pasties) renders
+cleanly (h1, prose, kicker, related grid). **Guardrails intact** across homepage / sections / categories / author: **0**
+forbidden-CTA hits (no "Request a Review", "Start Free Trial", "free trial", "Create workspace", "My Workspace",
+"BubbaAffiliate", "seller", "creator"), **no public `Log in`** in the header, **Staff Login footer-only**. **Conclusion: no UI
+defect — Phase 2O needs no code changes**; the public UI built through 2K–2N handles the corrected thin content correctly.
+📝 **Two optional content observations (notes only — operator's call in Payload, NOT code, NOT required):** (1) the
+**`bright-leds` article uses a FLANCCI-branded hero image** (`flancci01.jpg`, brand named in its alt text) — legitimately
+published and topically fine, but the operator may swap in brand-neutral imagery later; (2) **if the `[TEST]` article is ever
+republished, strip the "[TEST]" prefix from its display title first** (its SEO title is already clean) — moot while it is
+Draft.
 **Prior — `82a8eb6` (`82a8eb6a50c8c90926b963002530fd9e571a626d`) (Phase 2M — Public Magazine Visual
 Polish — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:090f2cdf…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
