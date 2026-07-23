@@ -1,8 +1,74 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-07-22 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-07-23 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `82a8eb6` (`82a8eb6a50c8c90926b963002530fd9e571a626d`) (Phase 2M — Public Magazine Visual
+**Production HEAD: `1134b46` (`1134b46abb701a55bdbd71d1191424664c0801a7`) (Phase 2N — Remaining Public Magazine
+Pages (Search + Author) — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:6b19eb6d…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+**no new migration**).**
+Phase 2N is a small **consistency + honesty** pass over the two remaining reader-facing public pages that earlier phases had
+not touched — the **search results page** and the **author page** — bringing them to the same magazine standard as the
+homepage/sections/articles. **Public presentation only — 2 code files** (`app/(site)/search/page.tsx`,
+`app/(site)/author/[slug]/page.tsx`); no stored content changed, no article/count/image fabricated. **These pages already
+worked — this is polish, not a bug fix.** **Four changes:** **(A) SEARCH — honest truncation.** `searchPublishedArticles`
+page-limits results at `SEARCH_LIMIT` (24) but the page printed the **true total**, so a 30-match query would read "30
+results" while showing only 24 cards. It now reads **"Showing first 24 of 30 results"** whenever `docs.length < total`, and
+keeps the original "N results" wording otherwise. The query, limit, helper and fetch are **untouched** — `docs.length < total`
+is the sole new signal. **Latent today** (~4 published articles, so no query yet exceeds 24), but correct as content grows;
+the wording is confirmed present in the **running container's** `search/page.js`. **(B) AUTHOR — real published-count meta
+line.** The masthead now carries an honest count from the already-fetched articles, rendered only when > 0 (a "0 guides" line
+never shows), reusing the existing `.cat-masthead-meta` styling — **no new CSS**. Confirmed live on
+`/author/exploringtoknow-editorial-team`: **"2 published guides · Independently researched, human-reviewed"** — a real count.
+**(C) AUTHOR — OpenGraph + Twitter metadata**, mirroring the category-page pattern exactly (title/description/url/siteName,
+og type `profile`, social image from the author's **OWN** avatar when set — **omitted entirely otherwise** rather than
+substituting an unrelated image). Confirmed live: `og:type=profile` + `og:site_name` present, `twitter:card=summary` with
+**no image** (this author has no avatar, so the image is correctly omitted — set one in Payload and it upgrades to
+`summary_large_image`). **(D) AUTHOR — empty-state copy** aligned with the 2M/2K tone: drops the "Coming soon" eyebrow
+("Published work" / "No guides published yet") and adds a second editorial link (Browse all topics). Copy only — no invented
+status, no fake count. **Newsletter confirm/unsubscribe pages were inspected and deliberately left untouched** (already clean,
+functional noindex utility pages — churning them would add risk without value); both still return 200. **NO schema,
+migration, DB write, Payload collection, `/admin`, env, provider, credential, OAuth, token, Google Ads, Meta Ads, Caddy,
+domain-routing, middleware, BubbaAffiliate gateway, ContactMessages, intake-API, sitemap, package/lockfile, or `/app` |
+`/dashboard` change** — and **no `site.css` or `lib/public.ts` change** (`.cat-masthead-meta` reused; `total`/`docs`/
+`articles.length` were all already available). **Delivery — FAST-FORWARD, not a PR merge** (as with 2H–2M): the validated
+branch `phase-2n-public-remaining-pages` was fast-forwarded onto `main`, so **`1134b46` is an ordinary single-parent commit**
+(`parents=8d150a6`) and there is **no PR-merge commit for Phase 2N**. ⚠️ **Pasted-hash note:** the deploy request carried a
+one-character-short commit hash (`1134b46ab701…`, a dropped "b"); the deployed commit is the **git-verified** full hash
+`1134b46abb701a55bdbd71d1191424664c0801a7` — resolved from the branch tip, not the paste. Delivered to the VPS by git bundle
+over SSH (SHA256 matched both ends, `8174cb5d…`; `git bundle verify` passed), working tree fast-forwarded `82a8eb6 → 1134b46`
+(verified ancestor, clean fast-forward — the FF also replayed the already-approved Phase 2M docs commit `8d150a6`,
+`CURRENT_PRODUCTION_STATUS.md` only, zero code impact), deployed with the standard
+`ROOT=/opt/exploringtoknow bash /opt/exploringtoknow/infra/server/deploy-app.sh` (**app-only**, no Caddy update, no full
+`docker compose up`, no manual DB change). **Verified live:** build passed (`✓ Compiled successfully`; deployed image
+`6b19eb6d`; stale-image guard passed and the **running image was confirmed byte-equal to `etk-web:latest`**); migrate ran as
+an observable **no-op** (`migrations up to date`, before=26 → after=26); **only `etk-app` was recreated** (`--no-deps`,
+`StartedAt 2026-07-23T01:55:47Z`) → **healthy**; **Postgres, worker and Caddy were NOT restarted** (all unchanged at
+`StartedAt 2026-07-14T00:22:20Z`) and the **live Caddyfile hash was byte-identical** (`0f45cd67…`). **Live DB re-inspected:**
+`payload_migrations` = **26**, `articles` still **39 columns**. `GET https://exploringtoknow.com/api/health` → **200**; Payload
+**`/admin` → 200**; **homepage 200**; **`/search` 200**; **`/author/exploringtoknow-editorial-team` 200**; **both newsletter
+confirm/unsubscribe pages 200** (untouched); **all eight section pages 200**; **`/categories` 200** and **`/category/appliances`
+200**; `/login` **200**; `/app`, `/app/articles`, `/dashboard`, `/dashboard/content` all **307 → /login**; **`/reviews` still
+308 → `/product-reviews`** and **`/explore` still 308 → `/explore-picks`**. `bubbaaffiliate.com/`, `/sellers`, `/creators` all
+**200 (unchanged)** and `POST bubbaaffiliate.com/api/bubbaaffiliate/intake` → **400 on empty body** (still wired + validating).
+**A forbidden-CTA scan across five public pages** (`/`, `/search`, `/author/…`, `/beauty-style`, `/categories`) **returned 0
+hits** for every one of eleven terms; **no public `Log in` in the header** (`>Log in<` → **0**). **Confirmed in the RUNNING
+container:** `search/page.js` contains "Showing first"; the author bundle contains `cat-masthead-meta` and "No guides published
+yet" and the old "Coming soon" is **gone (0)**. Pre-deploy: isolated VPS/Linux **build-only** validation of `1134b46` passed
+(throwaway image `etk-web:p2n-validate`, isolated bare-repo + `git archive` extraction to `/tmp`, real rebuild — `✓ Compiled
+successfully in 43s`, type-checking + linting clean, **44/44 static pages**; search + author + both newsletter pages + all
+eight sections compiled; author OG `profile`/`summary_large_image` and the meta line present; **all Phase 2K/2L/2M markers
+intact** — `grid:has` ×3, `picks-strip:has` ×4, `secdir` ×17, `section-band` ×3, `excerptText`; both 308 rules and the
+sitemap route intact; cleaned up; **production untouched throughout validation**). ⚠️ **Local typecheck remains unusable on the
+Windows checkout** (pnpm `node_modules` cannot resolve `next`/`react`/`payload` types), so the **isolated VPS/Linux build is
+the authoritative gate** — it was green.
+**Operator browser visual check: PASSED.** Confirmed by the operator in Chrome against the deployed production site — the
+public magazine layout reads clean, the search and author pages render correctly, the public header has no Log in link, and
+Staff Login remains footer-only. This brings Phase 2N to the same sign-off standard as Phases 2H–2M.
+⚠️ **Follow-up — a `[TEST]` article is still LIVE on the public homepage.** *"[TEST] FLANCCI LED Dimming Stickers"*
+(slug `zzz-test-flancci-led-dimming-stickers`) is `Editorial status = Published` and rendering in the "Most read" block. The
+operator has confirmed this and will **set it to Draft in Payload `/admin`** — deliberately NOT filtered in code, since hiding
+genuinely-published content behind a hardcoded rule would be dishonest and would mask the same problem next time.
+**Prior — `82a8eb6` (`82a8eb6a50c8c90926b963002530fd9e571a626d`) (Phase 2M — Public Magazine Visual
 Polish — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:090f2cdf…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 **no new migration**).**
@@ -905,14 +971,17 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `82a8eb6` (Phase 2M public magazine visual polish;
-**fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build & deploy; no
-migration, 26 → 26). This line was **stale through Phases 2L–2M** — it read `8046095` (Phase 2K) because the earlier docs
-updates only prepended the top block and did not revise this section; corrected here to match the deployed HEAD. Live Caddy
-config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup retained at
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `1134b46` (Phase 2N remaining public magazine pages —
+search + author; **fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build & deploy; no
+migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup retained at
 `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `82a8eb6`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: **before Phase 2M `689d296`** (Phase 2L public homepage magazine polish — app-only rollback, redeploy that
+`Bubbaacademy/exploringtoknow` holds `main` @ `1134b46`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: **before Phase 2N `82a8eb6`** (Phase 2M public magazine visual polish — app-only rollback, redeploy that
+commit with `deploy-app.sh`; ⚠️ this reverts the search "Showing first N of M" honest-truncation wording and the author-page
+published-count meta / OpenGraph / empty-state copy. Public-presentation only — no schema, data, or routing effect. Note
+`8d150a6` — the Phase 2M docs commit and the immediate parent of `1134b46` — is **app-code-identical** to `82a8eb6`,
+differing only in `CURRENT_PRODUCTION_STATUS.md`, so either commit restores the same running state);
+**before Phase 2M `689d296`** (Phase 2L public homepage magazine polish — app-only rollback, redeploy that
 commit with `deploy-app.sh`; ⚠️ this re-introduces the two visual defects 2M fixed — the homepage's back-to-back newsletter/
 footer email asks and the mid-word excerpt truncation — and removes the trust-band visual rhythm and the "In progress"
 empty-state copy. Public-presentation only — no schema, data, or routing effect. Note `765be87` and `beb09f1` — the Phase 2L
