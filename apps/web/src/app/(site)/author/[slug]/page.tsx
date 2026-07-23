@@ -14,11 +14,20 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const seo = (a.seo ?? {}) as { seoTitle?: string; seoDescription?: string };
   // Only index author pages that actually have published work.
   const hasContent = (await countPublishedByAuthor(a.id)) > 0;
+  const title = seo.seoTitle || `${a.name} — ${SITE_NAME}`;
+  const description = seo.seoDescription || a.bio || `Guides and reviews by ${a.name} at ${SITE_NAME}.`;
+  const url = `${SITE_URL}/author/${a.slug}`;
+  // Social preview uses the author's OWN avatar when one is set; omitted entirely
+  // otherwise rather than substituting an unrelated image (same pattern as the
+  // category page metadata).
+  const ogImg = mediaUrl(a.image) || undefined;
   return {
-    title: seo.seoTitle || `${a.name} — ${SITE_NAME}`,
-    description: seo.seoDescription || a.bio || `Guides and reviews by ${a.name} at ${SITE_NAME}.`,
-    alternates: { canonical: `${SITE_URL}/author/${a.slug}` },
+    title,
+    description,
+    alternates: { canonical: url },
     robots: hasContent ? undefined : { index: false, follow: true },
+    openGraph: { title, description, type: 'profile', url, siteName: SITE_NAME, images: ogImg ? [ogImg] : undefined },
+    twitter: { card: ogImg ? 'summary_large_image' : 'summary', title, description, images: ogImg ? [ogImg] : undefined },
   };
 }
 
@@ -55,6 +64,15 @@ export default async function AuthorPage({ params }: Args) {
               <span className="eyebrow">{(author.role as string) || 'Author'}</span>
               <h1>{author.name as string}</h1>
               {author.bio ? <p className="cat-masthead-desc">{author.bio as string}</p> : null}
+              {/* Real published count from the articles already fetched — rendered
+                  only when there is at least one, so a "0 guides" line is never shown.
+                  Reuses the existing category-masthead meta styling. */}
+              {articles.length ? (
+                <div className="cat-masthead-meta">
+                  <span>{articles.length} published {articles.length === 1 ? 'guide' : 'guides'}</span>
+                  <span>Independently researched, human-reviewed</span>
+                </div>
+              ) : null}
               {expertise.length ? (
                 <div className="author-expertise">
                   {expertise.map((t) => <span key={t} className="chip">{t}</span>)}
@@ -79,11 +97,12 @@ export default async function AuthorPage({ params }: Args) {
             articles={articles}
             empty={
               <div className="empty-panel">
-                <span className="eyebrow">Coming soon</span>
-                <h2>No published guides yet</h2>
-                <p>This author’s published work will appear here.</p>
+                <span className="eyebrow">Published work</span>
+                <h2>No guides published yet</h2>
+                <p>When this author’s guides and reviews go live, they’ll appear here. In the meantime, explore the rest of the magazine.</p>
                 <div className="empty-panel-actions">
                   <Link href="/explore-picks" className="btn btn-accent">Explore the magazine</Link>
+                  <Link href="/categories" className="btn btn-ghost">Browse all topics</Link>
                 </div>
               </div>
             }

@@ -50,7 +50,14 @@ export default async function SearchPage({ searchParams }: Args) {
           </form>
           {submitted && !tooShort ? (
             <p className="meta search-count">
-              {total} result{total === 1 ? '' : 's'} for <strong>“{query}”</strong>{capped ? ' (query shortened)' : ''}
+              {/* Results are page-limited by SEARCH_LIMIT. When more match than are
+                  shown, say so honestly rather than implying every result is on the
+                  page. `docs.length < total` is the only signal needed — no change
+                  to the query, limit or fetch. */}
+              {docs.length < total
+                ? <>Showing first {docs.length} of {total} results for <strong>“{query}”</strong></>
+                : <>{total} result{total === 1 ? '' : 's'} for <strong>“{query}”</strong></>}
+              {capped ? ' (query shortened)' : ''}
             </p>
           ) : null}
         </div>
