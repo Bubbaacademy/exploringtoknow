@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { client, getAdminOverview, type Doc } from '@/lib/public';
+import { client, getAdminOverview, listActiveCategoriesWithCounts, type Doc } from '@/lib/public';
 import { MAGAZINE_SECTIONS } from '@/lib/sections';
+import { getArticleFlags, topLevel, type QaFlag, type QaLevel } from '@/lib/content-qa';
 import {
-  Section, Stat, Card, Empty,
+  Section, Stat, Card, Empty, Badge,
   EditorialStatusBadge, PublicStateBadge, EDITORIAL_STATUS_LABEL, ARTICLE_TYPE_LABEL,
 } from '../_components';
 
@@ -34,32 +35,85 @@ const catName = (rel: unknown): string => {
   return rel == null ? '—' : String(rel);
 };
 
+const catSlug = (rel: unknown): string | null =>
+  rel && typeof rel === 'object' ? (String((rel as { slug?: unknown }).slug ?? '') || null) : null;
+
 /**
- * Read-only counts + recent queue. Mirrors the existing lib/public read patterns
- * (literal collection slug, `limit: 0` for a pure count). No writes anywhere.
+ * Read-only counts + recent queue + the full article set for the Content QA panel.
+ * Mirrors the existing lib/public read patterns (literal collection slug, `limit: 0`
+ * for a pure count). No writes anywhere. The `all` fetch (depth 1, so category and
+ * hero relationships resolve) is the single source the QA flags are derived from —
+ * no fabricated counts. Production holds a handful of articles; the 500 cap is
+ * headroom, and `recent` is sliced from `all` rather than re-queried.
  */
 async function loadEditorialOps() {
   const payload = await client();
 
-  const [overview, rejectedRes, totalRes, recentRes] = await Promise.all([
+  const [overview, rejectedRes, totalRes, allRes, cats] = await Promise.all([
     getAdminOverview(),
     payload.find({ collection: 'articles', where: { editorialStatus: { equals: 'rejected' } }, limit: 0, depth: 0 }),
     payload.find({ collection: 'articles', limit: 0, depth: 0 }),
-    payload.find({ collection: 'articles', sort: '-updatedAt', limit: 10, depth: 1 }),
+    payload.find({ collection: 'articles', sort: '-updatedAt', limit: 500, depth: 1 }),
+    listActiveCategoriesWithCounts(),
   ]);
 
+  const all = allRes.docs as Doc[];
   return {
     overview,
     rejected: rejectedRes.totalDocs,
     total: totalRes.totalDocs,
-    recent: recentRes.docs as Doc[],
+    recent: all.slice(0, 10),
+    all,
+    cats,
   };
 }
 
+/** Flag chips for one article, using the shared badge variants (err/warn/info). */
+function FlagChips({ flags }: { flags: QaFlag[] }) {
+  return (
+    <div className="adm-quicklinks">
+      {flags.map((f) => (
+        <Badge key={f.code} variant={f.level}>
+          <span title={f.detail ?? f.label}>{f.label}</span>
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
 export default async function ContentOpsPage() {
-  const { overview, rejected, total, recent } = await loadEditorialOps();
+  const { overview, rejected, total, recent, all, cats } = await loadEditorialOps();
   const c = (k: string): number => overview.counts[k] ?? 0;
   const review = c('review');
+
+  // ---- Content QA (Phase 2Q): all flags derived from the already-fetched `all`. ----
+  const flagged = all
+    .map((a) => ({ a, flags: getArticleFlags(a) }))
+    .filter((r) => r.flags.length > 0);
+  const isLive = (a: Doc) => String(a.editorialStatus ?? '').toLowerCase() === 'published';
+
+  // Live problems: published articles a reader is affected by right now.
+  const liveProblems = flagged
+    .filter((r) => isLive(r.a) && r.flags.some((f) => f.level !== 'info'))
+    .sort((x, y) => (topLevel(y.flags) === 'err' ? 1 : 0) - (topLevel(x.flags) === 'err' ? 1 : 0));
+  // Readiness / clutter: not-yet-public articles with advisory notes.
+  const readiness = flagged.filter((r) => !isLive(r.a));
+
+  // Section coverage — which magazine sections have any published content.
+  const publishedDocs = all.filter(isLive);
+  const publishedTypes = new Set(publishedDocs.map((a) => String(a.type ?? '')));
+  const publishedCatSlugs = new Set(publishedDocs.map((a) => catSlug(a.category)).filter(Boolean) as string[]);
+  const sectionHasContent = (s: (typeof MAGAZINE_SECTIONS)[number]): boolean => {
+    if (s.kind === 'type') return (s.types ?? []).some((t) => publishedTypes.has(t));
+    if (s.kind === 'category') return (s.categorySlugs ?? []).some((sl) => publishedCatSlugs.has(sl));
+    return publishedDocs.length > 0; // curated (Explore Picks)
+  };
+  const emptySections = MAGAZINE_SECTIONS.filter((s) => !sectionHasContent(s));
+  // Empty active categories — honest "not broken, just empty" (real counts from the helper).
+  const emptyCats = cats.filter((cat) => (cat.articleCount ?? 0) === 0);
+
+  const flagCount = (lvl: QaLevel) =>
+    liveProblems.reduce((n, r) => n + r.flags.filter((f) => f.level === lvl).length, 0);
 
   return (
     <>
@@ -85,6 +139,142 @@ export default async function ContentOpsPage() {
             <Stat label="Categories" value={c('categories')} />
             <Stat label="Media" value={c('media')} />
           </div>
+        </Section>
+
+        {/* ---- Content QA / Publishing readiness (Phase 2Q) — READ-ONLY ---- */}
+        <Section
+          title="Content QA / Publishing readiness"
+          action={<a className="adm-btn ghost" href="/admin/collections/articles">Fix in Payload /admin</a>}
+        >
+          <div className="adm-panel">
+            <p className="adm-note">
+              Read-only quality checks over real article records. <b>Public visibility is controlled by Editorial status
+              only</b> — Pipeline status does not make an article public. <b>Fix content in Payload /admin</b>; there is
+              <b> no automatic publishing</b>, and this dashboard never writes.
+            </p>
+            <div className="adm-quicklinks" style={{ marginTop: 10 }}>
+              <Badge variant={flagCount('err') > 0 ? 'err' : 'ok'}>{flagCount('err')} live errors</Badge>
+              <Badge variant={flagCount('warn') > 0 ? 'warn' : 'ok'}>{flagCount('warn')} live warnings</Badge>
+              <Badge>{readiness.length} draft{readiness.length === 1 ? '' : 's'} with notes</Badge>
+              <Badge>{emptySections.length}/{MAGAZINE_SECTIONS.length} sections empty</Badge>
+              <Badge>{emptyCats.length} categories with no published guides</Badge>
+            </div>
+          </div>
+
+          {/* Live problems — published articles a reader sees now. */}
+          <Card title="Live problems (published articles)">
+            {liveProblems.length ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table className="adm-table">
+                  <thead>
+                    <tr><th>Article</th><th>Category</th><th>Type</th><th>Flags</th><th>Fix</th></tr>
+                  </thead>
+                  <tbody>
+                    {liveProblems.map(({ a, flags }) => {
+                      const type = String(a.type ?? '');
+                      return (
+                        <tr key={String(a.id)}>
+                          <td>
+                            <div>{(a.title as string) || '(untitled)'}</div>
+                            {a.slug ? <span className="adm-cellsub">/{String(a.slug)}</span> : null}
+                          </td>
+                          <td>{catName(a.category)}</td>
+                          <td>{ARTICLE_TYPE_LABEL[type] ?? (type ? type.replace(/_/g, ' ') : '—')}</td>
+                          <td><FlagChips flags={flags} /></td>
+                          <td><a className="adm-btn ghost" href={`/admin/collections/articles/${a.id}`}>Edit ↗</a></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <Empty>No quality problems on published articles — every live article has a category, excerpt, hero image and editorial alt text. ✓</Empty>
+            )}
+          </Card>
+
+          {/* Publishing readiness — not-yet-public articles (advisory only). */}
+          <Section title="Publishing readiness (not public)">
+            <Card>
+              {readiness.length ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="adm-table">
+                    <thead>
+                      <tr><th>Article</th><th>Editorial status</th><th>Public</th><th>Notes</th><th>Open</th></tr>
+                    </thead>
+                    <tbody>
+                      {readiness.map(({ a, flags }) => {
+                        const status = String(a.editorialStatus ?? '');
+                        return (
+                          <tr key={String(a.id)}>
+                            <td>
+                              <div>{(a.title as string) || '(untitled)'}</div>
+                              {a.slug ? <span className="adm-cellsub">/{String(a.slug)}</span> : null}
+                            </td>
+                            <td><EditorialStatusBadge status={status} /></td>
+                            <td><PublicStateBadge status={status} /></td>
+                            <td><FlagChips flags={flags} /></td>
+                            <td><a className="adm-btn ghost" href={`/admin/collections/articles/${a.id}`}>Open ↗</a></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <Empty>No non-public articles need attention.</Empty>
+              )}
+              <p className="adm-note" style={{ marginTop: 10 }}>
+                These are <b>not public</b> — nothing here affects readers. Test/mock drafts are safe to leave, or delete in
+                Payload to declutter. A “Pipeline says Published, but NOT public” note means only the AI/QA state reads
+                published; the article stays hidden until <b>Editorial status</b> is set to Published by a human.
+              </p>
+            </Card>
+          </Section>
+
+          {/* Coverage — honest empty states, not errors. */}
+          <Section title="Coverage gaps (empty, not broken)">
+            <div className="adm-cols-2">
+              <Card title="Sections with no published content">
+                {emptySections.length ? (
+                  <>
+                    <div className="adm-quicklinks">
+                      {emptySections.map((s) => (
+                        <Badge key={s.slug} variant={s.slug === 'buying-guides' || s.slug === 'product-reviews' ? 'warn' : ''}>
+                          /{s.slug}
+                        </Badge>
+                      ))}
+                    </div>
+                    <p className="adm-note" style={{ marginTop: 10 }}>
+                      These render honest “In progress” states today. <b>Buying Guides</b> and <b>Product Reviews</b> are
+                      type-driven — they stay empty until an article’s <b>type</b> is Buying Guide / Best List / Comparison /
+                      How-To (guides) or Review / Comparison (reviews). Not broken — just awaiting content.
+                    </p>
+                  </>
+                ) : (
+                  <Empty>Every magazine section has published content. ✓</Empty>
+                )}
+              </Card>
+              <Card title="Categories with no published guides">
+                {emptyCats.length ? (
+                  <>
+                    <div className="adm-quicklinks">
+                      {emptyCats.slice(0, 30).map((cat) => (
+                        <Badge key={String(cat.id)}>{String(cat.name)}</Badge>
+                      ))}
+                    </div>
+                    <p className="adm-note" style={{ marginTop: 10 }}>
+                      {emptyCats.length} active {emptyCats.length === 1 ? 'category has' : 'categories have'} no published
+                      article yet. This is expected while the magazine is young — the categories are live and ready, just
+                      empty. Nothing is broken.
+                    </p>
+                  </>
+                ) : (
+                  <Empty>Every active category has at least one published guide. ✓</Empty>
+                )}
+              </Card>
+            </div>
+          </Section>
         </Section>
 
         {/* ---- Workflow rules ---- */}
