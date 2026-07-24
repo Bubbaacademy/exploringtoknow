@@ -105,6 +105,40 @@ defect — Phase 2O needs no code changes**; the public UI built through 2K–2N
 published and topically fine, but the operator may swap in brand-neutral imagery later; (2) **if the `[TEST]` article is ever
 republished, strip the "[TEST]" prefix from its display title first** (its SEO title is already clean) — moot while it is
 Draft.
+
+**Phase 2P — Real Content Cleanup & Magazine Seed Quality (CONTENT/ADMIN ONLY — NO CODE, NO DEPLOY). Production HEAD unchanged
+at `1134b46` (Phase 2N); rollback point `82a8eb6` (Phase 2M).**
+Phase 2P was a **content-quality pass, not a code phase** — no code change, no deploy, no build, no migration, no DB write by
+this session, and no schema/Payload-collection/env/provider/credential/OAuth/token/Google Ads/Meta Ads/Caddy/middleware/
+routing/BubbaAffiliate/ContactMessages/intake-API/sitemap/package-lockfile change. The running image (`sha256:6b19eb6d…`),
+`payload_migrations` (**26**) and all container `StartedAt` values are untouched. A read-only inspection (DB SELECT + public
+surfaces) found quality gaps on the two published articles — **Bright LEDs (#3) had an empty excerpt** (blank card summary)
+and **both live articles carried raw product-listing hero alt text** ending "– product image" — plus three non-public drafts
+(a mock smoke-test #1, a flagged LED near-duplicate #2, and the `[TEST]` FLANCCI article #4). The operator corrected the
+published-article quality manually in Payload `/admin`: an editorial **excerpt added to #3** and **editorial hero alt text on
+#3 and #7**; the three drafts remain non-public.
+⚠️ **Delivery note:** the edits did not reach production on the first two attempts — the operator was saving to a
+non-production Payload instance (proven via `articles.updated_at` on #3 staying frozen at `2026-06-14` while the operator
+reported saving). A **canary check** (save #3 on `https://exploringtoknow.com/admin`, then a read-only `SELECT`) confirmed the
+correct environment, after which both edits landed. **Final state verified live in production (2026-07-24, DB SELECT + public
+surfaces):** #3 `updated_at 2026-07-24`, `excerpt_len 185`, editorial alt ("Small light-dimming stickers used to soften bright
+LED indicator lights in a bedroom or workspace."); #7 `updated_at 2026-07-24`, editorial alt ("Silicone nipple covers shown as
+a discreet clothing accessory…"), excerpt 149; **both hero alts no longer end in "– product image".** Public surfaces
+reconcile: **the Bright LEDs card now renders a real `<p>` summary (blank-summary gap fixed)**, the homepage cover is the
+silicone-pasties article, exactly **2 published / 3 draft**, all three draft slugs return **404** and are absent from
+sitemap/search/homepage/author, section pages (Beauty & Style "2 guides", Explore Picks populated, the other six honest empty
+panels), the two real category pages (`/category/sleep-wellness`, `/category/beauty-personal-care` → 200), search, and the
+author page ("2 published guides" and 2 cards) all reconcile, and there is **no UI defect — no code change required**.
+**Guardrails clean:** 0 forbidden-CTA hits (no "Request a Review", "Start Free Trial", "free trial", "Create workspace",
+"My Workspace", "BubbaAffiliate", "seller", "creator"), **no public `Log in`** in the header, **Staff Login footer-only**;
+`bubbaaffiliate.com/`, `/sellers`, `/creators` all **200 (unchanged)** and `POST …/api/bubbaaffiliate/intake` → **400**.
+*(A guardrail scan's bare-substring "workspace" matched the new editorial alt text "…in a bedroom or workspace" — benign
+English, not SaaS-workspace CTA language; every actual forbidden phrase is 0.)*
+📝 **Standing content notes (operator's call, not code):** the magazine still runs on only **two real published articles**
+(both Sleep & Wellness / Beauty & Personal Care, both `problem_solution` type) — so `/buying-guides` and `/product-reviews`
+stay empty until articles of those *types* are published, and six of eight sections show honest "In progress" states. Growing
+the real published set across more sections and types (especially Buying Guide / Review) is the main lever for a fuller front
+page.
 **Prior — `82a8eb6` (`82a8eb6a50c8c90926b963002530fd9e571a626d`) (Phase 2M — Public Magazine Visual
 Polish — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:090f2cdf…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
