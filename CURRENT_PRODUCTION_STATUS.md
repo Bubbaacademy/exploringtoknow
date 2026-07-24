@@ -1,8 +1,72 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-07-23 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-07-24 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `1134b46` (`1134b46abb701a55bdbd71d1191424664c0801a7`) (Phase 2N — Remaining Public Magazine
+**Production HEAD: `a53a7f7` (`a53a7f759d3225cce32c2131da41dc2e3d669bb9`) (Phase 2Q — Internal Content QA /
+Publishing-Readiness Panel — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:bddb857c…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
+**no new migration**).**
+Phase 2Q adds a **read-only internal Content QA / Publishing-readiness panel** to the Editorial Ops dashboard
+(`/dashboard/content`) so the operator can catch article quality problems **before** they affect the public magazine. It is
+**not a public change and not publishing automation** — the panel never writes, links out to Payload `/admin` for edits, and
+every count is derived from real fetched records (no fabricated numbers). **The dashboard tree is super-admin gated
+(`requireSuperAdmin()`) and `noindex`; `/dashboard/content` → 307 → /login when signed out** (verified live post-deploy).
+**Two code files, both internal:** a **NEW `lib/content-qa.ts`** — pure, read-only flag logic (no DB access, no Payload/schema
+import, no mutation) whose predicates were unit-checked against the known production records (old raw "…product image" alts
+and `[TEST]`/mock titles flag; the post-2P editorial alts clear; word-boundaried so "greatest"/"contest" do NOT false-flag) —
+and **`app/dashboard/content/page.tsx`**, which adds **one** read-only `payload.find` (all articles, depth 1) reused for both
+the QA panel and the existing "Recently edited" slice (**one fewer query than before**) plus `listActiveCategoriesWithCounts()`
+for category coverage. **What the panel surfaces:** **Live problems** on published articles a reader sees now — empty excerpt,
+raw product-listing hero alt, test/mock language in title/slug, missing category/type/hero, missing alt text — each with an
+`/admin/collections/articles/{id}` fix link; **Publishing readiness** — advisory notes on non-public drafts, including the
+**editorial↔pipeline status divergence** ("Pipeline says Published, but NOT public") that caused the Phase 2O incident;
+and **Coverage gaps** — magazine sections/types and active categories with no published content, labelled **empty-not-broken**
+(Buying Guides and Product Reviews highlighted as type-driven). **Operator-friendly copy throughout:** public visibility is
+controlled by **Editorial status only**, **pipeline status does not make an article public**, **fix content in Payload
+/admin**, **no automatic publishing**, and **this dashboard is read-only**. **On today's data the panel reads clean:** Live
+problems is empty (validating the 2P fix — the two published articles #3/#7 now carry excerpts and editorial alts); the three
+non-public drafts (#1 mock/smoke-test, #2 flagged LED near-duplicate, #4 `[TEST]` with the divergence note) appear only under
+Publishing readiness; Buying Guides / Product Reviews and ~21 categories show as empty-not-broken. **Reuses the existing shared
+components** (`Section`/`Card`/`Stat`/`Badge`/`EditorialStatusBadge`/`PublicStateBadge`) and `.adm-*` styles — **zero CSS
+added, no new editor, no write/mutation buttons.** **NO schema, migration, DB write, Payload collection/config, `/admin`
+customization, env, provider, credential, OAuth, token, Google Ads, Meta Ads, Caddy, domain-routing, middleware, BubbaAffiliate
+gateway, ContactMessages, intake-API, sitemap, robots, package/lockfile, or public `(site)` change** — Header/Footer/SiteNav
+were not touched, so the public header still carries no `Log in` and Staff Login stays footer-only. **Delivery — FAST-FORWARD,
+not a PR merge** (as with 2H–2N): the validated branch `phase-2q-content-qa-panel` was fast-forwarded onto `main`, so
+**`a53a7f7` is an ordinary single-parent commit** (`parents=e0e9694`) and there is **no PR-merge commit for Phase 2Q**.
+Delivered to the VPS by git bundle over SSH (SHA256 matched both ends, `b064a3f0…`; `git bundle verify` passed), working tree
+fast-forwarded `1134b46 → a53a7f7` (verified ancestor, clean fast-forward — the FF also replayed the already-approved Phase 2O
+and 2P docs commits `212eba7` + `e0e9694`, `CURRENT_PRODUCTION_STATUS.md` only, zero code impact), deployed with the standard
+`ROOT=/opt/exploringtoknow bash /opt/exploringtoknow/infra/server/deploy-app.sh` (**app-only**, no Caddy update, no full
+`docker compose up`, no manual DB change). **Verified live:** build passed (`✓ Compiled successfully in 44s`,
+type-checking + linting clean, **44/44 static pages**; deployed image `bddb857c`; stale-image guard passed and the **running
+image was confirmed byte-equal to `etk-web:latest`**); migrate ran as an observable **no-op** (`migrations up to date`,
+before=26 → after=26); **only `etk-app` was recreated** (`--no-deps`, `StartedAt 2026-07-24T21:35:53Z`) → **healthy**;
+**Postgres, worker and Caddy were NOT restarted** (all unchanged at `StartedAt 2026-07-14T00:22:20Z`) and the **live Caddyfile
+hash was byte-identical** (`0f45cd67…`). **Live DB re-inspected:** `payload_migrations` = **26**, `articles` still **39
+columns**. `GET https://exploringtoknow.com/api/health` → **200**; Payload **`/admin` → 200**; **homepage 200**; **`/search`
+200**; **`/categories` 200**; **`/author/…` 200**; **a real article page 200**; **`/category/sleep-wellness` 200**; **all
+eight section pages 200**; **`/reviews` still 308 → `/product-reviews`** and **`/explore` still 308 → `/explore-picks`**;
+`/dashboard/content`, `/dashboard`, `/app`, `/app/articles`, `/app/editorial` all **307 → /login** signed out. **Confirmed in
+the RUNNING container's `/dashboard/content/page.js`:** "Content QA", "Publishing readiness", "Live problems", "Coverage gaps",
+"no automatic publishing" and the `collections/articles/` fix link are all present, and the `content-qa` logic ("Pipeline
+says…") is in the served bundle. **A public-regression scan across `/`, `/beauty-style`, `/search`, `/author/…` returned 0
+forbidden-CTA hits, 0 public header `Log in`, and Staff Login footer-only.** `bubbaaffiliate.com/`, `/sellers`, `/creators`
+all **200 (unchanged)** and `POST bubbaaffiliate.com/api/bubbaaffiliate/intake` → **400 on empty body** (still wired +
+validating). **No public magazine markers regressed** (2K `grid:has` ×3, 2M `.section-band` ×3, 2L `.secdir` ×17, 2N "Showing
+first" present, both 308 rules and the sitemap route intact). Pre-deploy: isolated VPS/Linux **build-only** validation of
+`a53a7f7` passed (throwaway image `etk-web:p2q-validate`, isolated bare-repo + `git archive` to `/tmp`, real rebuild — all
+internal routes + every public route + 8/8 sections compiled, QA markers present, no public regression; cleaned up; production
+untouched throughout). ⚠️ **Local typecheck remains unusable on the Windows checkout** (pnpm `node_modules` cannot resolve
+`next`/`react`/`payload` types), so the **isolated VPS/Linux build is the authoritative gate** — it was green, and the
+`content-qa` predicate logic was additionally unit-checked under Node (15/15).
+**Operator browser visual check: PASSED.** Confirmed signed in as super-admin: `/dashboard/content` renders correctly with the
+new "Content QA / Publishing readiness" section after Publishing overview; Live problems reads clean; Publishing-readiness /
+advisory items render for the non-public draft/test/mock content; Coverage gaps show as empty/not-broken rather than public
+errors; Open/Fix links point to `/admin/collections/articles/{id}`; there are no write/mutation buttons; mobile/tablet layout
+is acceptable; and `/dashboard/content` still redirects to `/login` when signed out. This brings Phase 2Q to the same sign-off
+standard as Phases 2H–2N.
+**Prior — `1134b46` (`1134b46abb701a55bdbd71d1191424664c0801a7`) (Phase 2N — Remaining Public Magazine
 Pages (Search + Author) — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:6b19eb6d…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 **no new migration**).**
@@ -1042,12 +1106,17 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `1134b46` (Phase 2N remaining public magazine pages —
-search + author; **fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build & deploy; no
-migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup retained at
-`/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `1134b46`; the VPS has no GitHub remote (updated via git bundle over SSH).
-Rollback points: **before Phase 2N `82a8eb6`** (Phase 2M public magazine visual polish — app-only rollback, redeploy that
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `a53a7f7` (Phase 2Q internal Content QA /
+publishing-readiness panel; **fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build &
+deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup
+retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
+`Bubbaacademy/exploringtoknow` holds `main` @ `a53a7f7`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Rollback points: **before Phase 2Q `1134b46`** (Phase 2N remaining public magazine pages — search + author; app-only rollback,
+redeploy that commit with `deploy-app.sh`; this reverts only the internal read-only Content QA panel at `/dashboard/content`
+and removes `lib/content-qa.ts` — no public-surface, schema, data, or routing effect. Note `212eba7` (Phase 2O docs) and
+`e0e9694` (Phase 2P docs) — the docs commits between `1134b46` and `a53a7f7` — are **app-code-identical** to `1134b46`,
+differing only in `CURRENT_PRODUCTION_STATUS.md`, so any of the three restores the same running state);
+**before Phase 2N `82a8eb6`** (Phase 2M public magazine visual polish — app-only rollback, redeploy that
 commit with `deploy-app.sh`; ⚠️ this reverts the search "Showing first N of M" honest-truncation wording and the author-page
 published-count meta / OpenGraph / empty-state copy. Public-presentation only — no schema, data, or routing effect. Note
 `8d150a6` — the Phase 2M docs commit and the immediate parent of `1134b46` — is **app-code-identical** to `82a8eb6`,
