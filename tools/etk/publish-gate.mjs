@@ -31,6 +31,18 @@ const PRODUCT_REQUIRED_TYPES = ['review'];
 const OWNED_PREFIXES = ['owned:', 'permission:'];
 const LICENSED_PREFIXES = ['license:', 'licence:'];
 
+/**
+ * Internal permission markers already written by the product-request approval
+ * flow. A request cannot be approved without `imagePermissionConfirmed`, and
+ * approval stamps this string onto the media it carries across — so the marker
+ * is itself the trace back to a confirmed permission.
+ *
+ * This matters because `/api/product-requests` is not readable over REST (405),
+ * so a REST-based caller cannot check the request directly. Callers that CAN
+ * read it (Local API) may still pass `productPermissionConfirmed` instead.
+ */
+const INTERNAL_PERMISSION_MARKERS = ['manual upload (product request)'];
+
 /** Public CTA / SaaS / marketplace language that must never reach the magazine. */
 const FORBIDDEN_PUBLIC_TERMS = [
   'Request a Review', 'Request Access', 'Start Free Trial', 'free trial',
@@ -140,8 +152,12 @@ export function evaluate(b) {
     if (productLinked) {
       if (!belongsToProduct) {
         block('HERO_NOT_PRODUCT_MEDIA', `Hero media ${heroId} ("${str(hero.filename)}") is not one of the linked product's images. A product article's hero must come from the product's own uploaded media — licensed stock is not acceptable here.`);
-      } else if (!permissionConfirmed && !startsWithAny(source, OWNED_PREFIXES)) {
-        block('HERO_PERMISSION_UNPROVEN', `Hero media ${heroId} belongs to the linked product, but permission is not proven. Either approve it through a product request with "image permission confirmed", or set Media.source to owned:… / permission:…`);
+      } else if (
+        !permissionConfirmed &&
+        !startsWithAny(source, OWNED_PREFIXES) &&
+        !startsWithAny(source, INTERNAL_PERMISSION_MARKERS)
+      ) {
+        block('HERO_PERMISSION_UNPROVEN', `Hero media ${heroId} belongs to the linked product, but permission is not proven (Media.source is "${source || '(empty)'}"). Bring it in through a product request with "image permission confirmed", or set Media.source to owned:… / permission:…`);
       }
     } else if (!source) {
       block('HERO_NO_SOURCE', `Hero media ${heroId} ("${str(hero.filename)}") has no recorded source. Set Media.source to owned:… / permission:… / license:…`);

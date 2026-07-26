@@ -73,8 +73,11 @@ const idOf = (rel) => (rel && typeof rel === 'object' ? (rel.id ?? null) : (rel 
         .map(Number);
     }
     // Permission provenance: an approved product request carrying
-    // imagePermissionConfirmed is what proves the seller owns or was granted
-    // use of these images. Media.source owned:/permission: is the alternative.
+    // imagePermissionConfirmed proves the seller owns or was granted use of
+    // these images. NOTE: /api/product-requests is not exposed over REST (405),
+    // so this lookup is best-effort — when it is unavailable the gate falls back
+    // to Media.source, which the approval flow stamps with an internal
+    // permission marker for exactly these images.
     const pr = await api(
       `/api/product-requests?where[linkedProduct][equals]=${productId}` +
       `&where[imagePermissionConfirmed][equals]=true&limit=1&depth=0`,
