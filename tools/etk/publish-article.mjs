@@ -60,25 +60,36 @@ const idOf = (rel) => (rel && typeof rel === 'object' ? (rel.id ?? null) : (rel 
   const productId = idOf(article.product);
   let product = null;
   let productMediaIds = [];
+  let productPermissionConfirmed = false;
   if (productId != null) {
     const r = await api(`/api/products/${productId}?depth=1`);
     if (r.status === 200) {
       product = r.json;
       const imgs = Array.isArray(product.productImages) ? product.productImages : [];
       productMediaIds = imgs
+        .filter((x) => x?.enabled !== false)
         .map((x) => idOf(x?.image ?? x))
         .filter((x) => x != null)
         .map(Number);
     }
+    // Permission provenance: an approved product request carrying
+    // imagePermissionConfirmed is what proves the seller owns or was granted
+    // use of these images. Media.source owned:/permission: is the alternative.
+    const pr = await api(
+      `/api/product-requests?where[linkedProduct][equals]=${productId}` +
+      `&where[imagePermissionConfirmed][equals]=true&limit=1&depth=0`,
+    );
+    if (pr.status === 200 && pr.json.totalDocs > 0) productPermissionConfirmed = true;
   }
 
   const cats = await api('/api/categories?limit=200&depth=0');
   const knownCategorySlugs = cats.status === 200 ? cats.json.docs.map((d) => String(d.slug)) : [];
 
   // ---- gate ----------------------------------------------------------------
-  const result = evaluate({ article, hero, product, knownCategorySlugs, productMediaIds });
+  const result = evaluate({ article, hero, product, knownCategorySlugs, productMediaIds, productPermissionConfirmed });
   console.log(formatResult(slug, result));
   console.log(`  (id=${article.id} type=${article.type} editorial=${article.editorialStatus} pipeline=${article.status} md=${String(article.markdown || '').length})`);
+  console.log(`  (product=${productId ?? 'none'} productMedia=${productMediaIds.length} permissionConfirmed=${productPermissionConfirmed} hero=${idOf(article.images?.hero) ?? 'none'})`);
 
   if (!result.ok) {
     console.log('\nNOT PUBLISHED — article left exactly as it was.');

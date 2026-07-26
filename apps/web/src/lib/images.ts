@@ -12,9 +12,33 @@ export const ARTICLE_IMAGES_MAX = 6; // hero + up to 5 inline
 
 export const IMAGE_ROLES = ['hero', 'lifestyle', 'product-detail', 'packaging', 'in-use', 'comparison', 'other'] as const;
 
-/** Deterministic, non-AI alt fallback. */
-export function altFallback(productName: string, role?: string, position?: number): string {
-  return `${productName} – ${role && role !== 'other' ? role : 'product image'}${position ? ' ' + position : ''}`;
+/**
+ * Editorial phrasing per image role. Says only what the role already asserts —
+ * no invented colours, settings, counts or visual detail.
+ */
+const ROLE_ALT: Record<string, (name: string) => string> = {
+  hero: (n) => n,
+  lifestyle: (n) => `${n} in everyday use`,
+  'product-detail': (n) => `A closer view of ${n}`,
+  packaging: (n) => `${n} in its packaging`,
+  'in-use': (n) => `${n} being used`,
+  comparison: (n) => `${n} shown alongside comparable options`,
+};
+
+/**
+ * Deterministic, non-AI alt fallback — used ONLY when an image carries no alt
+ * and no caption of its own.
+ *
+ * This previously emitted marketplace listing copy (`"<name> – product image"`),
+ * which is exactly the raw alt text Phase 2P had to clean off the live magazine
+ * by hand and which the Phase 2U publish gate rejects (`heroAltLooksRaw`). It now
+ * produces plain editorial alt text tied to the product and the image's declared
+ * role, and never fabricates visual detail it cannot know.
+ */
+export function altFallback(productName: string, role?: string): string {
+  const name = String(productName || '').trim() || 'The product';
+  const phrase = role ? ROLE_ALT[role] : undefined;
+  return phrase ? phrase(name) : name;
 }
 
 /** Shared productImages array field (used on products + product-requests). */
@@ -143,7 +167,7 @@ export function buildArticleImagePopulation(input: PopulateInput): PopulateResul
   const inserts = inline.map((pi, k) => {
     const frac = (k + 1) / (inline.length + 1);
     const after = (proseIdx.length ? proseIdx[Math.min(proseIdx.length - 1, Math.max(0, Math.round(frac * proseIdx.length) - 1))] : blocks.length - 1) ?? (blocks.length - 1);
-    return { after, block: { blockType: 'inlineImage', image: mid(pi), alt: pi.alt || altFallback(input.productTitle, pi.role, k + 1), caption: pi.caption || undefined, align: 'wide', source: 'Manually uploaded product image' } };
+    return { after, block: { blockType: 'inlineImage', image: mid(pi), alt: pi.alt || pi.caption || altFallback(input.productTitle, pi.role), caption: pi.caption || undefined, align: 'wide', source: 'Manually uploaded product image' } };
   }).sort((a, b) => b.after - a.after);
   for (const ins of inserts) blocks.splice(ins.after + 1, 0, ins.block);
 
@@ -153,6 +177,8 @@ export function buildArticleImagePopulation(input: PopulateInput): PopulateResul
     const pi = inline[ii]; ii += 1; return { ...s, status: 'generated', media: pi ? mid(pi) : s.media };
   });
 
-  const images = { ...(input.currentImages || {}), hero: mid(hero), heroAlt: hero.alt || altFallback(input.productTitle, hero.role, 0) };
+  // alt → caption → editorial fallback. `Media.source` is deliberately NOT used
+  // here: it records provenance/licence, not a description of the image.
+  const images = { ...(input.currentImages || {}), hero: mid(hero), heroAlt: hero.alt || hero.caption || altFallback(input.productTitle, hero.role) };
   return { ok: true, heroId: mid(hero), inlineIds: inline.map(mid), images, bodyBlocks: blocks, imageSlots };
 }

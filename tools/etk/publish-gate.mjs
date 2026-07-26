@@ -19,10 +19,15 @@ export const ARTICLE_TYPES = [
   'best_list', 'faq', 'problem_solution', 'educational',
 ];
 
-/** Types whose hero may never be generic stock. */
-const OWNED_IMAGE_TYPES = ['review'];
+/** Types that must be tied to a real product record. */
+const PRODUCT_REQUIRED_TYPES = ['review'];
 
-/** Accepted `media.source` provenance prefixes. */
+/**
+ * Accepted `media.source` provenance prefixes.
+ * OWNED proves the seller owns or was granted use of the image.
+ * LICENSED is acceptable ONLY for general editorial articles with no linked
+ * product — a licensed stock photo can never be a product article's hero.
+ */
 const OWNED_PREFIXES = ['owned:', 'permission:'];
 const LICENSED_PREFIXES = ['license:', 'licence:'];
 
@@ -68,7 +73,9 @@ export function heroAltLooksRaw(alt) {
  * @param {object|null} b.hero  resolved Media doc for images.hero, or null
  * @param {object|null} b.product  resolved Products doc for `product`, or null
  * @param {string[]} b.knownCategorySlugs  real category slugs from Payload
- * @param {number[]} [b.productMediaIds]  media ids belonging to the linked product
+ * @param {number[]} [b.productMediaIds]  media ids in the linked product's productImages
+ * @param {boolean} [b.productPermissionConfirmed]  a product-request for this
+ *        product has imagePermissionConfirmed = true
  */
 export function evaluate(b) {
   const a = b?.article || {};
@@ -113,23 +120,32 @@ export function evaluate(b) {
   else if (!ARTICLE_TYPES.includes(type)) block('TYPE_INVALID', `Article type "${type}" is not a real Articles.type value.`);
 
   // --- 5. hero image + provenance -------------------------------------------
-  const needsOwned = OWNED_IMAGE_TYPES.includes(type);
+  // Two regimes. A PRODUCT-LINKED article is monetizable: its hero must be one
+  // of that product's own uploaded images, and stock is refused outright no
+  // matter how well licensed. A GENERAL editorial article with no product may
+  // use owned or licensed imagery, provided the provenance is recorded.
+  const productLinked = idOf(a.product) != null;
+  const permissionConfirmed = b?.productPermissionConfirmed === true;
+
   if (heroId == null) {
-    block('NO_HERO', needsOwned
-      ? 'No hero image. A review requires a real owned or permissioned product photo.'
+    block('NO_HERO', productLinked
+      ? 'No hero image. A product article must use one of the linked product\'s own uploaded images.'
       : 'No hero image. Attach one and record its source before publishing.');
   } else if (!hero) {
     block('HERO_UNRESOLVED', `Hero media id ${heroId} could not be loaded.`);
   } else {
     const source = trimmed(hero.source);
     const belongsToProduct = productMediaIds.includes(Number(heroId));
-    if (!source && !belongsToProduct) {
-      block('HERO_NO_SOURCE', `Hero media ${heroId} ("${str(hero.filename)}") has no recorded source. Set Media.source to owned:… / permission:… / license:…`);
-    } else if (needsOwned) {
-      if (!belongsToProduct && !startsWithAny(source, OWNED_PREFIXES)) {
-        block('HERO_STOCK_ON_REVIEW', `Reviews may not use stock imagery. Hero media ${heroId} source "${source || '(none)'}" is not owned:/permission: and does not belong to the linked product.`);
+
+    if (productLinked) {
+      if (!belongsToProduct) {
+        block('HERO_NOT_PRODUCT_MEDIA', `Hero media ${heroId} ("${str(hero.filename)}") is not one of the linked product's images. A product article's hero must come from the product's own uploaded media — licensed stock is not acceptable here.`);
+      } else if (!permissionConfirmed && !startsWithAny(source, OWNED_PREFIXES)) {
+        block('HERO_PERMISSION_UNPROVEN', `Hero media ${heroId} belongs to the linked product, but permission is not proven. Either approve it through a product request with "image permission confirmed", or set Media.source to owned:… / permission:…`);
       }
-    } else if (!belongsToProduct && !startsWithAny(source, [...OWNED_PREFIXES, ...LICENSED_PREFIXES])) {
+    } else if (!source) {
+      block('HERO_NO_SOURCE', `Hero media ${heroId} ("${str(hero.filename)}") has no recorded source. Set Media.source to owned:… / permission:… / license:…`);
+    } else if (!startsWithAny(source, [...OWNED_PREFIXES, ...LICENSED_PREFIXES])) {
       block('HERO_SOURCE_UNRECOGNIZED', `Hero media ${heroId} source "${source}" must start with owned:, permission:, or license:.`);
     }
   }
@@ -157,10 +173,10 @@ export function evaluate(b) {
   }
 
   // --- 8. review requires a linked product ----------------------------------
-  if (needsOwned && idOf(a.product) == null) {
-    block('REVIEW_NO_PRODUCT', 'A review must have a linked product (drives the affiliate link and disclosure).');
+  if (PRODUCT_REQUIRED_TYPES.includes(type) && !productLinked) {
+    block('REVIEW_NO_PRODUCT', 'A review must have a linked product (drives the affiliate link and disclosure, and supplies the hero image).');
   }
-  if (needsOwned && idOf(a.product) != null && !product) {
+  if (productLinked && !product) {
     warn('PRODUCT_UNRESOLVED', 'Linked product could not be loaded for verification.');
   }
 

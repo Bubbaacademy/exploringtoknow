@@ -78,6 +78,28 @@ export async function persistGeneration(
   const product = await client.findById('products', outcome.productId);
   const categoryId = firstCategoryId(product as { categories?: unknown } | null);
 
+  // Phase 2V — product-owned media. Every monetizable article is tied to a real
+  // product, so its hero must come from that product's OWN manually-uploaded
+  // images, never from stock. The selection logic is not duplicated here: we set
+  // the one-shot `populateImagesFromProduct` flag and the Articles beforeChange
+  // hook runs the existing deterministic `buildArticleImagePopulation` inside
+  // this SAME atomic write (preferredHero → role=hero → best landscape → first,
+  // plus diverse inline images).
+  //
+  // Guarded to the hook's own minimum: that hook THROWS when a product has too
+  // few usable images, which would abort the whole article write. Below the
+  // threshold we still create the Draft — imageless — and the publish gate
+  // blocks it. A thin product costs us a blocked draft, never a lost article.
+  const PRODUCT_IMAGES_MIN = 3; // mirrors PRODUCT_IMAGES_MIN in apps/web/src/lib/images.ts
+  const productImages = (product as { productImages?: unknown } | null)?.productImages;
+  const usableImages = Array.isArray(productImages)
+    ? productImages.filter((i) => {
+        const img = i as { enabled?: boolean; image?: unknown } | null;
+        return Boolean(img) && img?.enabled !== false && img?.image != null;
+      }).length
+    : 0;
+  const populateImages = usableImages >= PRODUCT_IMAGES_MIN;
+
   const articleDoc = await client.create('articles', {
     title: article.title,
     slug,
@@ -85,6 +107,7 @@ export async function persistGeneration(
     product: outcome.productId,
     ...(categoryId != null ? { category: categoryId } : {}),
     type: article.type,
+    ...(populateImages ? { populateImagesFromProduct: true } : {}),
     markdown: article.markdown,
     excerpt: article.metaDescription,
     seo: { metaTitle: article.metaTitle, metaDescription: article.metaDescription },
