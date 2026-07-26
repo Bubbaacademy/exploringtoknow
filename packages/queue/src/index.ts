@@ -11,6 +11,7 @@ import { logger } from '@etk/core';
 export const QUEUES = {
   dailyPipeline: 'daily-pipeline',
   generateContent: 'generate-content',
+  generateTopicArticle: 'generate-topic-article',
 } as const;
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
@@ -21,6 +22,31 @@ export interface GenerateContentJob {
   /** When the job originates from a Product Request approval, the request id so
    * the worker can link the finished Article back to the request. */
   requestId?: string;
+}
+
+/**
+ * Topic-driven article generation (Phase 2U). No productId: the magazine's
+ * editorial articles are not all backed by a catalog row. Always produces a
+ * DRAFT — publishing is a separate, gated step and never happens here.
+ */
+export interface GenerateTopicArticleJob {
+  title: string;
+  articleType: string;
+  angle: string;
+  /** Category id or slug. Required before the article can ever be published. */
+  category: string | number;
+  slug?: string;
+  primaryKeyword?: string;
+  secondaryKeywords?: string[];
+  audience?: string;
+  notes?: string;
+  avoid?: string[];
+  publishPriority?: number;
+  heroMediaId?: string | number;
+  heroAlt?: string;
+  productId?: string | number;
+  authorId?: string | number;
+  editorialNotes?: string;
 }
 
 /**

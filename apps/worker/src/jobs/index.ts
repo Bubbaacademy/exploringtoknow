@@ -1,7 +1,8 @@
 import type PgBoss from 'pg-boss';
 import { logger } from '@etk/core';
-import { QUEUES, type GenerateContentJob } from '@etk/queue';
-import { RestPersistenceClient, generateAndPersist } from '@etk/persistence';
+import { QUEUES, type GenerateContentJob, type GenerateTopicArticleJob } from '@etk/queue';
+import { RestPersistenceClient, generateAndPersist, generateAndPersistTopic } from '@etk/persistence';
+import type { ArticleType } from '@etk/core';
 
 /**
  * Worker handlers.
@@ -24,6 +25,37 @@ function makeClient(): RestPersistenceClient {
 export async function registerJobs(boss: PgBoss): Promise<void> {
   await boss.work(QUEUES.dailyPipeline, async () => {
     logger.info('daily_pipeline_tick');
+  });
+
+  // Topic-driven generation (Phase 2U): no product, always lands as a DRAFT.
+  // Publishing is a separate gated step (tools/etk/publish-article.mjs) and is
+  // never performed here — a generated draft with no safe hero image must stay
+  // non-public until a human attaches one and records its source.
+  await boss.work(QUEUES.generateTopicArticle, async ([job]) => {
+    const data = (job?.data ?? {}) as Partial<GenerateTopicArticleJob>;
+    if (!data.title || !data.articleType || !data.category) {
+      logger.error('generate_topic_missing_fields', {
+        hasTitle: Boolean(data.title), hasType: Boolean(data.articleType), hasCategory: Boolean(data.category),
+      });
+      return;
+    }
+    logger.info('generate_topic_start', { title: data.title, type: data.articleType });
+
+    try {
+      const saved = await generateAndPersistTopic(makeClient(), {
+        ...(data as GenerateTopicArticleJob),
+        articleType: data.articleType as ArticleType,
+        category: data.category,
+      });
+      logger.info('generate_topic_done', {
+        articleId: saved.articleId, slug: saved.articleSlug,
+        markdownLength: saved.markdownLength, updated: saved.updated,
+        editorialStatus: saved.editorialStatus, costCents: saved.costCents,
+      });
+    } catch (e) {
+      logger.error('generate_topic_failed', { title: data.title, err: String(e) });
+      throw e;
+    }
   });
 
   await boss.work(QUEUES.generateContent, async ([job]) => {

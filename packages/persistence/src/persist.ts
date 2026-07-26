@@ -90,7 +90,12 @@ export async function persistGeneration(
     seo: { metaTitle: article.metaTitle, metaDescription: article.metaDescription },
     openGraph: { title: article.title, description: article.metaDescription },
     qaReport: { passed, reasons: outcome.qa?.reasons ?? [] },
-    status: passed ? 'published' : 'flagged',
+    // Pipeline status must NEVER claim 'published' while the editorial gate is
+    // only at ready_for_review. That divergence ("Pipeline says Published, but
+    // NOT public") is what the Phase 2Q QA panel flags and what caused the
+    // Phase 2O incident. A clean run has finished QA — so it lands on 'qa', and
+    // only the publish tool moves both statuses, editorial first.
+    status: passed ? 'qa' : 'flagged',
     // Editorial gate: generation NEVER auto-publishes. A clean run lands at
     // ready_for_review for an administrator to publish manually.
     editorialStatus: passed ? 'ready_for_review' : 'draft',
@@ -112,7 +117,7 @@ export async function persistGeneration(
     briefId: brief.id,
     articleId: articleDoc.id,
     articleSlug: slug,
-    articleStatus: passed ? 'published' : 'flagged',
+    articleStatus: passed ? 'qa' : 'flagged',
     passed,
   };
 }

@@ -46,6 +46,8 @@ export interface PersistResult {
   briefId: string | number;
   articleId: string | number;
   articleSlug: string;
-  articleStatus: 'published' | 'flagged';
+  /** Pipeline status the article was persisted with. Never 'published' — the
+   *  editorial gate leads, so a clean run lands on 'qa'. */
+  articleStatus: 'qa' | 'flagged';
   passed: boolean;
 }

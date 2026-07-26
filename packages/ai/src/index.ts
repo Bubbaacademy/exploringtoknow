@@ -7,6 +7,8 @@ import type { ContentState } from './state';
 
 export { buildContentGraph, buildRefreshGraph };
 export type { ContentState } from './state';
+export { generateTopicArticle } from './topic';
+export type { TopicSpec, TopicResult } from './topic';
 
 export interface PipelineResult {
   state: ContentState;
