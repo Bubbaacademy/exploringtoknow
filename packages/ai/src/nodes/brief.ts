@@ -25,8 +25,16 @@ export async function briefNode(state: ContentState): Promise<Partial<ContentSta
   };
 
   const res = await provider.completeStructured<ContentBrief>({ system, prompt, schemaName: 'ContentBrief', outputSchema: BRIEF_SCHEMA, mock });
+
+  // An editorially requested format wins over the model's own choice. The
+  // article node renders `Write a ${brief.articleType} article`, so overriding
+  // here is what actually steers the written piece — not just the stored field.
+  const brief = state.requestedType
+    ? { ...res.data, articleType: state.requestedType }
+    : res.data;
+
   return {
-    brief: res.data,
+    brief,
     cost: [...state.cost, { label: 'brief', model: res.model, ...res.usage }],
   };
 }

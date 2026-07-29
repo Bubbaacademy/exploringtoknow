@@ -1,6 +1,6 @@
 import { StateGraph, START, END, Annotation } from '@langchain/langgraph';
 import type {
-  ProductInput, Intelligence, ContentBrief, GeneratedArticle, QaResult, BrandProfile,
+  ProductInput, Intelligence, ContentBrief, GeneratedArticle, QaResult, BrandProfile, ArticleType,
 } from '@etk/core';
 import type { ContentState } from '../state';
 import { intelligenceNode } from '../nodes/intelligence';
@@ -19,6 +19,7 @@ import { regenerateNode } from '../nodes/regenerate';
 const State = Annotation.Root({
   product: Annotation<ProductInput>(),
   brand: Annotation<BrandProfile>(),
+  requestedType: Annotation<ArticleType | undefined>(),
   intelligence: Annotation<Intelligence | undefined>(),
   brief: Annotation<ContentBrief | undefined>(),
   article: Annotation<GeneratedArticle | undefined>(),

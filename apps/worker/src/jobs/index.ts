@@ -68,7 +68,11 @@ export async function registerJobs(boss: PgBoss): Promise<void> {
 
     try {
       const client = makeClient();
-      const saved = await generateAndPersist(client, { productId: data.productId }, { maxAttempts: 2 });
+      const saved = await generateAndPersist(
+        client,
+        { productId: data.productId, articleType: data.articleType as ArticleType | undefined },
+        { maxAttempts: 2 },
+      );
       logger.info('generate_content_done', {
         productId: data.productId,
         runId: saved.runId,

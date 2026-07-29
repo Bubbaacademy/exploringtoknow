@@ -22,6 +22,13 @@ export interface GenerateContentJob {
   /** When the job originates from a Product Request approval, the request id so
    * the worker can link the finished Article back to the request. */
   requestId?: string;
+  /**
+   * Editorially requested article format (a real `Articles.type` value, e.g.
+   * `review`). Omit to keep the previous behaviour, where the model picks.
+   * Needed because a product that already has a problem/solution piece may
+   * still want a distinct review.
+   */
+  articleType?: string;
 }
 
 /**

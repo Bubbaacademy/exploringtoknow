@@ -1,4 +1,4 @@
-import type { ProductInput, BrandProfile } from '@etk/core';
+import type { ProductInput, BrandProfile, ArticleType } from '@etk/core';
 import { DEFAULT_BRAND } from '@etk/core';
 import { CostMeter } from '@etk/providers';
 import { buildContentGraph } from './graphs/contentPipeline';
@@ -25,12 +25,14 @@ export interface PipelineResult {
 export async function runContentPipeline(
   product: ProductInput,
   brand: BrandProfile = DEFAULT_BRAND,
-  opts: { maxAttempts?: number } = {},
+  opts: { maxAttempts?: number; articleType?: ArticleType } = {},
 ): Promise<PipelineResult> {
   const graph = buildContentGraph();
   const final = (await graph.invoke({
     product,
     brand,
+    // Undefined leaves the pipeline's original behaviour untouched.
+    requestedType: opts.articleType,
     attempts: { article: 0, max: opts.maxAttempts ?? 2 },
     cost: [],
   })) as ContentState;

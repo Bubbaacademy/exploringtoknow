@@ -1,5 +1,5 @@
 import type {
-  ProductInput, Intelligence, ContentBrief, GeneratedArticle, QaResult, BrandProfile,
+  ProductInput, Intelligence, ContentBrief, GeneratedArticle, QaResult, BrandProfile, ArticleType,
 } from '@etk/core';
 
 /**
@@ -9,6 +9,13 @@ import type {
 export interface ContentState {
   product: ProductInput;
   brand: BrandProfile;
+  /**
+   * Editorially requested article format. When set, the brief node adopts it
+   * instead of the format the model would have chosen, so an operator can ask
+   * for a `review` of a product that already has a problem/solution piece.
+   * Left undefined, the pipeline behaves exactly as before.
+   */
+  requestedType?: ArticleType;
   intelligence?: Intelligence;
   brief?: ContentBrief;
   article?: GeneratedArticle;
