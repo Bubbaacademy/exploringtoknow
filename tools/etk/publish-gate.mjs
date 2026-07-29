@@ -51,6 +51,47 @@ const FORBIDDEN_PUBLIC_TERMS = [
 ];
 
 /**
+ * Health / sleep / medical claims. The magazine's promise is "independently
+ * researched, human-reviewed" — it is not qualified to assert physiological
+ * effects. Phase 2W generated a "review" claiming LEDs "nudge your brain toward
+ * awake" and "make falling asleep harder"; none of that is supportable.
+ */
+const HEALTH_CLAIM_PATTERNS = [
+  /\bmelatonin\b/i, /\bcircadian\b/i, /\binsomnia\b/i,
+  /\bfall(?:ing)? asleep\b/i, /\bstay(?:ing)? awake\b/i,
+  /\bsleep quality\b/i, /\bsleep better\b/i, /\bhelps? you sleep\b/i,
+  /\b(?:disrupt|disrupts|disrupting|wreck|wrecks|wrecking|ruin|ruins|ruining|harm|harms|harming)\s+(?:your\s+)?sleep\b/i,
+  /\bbrain toward\b/i, /\bclinically\b/i, /\bmedically\b/i, /\bdoctor[- ]recommended\b/i,
+];
+
+/**
+ * Performance / durability assertions that require a manufacturer or product
+ * source. Pass `allowSourcedClaims: true` only when the copy actually attributes
+ * them.
+ */
+const UNSUPPORTED_CLAIM_PATTERNS = [
+  /\bno[- ]residue\b/i, /\bresidue[- ]free\b/i, /\bleaves no residue\b/i,
+  /\b(?:will not|won'?t|does not|doesn'?t)\s+(?:damage|peel|fade|yellow|fall off)\b/i,
+  /\blong[- ]term\b/i, /\blasts? (?:for )?years\b/i, /\bpermanently\b/i,
+  /\bblocks?\s+\d+\s*%/i, /\breduces?\s+[^.]{0,24}\d+\s*%/i, /\bup to \d+\s*%/i,
+];
+
+/** A review must say what it is and is not based on. */
+const RESEARCH_BASIS_PATTERNS = [
+  /\bresearch[- ]based\b/i, /\bdid not (?:run|test|measure)\b/i,
+  /\b(?:have|has) not (?:been )?tested\b/i, /\bnot a hands[- ]on\b/i,
+  /\bwe did not\b/i, /\bbased on (?:the )?(?:manufacturer|published|product)[^.]{0,40}(?:information|documentation|specification|listing)/i,
+  /\bnot lab[- ]tested\b/i,
+];
+
+/** Disclosure is rendered by the site when a product is linked — never in prose. */
+const MANUAL_DISCLOSURE_PATTERNS = [
+  /this (?:article|post|page) contains affiliate links/i,
+  /we may earn a (?:small )?commission/i,
+  /at no extra cost to you/i,
+];
+
+/**
  * Placeholder / internal markers. Word-boundaried on purpose: a bare substring
  * scan for "TEST" flags "greatest" and "contest" (noted in Phase 2Q).
  */
@@ -75,6 +116,35 @@ export function heroAltLooksRaw(alt) {
   const a = trimmed(alt).toLowerCase();
   if (!a) return false;
   return /[-–—]\s*product image\.?$/.test(a) || /\bproduct image\b\.?$/.test(a);
+}
+
+const norm = (s) => trimmed(s).toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+/**
+ * Alt text that is really the marketplace listing title rather than a
+ * description. Catches the Phase 2W failure, where the alt was the full Amazon
+ * title — which escaped `heroAltLooksRaw` only because it lacked the suffix.
+ */
+export function altLooksLikeListingTitle(alt, productTitle) {
+  const a = trimmed(alt);
+  if (!a) return false;
+  if (productTitle && norm(a) === norm(productTitle)) return true;
+  if (a.length > 120) return true;
+  if ((a.match(/,/g) || []).length >= 3) return true;
+  return false;
+}
+
+const STOP = new Set(['a','an','the','and','or','of','for','to','in','on','with','your','you','what','how','is','are','it','that','this','here','s','was','do','does']);
+const tokens = (s) => norm(s).split(' ').filter((w) => w.length > 2 && !STOP.has(w));
+
+/** Jaccard overlap of significant title words. */
+export function titleSimilarity(a, b) {
+  const A = new Set(tokens(a));
+  const B = new Set(tokens(b));
+  if (!A.size || !B.size) return 0;
+  let inter = 0;
+  for (const w of A) if (B.has(w)) inter += 1;
+  return inter / (A.size + B.size - inter);
 }
 
 /**
@@ -201,6 +271,60 @@ export function evaluate(b) {
   for (const term of FORBIDDEN_PUBLIC_TERMS) {
     if (prose.toLowerCase().includes(term.toLowerCase())) {
       block('FORBIDDEN_CTA', `Forbidden public CTA/SaaS language: "${term}".`);
+    }
+  }
+
+  // --- 9b. editorial quality (Phase 2X) --------------------------------------
+  // Everything below exists because Phase 2W produced a technically valid but
+  // unpublishable "review": a re-skin of an existing article, with sleep claims,
+  // an unsourced durability claim, marketplace alt text, no stated basis, and a
+  // hand-written disclosure the site already renders.
+  const bodyAndMeta = [str(a.title), str(a.excerpt), markdown].join('\n');
+
+  for (const re of HEALTH_CLAIM_PATTERNS) {
+    const m = bodyAndMeta.match(re);
+    if (m && b?.allowHealthClaims !== true) {
+      block('HEALTH_CLAIM', `Health/sleep/medical claim "${m[0]}" — the magazine cannot assert physiological effects.`);
+      break;
+    }
+  }
+
+  for (const re of UNSUPPORTED_CLAIM_PATTERNS) {
+    const m = bodyAndMeta.match(re);
+    if (m && b?.allowSourcedClaims !== true) {
+      block('UNSUPPORTED_CLAIM', `Unsourced performance/durability claim "${m[0]}" — attribute it to the manufacturer or remove it.`);
+      break;
+    }
+  }
+
+  if (type === 'review' && !RESEARCH_BASIS_PATTERNS.some((re) => re.test(markdown))) {
+    block('NO_RESEARCH_BASIS', 'A review must state what it is based on (e.g. research-based from manufacturer documentation, and that nothing was hands-on tested).');
+  }
+
+  if (productLinked) {
+    for (const re of MANUAL_DISCLOSURE_PATTERNS) {
+      if (re.test(markdown)) {
+        block('MANUAL_DISCLOSURE', 'The body hand-writes an affiliate disclosure; the site renders one automatically for product-linked articles. Remove it.');
+        break;
+      }
+    }
+  }
+
+  if (heroId != null && altLooksLikeListingTitle(heroAlt, str(product?.title))) {
+    block('HERO_ALT_LISTING_TITLE', `Hero alt is marketplace listing text, not a description: "${heroAlt.slice(0, 90)}${heroAlt.length > 90 ? '…' : ''}"`);
+  }
+
+  // Near-duplicate of something already published on the same product+category.
+  const siblings = Array.isArray(b?.publishedSiblings) ? b.publishedSiblings : [];
+  for (const s of siblings) {
+    if (String(s.id) === String(a.id)) continue;
+    const sameProduct = idOf(s.product) != null && String(idOf(s.product)) === String(idOf(a.product));
+    const sameCategory = String(idOf(s.category)) === String(catId);
+    if (!sameProduct || !sameCategory) continue;
+    const sim = titleSimilarity(a.title, s.title);
+    if (sim >= 0.5) {
+      block('DUPLICATE_TOPIC', `Near-duplicate of published "${s.title}" (${s.slug}) — same product and category, title overlap ${(sim * 100).toFixed(0)}%.`);
+      break;
     }
   }
 

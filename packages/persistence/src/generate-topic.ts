@@ -68,6 +68,24 @@ export async function generateAndPersistTopic(
 ): Promise<TopicPersistResult> {
   const categoryId = await resolveCategory(client, input.category);
 
+  // Phase 2X — when the piece is about a real product, its hero must come from
+  // that product's OWN uploaded images. Same guard and same one-shot flag the
+  // product path uses; the Articles beforeChange hook does the selection.
+  let populateImages = false;
+  let productName: string | undefined;
+  if (input.productId != null && input.heroMediaId == null) {
+    const product = await client.findById('products', input.productId);
+    productName = typeof product?.title === 'string' ? product.title : undefined;
+    const imgs = (product as { productImages?: unknown } | null)?.productImages;
+    const usable = Array.isArray(imgs)
+      ? imgs.filter((i) => {
+          const img = i as { enabled?: boolean; image?: unknown } | null;
+          return Boolean(img) && img?.enabled !== false && img?.image != null;
+        }).length
+      : 0;
+    populateImages = usable >= 3; // mirrors PRODUCT_IMAGES_MIN in apps/web/src/lib/images.ts
+  }
+
   let brand: BrandProfile | undefined;
   try {
     brand = mapBrandProfile(await client.findGlobal('brand-profile'));
@@ -75,7 +93,10 @@ export async function generateAndPersistTopic(
     brand = undefined; // generateTopicArticle falls back to DEFAULT_BRAND
   }
 
-  const { article, cost } = await generateTopicArticle(input, brand);
+  const { article, cost } = await generateTopicArticle(
+    { ...input, productName: input.productName ?? productName },
+    brand,
+  );
 
   // Idempotency: an explicit slug updates in place; a derived slug never
   // collides (freeSlug appends -2, -3, …) so reruns cannot clobber a live post.
@@ -109,6 +130,8 @@ export async function generateAndPersistTopic(
     ...(input.heroMediaId != null
       ? { images: { hero: input.heroMediaId, heroAlt: input.heroAlt ?? '' } }
       : {}),
+    // Product-owned hero + inline images, selected by the existing hook.
+    ...(populateImages ? { populateImagesFromProduct: true } : {}),
   };
 
   const doc = existing

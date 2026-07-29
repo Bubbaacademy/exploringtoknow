@@ -88,8 +88,17 @@ const idOf = (rel) => (rel && typeof rel === 'object' ? (rel.id ?? null) : (rel 
   const cats = await api('/api/categories?limit=200&depth=0');
   const knownCategorySlugs = cats.status === 200 ? cats.json.docs.map((d) => String(d.slug)) : [];
 
+  // Already-published articles, for the near-duplicate check.
+  const pub = await api('/api/articles?where[editorialStatus][equals]=published&limit=200&depth=0');
+  const publishedSiblings = pub.status === 200
+    ? pub.json.docs.map((d) => ({ id: d.id, title: d.title, slug: d.slug, product: d.product, category: d.category }))
+    : [];
+
   // ---- gate ----------------------------------------------------------------
-  const result = evaluate({ article, hero, product, knownCategorySlugs, productMediaIds, productPermissionConfirmed });
+  const result = evaluate({
+    article, hero, product, knownCategorySlugs, productMediaIds,
+    productPermissionConfirmed, publishedSiblings,
+  });
   console.log(formatResult(slug, result));
   console.log(`  (id=${article.id} type=${article.type} editorial=${article.editorialStatus} pipeline=${article.status} md=${String(article.markdown || '').length})`);
   console.log(`  (product=${productId ?? 'none'} productMedia=${productMediaIds.length} permissionConfirmed=${productPermissionConfirmed} hero=${idOf(article.images?.hero) ?? 'none'})`);

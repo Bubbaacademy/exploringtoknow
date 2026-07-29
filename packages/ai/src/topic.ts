@@ -27,6 +27,12 @@ export interface TopicSpec {
   /** Working title. The model may refine it; keep it concrete. */
   title: string;
   articleType: ArticleType;
+  /**
+   * Name of the real product under review, when the piece is about one. Switches
+   * the prompt from "no product behind this" to a product-review structure and
+   * requires an explicit statement of the review's basis.
+   */
+  productName?: string;
   /** What the reader is actually trying to solve. */
   angle: string;
   primaryKeyword?: string;
@@ -77,11 +83,26 @@ function buildPrompt(spec: TopicSpec, brand: BrandProfile) {
       (spec.audience ? `AUDIENCE: ${spec.audience}\n` : '') +
       (spec.notes ? `\nGROUND THE ARTICLE IN THESE NOTES — do not invent beyond them:\n${spec.notes}\n` : '') +
       (spec.avoid?.length ? `\nCLAIMS TO AVOID (hard constraints):\n- ${spec.avoid.join('\n- ')}\n` : '') +
-      '\nThis article has NO single product behind it. Do not invent one, do not name brands you were ' +
-      'not given, and do not write a product pitch. Where products are relevant, discuss them as ' +
-      'categories and give the reader selection criteria they can apply themselves.\n' +
-      '\nStructure: a short honest intro, H2 sections with H3 sub-steps where useful, practical decision ' +
-      'guidance, and a closing summary. Aim for roughly 1,000-1,400 words — thorough, not padded.\n' +
+      (spec.productName
+        ? `\nThis is a review of ONE real product: ${spec.productName}. Do not invent specifications, ` +
+          'pack contents, materials, dimensions, percentages or durability figures. Where a fact is not ' +
+          'given to you above, say plainly that a buyer should check the current listing or packaging ' +
+          'rather than stating a number.\n' +
+          '\nUse this review structure as H2 sections, in this order:\n' +
+          '1. What this product is\n2. What is in the pack (only if given above; otherwise say what to check)\n' +
+          '3. How it is meant to be used\n4. Where it works well\n5. Where it is not the right fit\n' +
+          '6. Trade-offs and limitations\n7. Who should consider something else\n' +
+          '8. How we reviewed this — state plainly that this is a RESEARCH-BASED review drawn from the ' +
+          'manufacturer\'s published product information, that nothing was hands-on tested, measured or ' +
+          'lab-tested, and name what could not be verified.\n' +
+          '\nDo NOT write an affiliate disclosure, an affiliate link, or a buy CTA anywhere in the body — ' +
+          'the site renders disclosure automatically for product-linked articles.\n'
+        : '\nThis article has NO single product behind it. Do not invent one, do not name brands you were ' +
+          'not given, and do not write a product pitch. Where products are relevant, discuss them as ' +
+          'categories and give the reader selection criteria they can apply themselves.\n' +
+          '\nStructure: a short honest intro, H2 sections with H3 sub-steps where useful, practical decision ' +
+          'guidance, and a closing summary.\n') +
+      '\nAim for roughly 1,000-1,400 words — thorough, not padded.\n' +
       '\nReturn JSON keys: title (concise and human), type (=' + spec.articleType + '), markdown (the full ' +
       'article body in Markdown, H2/H3, NO H1 — the site renders the title), metaTitle (<=60 chars), ' +
       'metaDescription (140-165 chars, a complete sentence), sections (array of the H2 headings used).',
