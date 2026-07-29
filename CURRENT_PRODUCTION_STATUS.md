@@ -1,8 +1,72 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-07-24 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-07-29 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `a53a7f7` (`a53a7f759d3225cce32c2131da41dc2e3d669bb9`) (Phase 2Q — Internal Content QA /
+**Production HEAD: `b5eaf21` (`b5eaf21a65572b910c6b4a1480849a518eea69ef`) (Phase 2X — Product Review Quality
+Correction + First Automated Product Review Published — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:cbea6124…`) healthy; worker image `etk-worker` (id `sha256:09e7ba8b…`);
+payload_migrations 26 (before=26 → after=26, `migrations up to date`, **no new migration**). Rollback point `a53a7f7`.**
+Phase 2X is the correction that made the **automated product-content engine produce a publishable review**, not merely a
+technically valid draft. Phase 2W had proved the mechanism but produced an unpublishable article (id 17): a re-skin of the
+already-published Bright LEDs piece, carrying sleep claims, an unsourced "no-residue" durability claim, the full Amazon
+listing title as hero alt text, no statement of what the review was based on, and a hand-written affiliate disclosure the
+site already renders automatically. **The gate passed all of it** — so 2X closed that blind spot and fixed the steering that
+caused it. **Four files, no schema, no migration, no env, no provider, no Caddy, no auth, no BubbaAffiliate, no public UI, no
+dashboard UI, no package/lockfile change, and no stock-image integration** (`tools/etk/publish-gate.mjs`,
+`tools/etk/publish-article.mjs`, `packages/ai/src/topic.ts`, `packages/persistence/src/generate-topic.ts`).
+**Six new gate blockers, every one drawn from that real failure — and no existing gate weakened:**
+**`HEALTH_CLAIM`** (sleep / melatonin / circadian / insomnia / falling-asleep / clinically-style assertions — the magazine is
+not qualified to assert physiological effects); **`UNSUPPORTED_CLAIM`** (`no-residue`, `will not damage`, `long-term`,
+`blocks N%`, `up to N%`, `lasts years` — unless attributed to the manufacturer); **`NO_RESEARCH_BASIS`** (a `review` must
+state what it is and is not based on); **`MANUAL_DISCLOSURE`** (prose disclosure on a product-linked article, which the site
+renders automatically); **`HERO_ALT_LISTING_TITLE`** (alt equal to the product title, over 120 chars, or comma-stuffed like a
+listing — this is what escaped `heroAltLooksRaw` in 2W because it lacked the "– product image" suffix); and
+**`DUPLICATE_TOPIC`** (same product + category with ≥50% title-token overlap against an already-published article).
+**13/13 gate unit tests pass**, including that the clean target article still passes and every prior gate still fires;
+isolated VPS/Linux typecheck 4/4 clean. **Proof the blind spot is closed: the failed 2W draft (id 17) is now blocked on all
+six new codes simultaneously.**
+**Review steering:** `topic.ts` now switches to a real product-review structure when a product name is supplied — *what this
+product is / what is in the pack / how it is meant to be used / where it works well / where it is not the right fit /
+trade-offs and limitations / who should consider something else / how we reviewed this* — forbids inventing specs, pack
+contents, dimensions or percentages, requires an explicit research-based statement, and forbids writing a disclosure or CTA.
+`generate-topic.ts` now populates hero + inline images from the linked product's **own** uploaded media using the same
+one-shot `populateImagesFromProduct` flag and the same ≥3-image guard the product path uses — so a fully steered review still
+gets a product-owned hero. **Delivery: worker-only rebuild + recreate** (`ec3f334e → 09e7ba8b`, `--no-deps
+--force-recreate worker`); **app, Postgres and Caddy were NOT touched** (app unchanged at `cbea6124`, live Caddyfile hash
+byte-identical at `0f45cd67…`), and **no migration ran**.
+**ARTICLE 18 PUBLISHED — the magazine's first automated product review.** Slug **`flancci-led-dimming-stickers-review`**,
+type **`review`**, linked **Product 2** (FLANCCI LED Light Dimming Stickers), category **Tech & Electronics**, hero
+**Product 2 media 8 / `flancci01.jpg`** drawn from that product's own `productImages` with provenance
+`owned: FLANCCI product media supplied/authorized by product owner` (operator attestation), hero alt **"FLANCCI LED dimming
+sticker sheet shown beside a small indicator light."** — clean editorial text, not marketplace copy. 8,063 chars, excerpt 158,
+author = ExploringToKnow Editorial Team. It uses exactly the eight-section review structure above; claim scans returned **0
+rows** for sleep/health, performance/percentage, hand-written disclosure, hands-on testing and placeholder markers; and it
+states plainly that it is a research-based review from the manufacturer's published information, that nothing was hands-on
+tested or measured, and what could not be verified. **Gate: PASS. Published through the gated publisher in the correct
+order** — `editorialStatus=published` → `editorialPublishedAt` confirmed (`2026-07-29T19:36:21.092Z`) → **only then**
+pipeline `status=published`. **Nothing was published outside the gate.**
+⚠️ **Article 17 (`those-bright-standby-leds-wrecking-your-sleep-here-s-a-clean-fix`) remains DELIBERATELY NON-PUBLIC as
+failed evidence** — `ready_for_review`, 404, absent from sitemap/search. It is the regression case the six new blockers must
+keep rejecting; do not publish it and do not delete it without a reason.
+**Public verification PASSED:** article URL **200**; **sitemap includes article 18**; **search finds it**;
+**`/product-reviews` populated**; **`/tech` populated**; **`/category/tech-electronics` populated** (all three with no "In
+progress" panel); **all eight section pages 200**; hero renders from `flancci01.jpg` with the clean alt; **9 `<h2>`**; the
+**affiliate disclosure renders automatically** from the product link; **no public header `Log in`**; **Staff Login
+footer-only**; **0 forbidden-CTA hits**; `/dashboard/content`, `/dashboard`, `/app` all **307 → /login** signed out;
+`bubbaaffiliate.com/`, `/sellers`, `/creators` all **200 (unchanged)**. **All six non-public drafts stayed 404 and absent
+from the sitemap** (ids 1, 2, 4, 13, 14, 15, 16, 17 — including the `zzz-test` record). Published set is now **#3, #7, #12,
+#18**; #12 remains the featured cover. **No unrelated product, media or article record was changed** — `payload_migrations`
+**26**, `articles` **39 columns**, `media` **48 rows**, `products` **3**. Operator content edits this phase were confined to
+**Product 2 only**: `Media.source` on its five images (per operator attestation) and clean editorial `alt` on those same five
+`productImages` rows.
+📝 **Conclusion: Phase 2X proves the automated product-review path end to end — product-owned media + generated review +
+hardened gate + gated publish + public verification — with no manual article pasting at any step.** The engine is now both
+mechanically and editorially production-proven. ⚠️ **The binding constraint is no longer the engine but the catalog:** only
+3 products exist, one of which is a mock smoke-test record, and only Product 2 and Product 5 carry permissioned images.
+📝 **Minor follow-ups (not blockers):** the generated review uses first-person singular ("I did not apply the stickers")
+under a team byline — a one-line prompt rule would fix the voice; and articles 15, 16, 17 plus mock draft #1 are non-public
+proof artifacts that can be deleted whenever desired.
+**Prior — `a53a7f7` (`a53a7f759d3225cce32c2131da41dc2e3d669bb9`) (Phase 2Q — Internal Content QA /
 Publishing-Readiness Panel — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:bddb857c…`) healthy; payload_migrations 26 (before=26 → after=26, `migrations up to date`,
 **no new migration**).**
@@ -1106,11 +1170,13 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `a53a7f7` (Phase 2Q internal Content QA /
-publishing-readiness panel; **fast-forwarded onto `main`, no PR-merge commit** — see the delivery note above; app-only build &
-deploy; no migration, 26 → 26). Live Caddy config unchanged this deploy (still serves `bubbaaffiliate.com` + `www`; backup
-retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
-`Bubbaacademy/exploringtoknow` holds `main` @ `a53a7f7`; the VPS has no GitHub remote (updated via git bundle over SSH).
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `b5eaf21` (Phase 2X product-review quality correction;
+**fast-forwarded onto `main`, no PR-merge commit**; worker-only rebuild & recreate — app image unchanged at `cbea6124`, worker
+at `09e7ba8b`; no migration, 26 → 26). The running **app** image was last rebuilt for Phase 2V (`cbea6124`, app-only deploy);
+Phases 2W and 2X were **worker-only** activations, so the app deliberately trails the tree — the next ordinary
+`deploy-app.sh` will pick up those (worker-side, app-inert) changes. Live Caddy config unchanged (still serves
+`bubbaaffiliate.com` + `www`; backup retained at `/opt/exploringtoknow/caddy/Caddyfile.bak-20260714-050927`). GitHub origin
+`Bubbaacademy/exploringtoknow` holds `main` @ `b5eaf21`; the VPS has no GitHub remote (updated via git bundle over SSH).
 Rollback points: **before Phase 2Q `1134b46`** (Phase 2N remaining public magazine pages — search + author; app-only rollback,
 redeploy that commit with `deploy-app.sh`; this reverts only the internal read-only Content QA panel at `/dashboard/content`
 and removes `lib/content-qa.ts` — no public-surface, schema, data, or routing effect. Note `212eba7` (Phase 2O docs) and
