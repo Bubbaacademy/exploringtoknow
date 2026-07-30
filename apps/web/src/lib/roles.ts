@@ -8,9 +8,20 @@ import type { Role } from './tenant';
 export const isOwner = (r: Role | null | undefined): boolean => r === 'workspace_owner';
 export const isViewer = (r: Role | null | undefined): boolean => r === 'viewer';
 
-/** Create/edit/upload (products, requests, media). Everyone except viewer. */
+/**
+ * Create/edit/upload (products, requests, media). Everyone except viewer.
+ *
+ * Includes the platform super admin. `isSuperAdmin` is derived from holding a
+ * `platform_super_admin` membership (lib/tenant.ts), and `getPrimaryMembership`
+ * returns that row as the actor's role — so without this the operator who owns
+ * the platform is locked out of their own workspace's intake form as
+ * "read-only", which is what blocked ProductRequest submission. Same
+ * special-case, and same rationale, as `canManageConnections` below; scope is
+ * still derived from the actor's own membership, so this widens no tenant
+ * access. Editors/viewers are unaffected.
+ */
 export const canWrite = (r: Role | null | undefined): boolean =>
-  r === 'workspace_owner' || r === 'workspace_admin' || r === 'editor';
+  r === 'workspace_owner' || r === 'workspace_admin' || r === 'editor' || r === 'platform_super_admin';
 
 /** Manage team (invite / change role / remove). Owner only in this phase. */
 export const canManageTeam = (r: Role | null | undefined): boolean => r === 'workspace_owner';
