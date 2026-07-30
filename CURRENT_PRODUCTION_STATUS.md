@@ -1,8 +1,58 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-07-29 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-07-30 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `b5eaf21` (`b5eaf21a65572b910c6b4a1480849a518eea69ef`) (Phase 2X — Product Review Quality
+**Production HEAD: `563197a` (`563197a8e2e5e9d1f29e03fa26807f58024ff2c3`) (Phase 2W/2X — Automated Product-Content
+Engine PROVEN END-TO-END on a real seller submission — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:342ce297…`, `StartedAt 2026-07-30T03:42:05Z`) healthy; worker image `etk-worker`
+(id `sha256:cad52027…`, `StartedAt 2026-07-30T04:10:34Z`); Postgres and Caddy untouched (both `StartedAt
+2026-07-14T00:22:20Z`, live Caddyfile hash `0f45cd67…`); payload_migrations **26 → 26**, **no new migration**.
+Rollback point `a53a7f7`.**
+**A real seller-submitted product went from intake to a published review with no manual article writing and no manual
+field editing at any step.** The operator submitted **ProductRequest 12** (RØDE PodMic) through
+`/app/product-requests/new`, uploaded 11 images, ticked **Image Permission Confirmed**, set category **Tech &
+Electronics**, and approved it. Everything after that was the engine: Product 6 created and linked, the 11 media copied,
+one generation job enqueued and consumed, the review generated, a product-owned hero selected, the gate run, and the
+article published in the correct status order.
+**PUBLISHED — article 23**, slug **`r-de-podmic-review-the-honest-xlr-upgrade-guide`**, type **`review`**, linked
+**Product 6**, category **Tech & Electronics**, 9,124 chars. **Hero = media 68** (`71DKUvGnAxL…jpg`, 1080×1080) drawn
+from Product 6's **own request-confirmed** `productImages` — provenance `permission: confirmed via approved product
+request #12` — and explicitly **NOT** media 66, the 970×300 RØDE "PODMIC" marketing banner that an earlier run had
+auto-selected. **Hero alt** is clean editorial text (`RØDE PodMic Cardioid Dynamic Broadcast Microphone`), reduced from
+the 190-character Amazon listing title. **Research basis present** ("a research-based review… drawn from RØDE's
+published product information"); **0 manual affiliate disclosures** (the site renders it automatically from the product
+link); **0 unsupported long-term/future-proof claims**; **0 dead links**; all eight review sections in order.
+**Gate PASSED**, then published in the correct order — `editorialStatus=published` → **`editorialPublishedAt`
+confirmed** (`2026-07-30T04:14:11.587Z`) → **only then** pipeline `status=published`. No bypass at any point.
+**Public verification PASSED:** article URL **200**, present in the **sitemap**, found by **search**, listed on
+**`/product-reviews`**, **`/tech`** and **`/category/tech-electronics`**, hero renders with the clean alt, affiliate
+disclosure renders automatically, all eight section pages **200**, **no public header `Log in`**, **Staff Login
+footer-only**, **0 forbidden-CTA hits**, `/dashboard/content` + `/dashboard` + `/app` **307 → /login** signed out, and
+`bubbaaffiliate.com/`, `/sellers`, `/creators` all **200 (unchanged)**.
+**Published set is now 5** — `#3`, `#7`, `#12`, `#18`, `#23`. **No unrelated area changed:** `payload_migrations` **26**,
+`articles` **39 columns**, `products` **4**, `media` **59**, Caddyfile hash byte-identical, and **no schema, migration,
+env, provider, Caddy, API, auth, users, tenants, workspaces, dashboard UI, seller UI, sitemap, robots, package or
+lockfile change**.
+**What it took (six commits, all small):** `d4bc494` let the platform super admin write in their own workspace, which
+was blocking the intake form entirely; `84b91e2` made an approved request stamp `permission:` provenance onto the media
+it copies and stopped the hero selector preferring the *widest* image (which is always a banner), choosing the largest
+non-banner by pixel area instead; `ae7cc0d` + `c5781c2` gave `articleV2` the proven eight-section review structure with
+an explicit basis statement, and reduced marketplace listing titles to a brand+model phrase for alt text; `d406b46`
+strips hand-written affiliate disclosures deterministically at the persistence layer, after three separate prompt
+instructions failed to stop them (4 → 1 → 1 → **0**); `563197a` names the banned comparative/future-value vocabulary in
+the prompt so the writer is finally shown the rules the gate judges it against.
+📌 **The publish gate was NOT weakened, narrowed, or bypassed at any point in this phase** — every fix moved the input,
+not the standard. The gate blocked four successive drafts (19, 20, 21, 22) and each blocker was a real defect: a
+marketing-banner hero, a listing-title alt, a missing basis statement, hand-written disclosures, dead links, and an
+unsourced "long-term flexibility" claim. **Articles 19–22 remain DELIBERATELY NON-PUBLIC** (`ready_for_review`, 404,
+absent from sitemap) as the regression evidence those blockers must keep rejecting.
+⚠️ **CURRENT BLOCKER — catalog, not engine.** The automated product-review path is proven; what limits output now is
+**input volume**. The catalog holds **4 products**, one a mock smoke-test record, and only Products 2, 5 and 6 carry
+usable permission-confirmed images. **The next constraint is more real products with 5–10 owned or permission-confirmed
+images each, submitted through the ProductRequest intake.** Explicitly NOT the path forward: **stock/Pexels/Unsplash
+imagery as a product hero** (product articles must use the product's own approved media) and **manual article pasting**
+(the engine generates, gates and publishes; the operator supplies products and images, and approves).
+**Prior — `b5eaf21` (`b5eaf21a65572b910c6b4a1480849a518eea69ef`) (Phase 2X — Product Review Quality
 Correction + First Automated Product Review Published — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:cbea6124…`) healthy; worker image `etk-worker` (id `sha256:09e7ba8b…`);
 payload_migrations 26 (before=26 → after=26, `migrations up to date`, **no new migration**). Rollback point `a53a7f7`.**
@@ -1170,7 +1220,10 @@ Sheets, no SaaS/multi-tenant shortcuts.
 Any future change to these requires its own reviewed, scoped deployment.
 
 ## Repo state
-Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `b5eaf21` (Phase 2X product-review quality correction;
+Production (VPS `/opt/exploringtoknow`, branch `main`) app code is at `563197a` (Phase 2W/2X automated product-content
+engine proven end-to-end; app image `342ce297`, worker image `cad52027`; no migration, 26 → 26). GitHub origin
+`Bubbaacademy/exploringtoknow` holds `main` @ `563197a`.
+Prior state — `b5eaf21` (Phase 2X product-review quality correction;
 **fast-forwarded onto `main`, no PR-merge commit**; worker-only rebuild & recreate — app image unchanged at `cbea6124`, worker
 at `09e7ba8b`; no migration, 26 → 26). The running **app** image was last rebuilt for Phase 2V (`cbea6124`, app-only deploy);
 Phases 2W and 2X were **worker-only** activations, so the app deliberately trails the tree — the next ordinary
