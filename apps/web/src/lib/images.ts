@@ -24,7 +24,7 @@ export const IMAGE_ROLES = ['hero', 'lifestyle', 'product-detail', 'packaging', 
 export function cleanProductName(title: string): string {
   const raw = String(title || '').trim();
   if (!raw) return 'The product';
-  let s = raw.split(/\s[—–|]\s|\s\|\s|\(|,|\.\s/)[0].trim();
+  let s = (raw.split(/\s[—–|]\s|\s\|\s|\(|,|\.\s/)[0] ?? raw).trim();
   if (!s) s = raw;
   if (s.length > 60) s = s.slice(0, 60).replace(/\s+\S*$/, '').trim();
   return s || 'The product';
