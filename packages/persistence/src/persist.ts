@@ -1,5 +1,42 @@
 import type { PersistenceClient, GenerationOutcome, PersistResult } from './types';
 
+/**
+ * Lines that are a hand-written affiliate disclosure (or a buy CTA carrying one).
+ * Deliberately the same patterns `tools/etk/publish-gate.mjs` blocks on, plus the
+ * "earns a commission" phrasing, so the cleaner and the gate agree by construction
+ * rather than by coincidence.
+ */
+const DISCLOSURE_LINE_PATTERNS = [
+  /this (?:article|post|page) contains affiliate links/i,
+  /we may earn a (?:small )?commission/i,
+  /at no extra cost to you/i,
+  /earns? a commission/i,
+];
+
+/**
+ * Remove a generated affiliate-disclosure line from article markdown.
+ *
+ * The site renders the disclosure itself for any product-linked article, so one
+ * written into the body is a duplicate. The article prompt was told not to write
+ * one in three separate places and still produced it — reworded each time — so
+ * this stops asking and removes it deterministically.
+ *
+ * Conservative on purpose: only whole lines are dropped, only when they match a
+ * disclosure pattern, and only when short enough to be a standalone disclosure
+ * rather than a paragraph of prose that happens to mention commissions. Normal
+ * editorial text is never touched.
+ */
+export function stripManualDisclosure(markdown: string): string {
+  const src = String(markdown || '');
+  if (!src) return src;
+  const kept = src.split('\n').filter((line) => {
+    const t = line.trim();
+    if (!t || t.length > 300) return true; // blank lines and long prose are never stripped
+    return !DISCLOSURE_LINE_PATTERNS.some((re) => re.test(t));
+  });
+  return `${kept.join('\n').replace(/\n{3,}/g, '\n\n').trim()}\n`;
+}
+
 export function slugify(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80).replace(/(^-|-$)/g, '');
 }
@@ -108,7 +145,9 @@ export async function persistGeneration(
     ...(categoryId != null ? { category: categoryId } : {}),
     type: article.type,
     ...(populateImages ? { populateImagesFromProduct: true } : {}),
-    markdown: article.markdown,
+    // Every article persisted here is product-linked, so the site renders the
+    // disclosure automatically — drop any the model wrote into the body.
+    markdown: stripManualDisclosure(article.markdown),
     excerpt: article.metaDescription,
     seo: { metaTitle: article.metaTitle, metaDescription: article.metaDescription },
     openGraph: { title: article.title, description: article.metaDescription },
