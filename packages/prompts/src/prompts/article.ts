@@ -82,12 +82,30 @@ export const articleV2: PromptDef<ArticleVars> = {
       `PRODUCT: ${product.title} (${product.offerType})\n` +
       (product.notes ? `PRODUCT FACTS & USE CASES (ground the article in these; do not invent beyond them):\n${product.notes}\n` : '') +
       (feedback?.length ? `\nREVISE PER FEEDBACK:\n- ${feedback.join('\n- ')}\n` : '') +
-      `\nMUST: address the specific real-world problems surfaced above; include a practical, honest ` +
-      `COMPARISON of this product approach vs the common alternatives a reader would actually consider — ` +
-      `strengths AND weaknesses of each; include a short FAQ; end with an honest ` +
-      `recommendation (who it’s for / not for). Aim ~1,000–1,400 words; thorough, not padded.\n` +
+      (brief.articleType === 'review'
+        // A review is a different shape from a problem/solution piece. This is the
+        // structure that produced the magazine's first publishable automated review
+        // (article 18) — including the explicit basis statement the publish gate
+        // requires, since we never test anything hands-on.
+        ? `\nThis is a PRODUCT REVIEW. Use these H2 sections, in this order:\n` +
+          `1. What this product is\n` +
+          `2. What is in the pack — only if you were given it above; otherwise tell the reader what to check on the current listing, and state NO numbers of your own\n` +
+          `3. How it is meant to be used\n` +
+          `4. Where it works well\n` +
+          `5. Where it is not the right fit\n` +
+          `6. Trade-offs and limitations\n` +
+          `7. Who should consider something else\n` +
+          `8. How we reviewed this — state plainly that this is a RESEARCH-BASED review drawn from the ` +
+          `manufacturer's published product information, that nothing was hands-on tested, measured or ` +
+          `lab-tested, and name what could not be verified.\n` +
+          `Do NOT invent specifications, pack contents, materials, dimensions, percentages or durability ` +
+          `figures. Aim ~1,000–1,400 words; thorough, not padded.\n`
+        : `\nMUST: address the specific real-world problems surfaced above; include a practical, honest ` +
+          `COMPARISON of this product approach vs the common alternatives a reader would actually consider — ` +
+          `strengths AND weaknesses of each; include a short FAQ; end with an honest ` +
+          `recommendation (who it’s for / not for). Aim ~1,000–1,400 words; thorough, not padded.\n`) +
       `Return JSON keys: title (concise, human — NOT the full product name), type (=${brief.articleType}), ` +
-      `markdown (full article, H2/H3, comparison, FAQ — no disclosure, no CTA, no placeholder links), metaTitle (<=60 chars), ` +
+      `markdown (full article, H2/H3 — no disclosure, no affiliate link, no buy CTA, no placeholder links), metaTitle (<=60 chars), ` +
       `metaDescription (<=155 chars), sections (array of the H2 headings used).`,
   }),
 };

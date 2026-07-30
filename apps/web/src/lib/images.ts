@@ -13,6 +13,24 @@ export const ARTICLE_IMAGES_MAX = 6; // hero + up to 5 inline
 export const IMAGE_ROLES = ['hero', 'lifestyle', 'product-detail', 'packaging', 'in-use', 'comparison', 'other'] as const;
 
 /**
+ * Marketplace listing titles are long, comma-stuffed spec dumps — e.g. "RØDE PodMic
+ * Cardioid Dynamic Broadcast Microphone — XLR Output, Requires Audio Interface
+ * (RØDECaster, AI-1, or similar). … | Broadcast-Grade …". Using one verbatim as alt
+ * text is listing copy, not a description, and the publish gate rejects it
+ * (HERO_ALT_LISTING_TITLE). Reduce it to the leading brand + model phrase by cutting
+ * at the first structural separator a listing title uses, then capping the length.
+ * Purely textual — invents nothing.
+ */
+export function cleanProductName(title: string): string {
+  const raw = String(title || '').trim();
+  if (!raw) return 'The product';
+  let s = raw.split(/\s[—–|]\s|\s\|\s|\(|,|\.\s/)[0].trim();
+  if (!s) s = raw;
+  if (s.length > 60) s = s.slice(0, 60).replace(/\s+\S*$/, '').trim();
+  return s || 'The product';
+}
+
+/**
  * Editorial phrasing per image role. Says only what the role already asserts —
  * no invented colours, settings, counts or visual detail.
  */
@@ -36,7 +54,7 @@ const ROLE_ALT: Record<string, (name: string) => string> = {
  * role, and never fabricates visual detail it cannot know.
  */
 export function altFallback(productName: string, role?: string): string {
-  const name = String(productName || '').trim() || 'The product';
+  const name = cleanProductName(productName);
   const phrase = role ? ROLE_ALT[role] : undefined;
   return phrase ? phrase(name) : name;
 }
