@@ -70,6 +70,11 @@ export const articleV2: PromptDef<ArticleVars> = {
       'is and is not for instead.\n' +
       '- NEVER emit a placeholder or invented link — no "](#)", no made-up URLs, no fabricated anchors. Link only to ' +
       'something you were explicitly given. If you have no URL, write plain text.\n' +
+      '- No unsupported comparative or future-value claims. Do NOT write "long-term", "long-term flexibility", ' +
+      '"room to grow", "future-proof", "upgrade path", "better over time", "grows with you", or similar unverified ' +
+      'benefit language unless you are directly quoting the manufacturer. Describe what something IS and what it ' +
+      'REQUIRES, not what it will be worth later. Right register: "XLR requires an audio interface and can fit ' +
+      'setups that use mixers or multiple microphones. USB is simpler to connect directly."\n' +
       'Return ONLY valid minified JSON. No prose outside JSON.',
     prompt:
       `Write a complete, publish-ready ${brief.articleType} article that solves the reader’s problem.\n` +
