@@ -65,7 +65,11 @@ export const articleV2: PromptDef<ArticleVars> = {
       '- Honesty: NO fabricated testing, lab results, ratings, or first-person "I tested" claims unless provided; ' +
       'NO fake statistics; NO exaggerated marketing. Only claims true of the product category.\n' +
       '- SEO without stuffing: primary keyword naturally in title, intro, and one H2; related terms where they fit.\n' +
-      '- Affiliate done right: plain disclosure near the top; explain who it is and isn’t for; one low-pressure CTA.\n' +
+      '- Do NOT write an affiliate disclosure, an affiliate link, or a buy CTA anywhere in the body. The site renders ' +
+      'the disclosure automatically for product-linked articles, so writing one duplicates it. Explain who the product ' +
+      'is and is not for instead.\n' +
+      '- NEVER emit a placeholder or invented link — no "](#)", no made-up URLs, no fabricated anchors. Link only to ' +
+      'something you were explicitly given. If you have no URL, write plain text.\n' +
       'Return ONLY valid minified JSON. No prose outside JSON.',
     prompt:
       `Write a complete, publish-ready ${brief.articleType} article that solves the reader’s problem.\n` +
@@ -79,11 +83,11 @@ export const articleV2: PromptDef<ArticleVars> = {
       (product.notes ? `PRODUCT FACTS & USE CASES (ground the article in these; do not invent beyond them):\n${product.notes}\n` : '') +
       (feedback?.length ? `\nREVISE PER FEEDBACK:\n- ${feedback.join('\n- ')}\n` : '') +
       `\nMUST: address the specific real-world problems surfaced above; include a practical, honest ` +
-      `COMPARISON of this product approach vs common DIY alternatives (electrical tape, unplugging, ` +
-      `blackout fixes) — strengths AND weaknesses of each; include a short FAQ; end with an honest ` +
-      `recommendation (who it’s for / not for) + one CTA. Aim ~1,000–1,400 words; thorough, not padded.\n` +
+      `COMPARISON of this product approach vs the common alternatives a reader would actually consider — ` +
+      `strengths AND weaknesses of each; include a short FAQ; end with an honest ` +
+      `recommendation (who it’s for / not for). Aim ~1,000–1,400 words; thorough, not padded.\n` +
       `Return JSON keys: title (concise, human — NOT the full product name), type (=${brief.articleType}), ` +
-      `markdown (full article, H2/H3, disclosure near top, comparison, FAQ, CTA), metaTitle (<=60 chars), ` +
+      `markdown (full article, H2/H3, comparison, FAQ — no disclosure, no CTA, no placeholder links), metaTitle (<=60 chars), ` +
       `metaDescription (<=155 chars), sections (array of the H2 headings used).`,
   }),
 };

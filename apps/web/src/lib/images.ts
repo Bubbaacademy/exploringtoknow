@@ -74,6 +74,22 @@ function dims(i: PImg): { w: number; h: number } {
 function hashStr(s: string): number { let h = 2166136261; for (let k = 0; k < s.length; k += 1) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return h >>> 0; }
 
 /**
+ * Aspect ratio beyond which an image is treated as a marketing banner (A+ content)
+ * rather than a product photo. Banners carry burned-in branding and sales copy and
+ * must never become an article hero — a RØDE "PODMIC / DYNAMIC PODCASTING
+ * MICROPHONE" banner (970×300) was auto-selected as one, because the previous
+ * fallback preferred the WIDEST landscape image and banners are always widest.
+ */
+export const HERO_MAX_ASPECT = 2.2;
+
+/** True for extreme wide/tall images. Unknown dimensions are never excluded. */
+export function isBannerish(w: number, h: number): boolean {
+  if (!w || !h) return false;
+  const r = w / h;
+  return r >= HERO_MAX_ASPECT || 1 / r >= HERO_MAX_ASPECT;
+}
+
+/**
  * Deterministic article image selection from a product's enabled images.
  * No AI / no content recognition. Stable across reloads/deploys (seeded by
  * articleKey). Returns one hero + diverse, non-repeating inline images.
@@ -84,11 +100,21 @@ export function selectArticleImages(images: PImg[], articleKey: string, inlineCo
   const ord = (i: PImg) => (i.order ?? 999);
   const byOrder = [...enabled].sort((a, b) => ord(a) - ord(b));
 
-  // Hero: preferredHero -> role=hero (by order) -> best landscape -> first
-  const hero = byOrder.find((i) => i.preferredHero)
-    || byOrder.filter((i) => i.role === 'hero')[0]
-    || [...byOrder].filter((i) => { const d = dims(i); return d.w >= d.h && d.w > 0; }).sort((a, b) => (dims(b).w / (dims(b).h || 1)) - (dims(a).w / (dims(a).h || 1)))[0]
-    || byOrder[0];
+  // Hero: an explicit operator choice always wins (preferredHero, then role=hero).
+  // Otherwise pick the LARGEST non-banner image by pixel area, tie-broken by order.
+  // Area favours the real high-res product shot over thumbnails and comparison
+  // strips, and the banner filter keeps marketing collateral out of the hero slot.
+  // If every enabled image is banner-shaped there is no safe hero — return null so
+  // the caller can report it rather than shipping branded sales art as the hero.
+  const explicitHero = byOrder.find((i) => i.preferredHero) || byOrder.filter((i) => i.role === 'hero')[0];
+  const safeForHero = byOrder.filter((i) => { const d = dims(i); return !isBannerish(d.w, d.h); });
+  const largestSafe = [...safeForHero].sort((a, b) => {
+    const da = dims(a); const db = dims(b);
+    const byArea = (db.w * db.h) - (da.w * da.h);
+    return byArea !== 0 ? byArea : ord(a) - ord(b);
+  })[0];
+  const hero = explicitHero || largestSafe || null;
+  if (!hero) return { hero: null, inline: [] };
 
   const heroMid = mediaId(hero?.image);
   const rest = byOrder.filter((i) => mediaId(i.image) !== heroMid);
@@ -155,8 +181,11 @@ export function buildArticleImagePopulation(input: PopulateInput): PopulateResul
   }
   const inlineN = inlineCountForLength(input.markdownLen || 0);
   const { hero, inline } = selectArticleImages(imgs, input.articleKey, inlineN);
-  if (!hero || inline.length < 2) {
-    return { ok: false, reason: 'could not select one hero plus at least two distinct inline images.' };
+  if (!hero) {
+    return { ok: false, reason: 'NO_SAFE_HERO: every enabled product image is banner-shaped marketing collateral; none is usable as a hero.' };
+  }
+  if (inline.length < 2) {
+    return { ok: false, reason: 'could not select at least two distinct inline images.' };
   }
   const mid = (pi: any) => (typeof pi.image === 'object' ? pi.image?.id : pi.image);
 

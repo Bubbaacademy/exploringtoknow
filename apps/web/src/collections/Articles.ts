@@ -341,6 +341,17 @@ export const Articles: CollectionConfig = {
           currentImages: cur.images,
         });
         if (!result.ok) {
+          // On CREATE this flag is set by the generation pipeline, not by a human.
+          // Aborting would discard a finished article over an image problem, so we
+          // drop the flag and let the article exist without images — the publish
+          // gate then blocks it with a clear reason (NO_HERO / NO_SAFE_HERO) and
+          // nothing reaches readers. On UPDATE a human ticked the box, so the error
+          // belongs in front of them.
+          if (!originalDoc) {
+            req.payload.logger.warn(`populate_images skipped on create: ${result.reason}`);
+            data.populateImagesFromProduct = false;
+            return data;
+          }
           throw new APIError(`Populate Images From Product failed: ${result.reason}`, 400);
         }
         data.images = result.images;

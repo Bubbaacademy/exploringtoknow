@@ -126,12 +126,38 @@ export const ProductRequests: CollectionConfig = {
           },
         });
 
+        // Provenance. An approved request with confirmed image permission IS the
+        // operator's attestation for exactly these images, so record it on the
+        // media itself — otherwise the publish gate later sees a bare
+        // "workspace upload" and the operator has to hand-edit every record.
+        // Deliberately narrow: only this request's copied images, only when
+        // permission was confirmed, and never overwriting an existing
+        // owned:/permission:/license: marker. A generic workspace upload that did
+        // not come through an approved request stays unproven and still blocks.
+        // Best-effort: a media write failing must not fail the approval — the gate
+        // is the backstop and will simply report the missing provenance.
+        if (cur.imagePermissionConfirmed === true) {
+          const marker = `permission: confirmed via approved product request #${reqId}`;
+          for (const pi of productImages) {
+            try {
+              const m = await req.payload.findByID({ collection: 'media', id: pi.image as never, depth: 0, req });
+              const existing = typeof (m as { source?: unknown })?.source === 'string' ? String((m as { source?: unknown }).source).trim() : '';
+              if (existing && existing.toLowerCase() !== 'workspace upload') continue;
+              await req.payload.update({ collection: 'media', id: pi.image as never, data: { source: marker }, req, depth: 0 });
+            } catch (e) {
+              req.payload.logger.error(`product-request ${reqId}: could not stamp provenance on media ${pi.image}: ${String(e)}`);
+            }
+          }
+        }
+
         // Enqueue exactly one job. On failure, throw -> the whole transaction
         // (including the Product create) rolls back: no half-approved state, no
         // orphan Product, and the admin can retry.
         let jobId: string;
         try {
-          const job: GenerateContentJob = { productId: String(product.id), trigger: 'force_generate', requestId: String(reqId) };
+          // A seller product submission is inherently a product review — say so,
+          // rather than letting the model pick a format for it.
+          const job: GenerateContentJob = { productId: String(product.id), trigger: 'force_generate', requestId: String(reqId), articleType: 'review' };
           jobId = await enqueue(QUEUES.generateContent, job);
         } catch (e) {
           req.payload.logger.error(`product-request approval enqueue failed: ${String(e)}`);
