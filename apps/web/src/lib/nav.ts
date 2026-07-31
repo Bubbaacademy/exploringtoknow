@@ -5,8 +5,9 @@
  * - There is NO public call-to-action. Phase 2F removed the last "Request a
  *   Review" CTA from the public magazine: ExploringToKnow reads as an
  *   independent publication, so public pages link only to more editorial
- *   content. The `/request-product` route still exists and still works, but it
- *   is unlinked and noindexed — it is not promoted as public magazine surface.
+ *   content. Phase 2Y then retired `/request-product` outright: the route now
+ *   308-redirects to bubbaaffiliate.com/sellers, because seller/product intake
+ *   is BubbaAffiliate's surface and the magazine is reader-only.
  * - Topic (category) grouping for the Topics mega menu. The grouping is ONLY a
  *   presentation map keyed by category slug — the categories themselves always
  *   come from the real database (see `listActiveCategories`). Any active category

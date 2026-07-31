@@ -23,11 +23,21 @@ const nextConfig: NextConfig = {
    * `/pricing` and `/how-it-works` only, so neither rule can affect gateway
    * routing, and `middleware.ts` (which owns host-aware gateway rewrites) is
    * untouched.
+   *
+   * Phase 2Y — route/ownership boundary. `/request-product` was the last
+   * seller/product intake surface living on the reader-facing magazine. Phase 2F
+   * had only unlinked and noindexed it; it still rendered a working submission
+   * form at the direct URL. Product/seller intake belongs to BubbaAffiliate, so
+   * the route is now retired with a PERMANENT (308) redirect to the live seller
+   * entry point and its page + form component are deleted. The operator route
+   * `/app/product-requests/new` is a different page, form, upload and API path
+   * and is deliberately untouched.
    */
   async redirects() {
     return [
       { source: '/reviews', destination: '/product-reviews', permanent: true },
       { source: '/explore', destination: '/explore-picks', permanent: true },
+      { source: '/request-product', destination: 'https://bubbaaffiliate.com/sellers', permanent: true },
     ];
   },
 };

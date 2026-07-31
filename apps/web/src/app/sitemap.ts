@@ -21,8 +21,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'weekly' as const,
       priority: 0.6,
     })),
-    // `/request-product` and `/signup` are intentionally absent: both are
-    // unlinked, noindexed operational routes, not public magazine surface.
+    // `/signup` is intentionally absent: an unlinked, noindexed operational
+    // route, not public magazine surface. `/request-product` is absent because
+    // Phase 2Y retired it — it 308s to bubbaaffiliate.com/sellers.
     { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${SITE_URL}/editorial-policy`, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${SITE_URL}/affiliate-disclosure`, changeFrequency: 'yearly', priority: 0.3 },
