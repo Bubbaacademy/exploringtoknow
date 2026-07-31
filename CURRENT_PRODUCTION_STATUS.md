@@ -1,8 +1,140 @@
 # CURRENT_PRODUCTION_STATUS.md
 
-_Updated: 2026-07-30 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
+_Updated: 2026-07-31 — facts below verified live over SSH this session. Regenerate anytime with `infra/server/verify-app.sh`._
 
-**Production HEAD: `563197a` (`563197a8e2e5e9d1f29e03fa26807f58024ff2c3`) (Phase 2W/2X — Automated Product-Content
+**Production HEAD: `0053d7f` (`0053d7f31d57cf32f48094c3750f699fd6963f4f`) (Phase 2Z — Domain Ownership Boundary:
+ExploringToKnow is magazine-only — DEPLOYED & VERIFIED LIVE).
+App image `etk-web` (id `sha256:d9325418…`, `StartedAt 2026-07-31T19:35:35Z`) healthy; worker image `etk-worker`
+UNCHANGED (id `sha256:cad52027…`, `StartedAt 2026-07-30T04:10:34Z`); Postgres and Caddy untouched (both `StartedAt
+2026-07-14T00:22:20Z`, live Caddyfile hash byte-identical before and after at `707a062d…` as measured in-container);
+payload_migrations **26 → 26**, **no migration run at all** (`SKIP_MIGRATE=1`). Rollback point `563197a`.**
+📌 **THE BLUEPRINT THIS ENFORCES.** **bubbaaffiliate.com owns every operational surface** — seller/creator intake,
+product requests, product images and permissions, offers, products, campaigns, the content engine, article generation,
+editorial/admin workflows, media uploads, analytics, auth, `/app`, `/dashboard`, `/platform`, `/admin`.
+**exploringtoknow.com is a reader-facing magazine and nothing else** — a **publication/display target** for content
+BubbaAffiliate generates, **not the owner of any engine**: no login, no admin, no `/app`, no `/dashboard`, no
+seller/product/creator intake, no public write API, no operational surface.
+⚠️ **THE ROOT CAUSE, and why this was invisible for so long:** **ONE app container serves BOTH domains.** The Caddyfile
+declares two vhosts — `exploringtoknow.com, www.exploringtoknow.com` and `bubbaaffiliate.com` — and **both
+`reverse_proxy app:3000`**. The only host-aware logic that existed was a 5-path gateway rewrite, so **every operational
+route resolved identically on BOTH hosts**: `exploringtoknow.com/app/product-requests/new` rendered the seller/product
+submission form when signed in, and `/dashboard`, `/platform`, `/admin`, `/login`, `/signup` all answered there too.
+📌 **Nothing was moved, ported or rebuilt to fix this — because nothing needed to be.** Every operational route
+**already answered on bubbaaffiliate.com** (verified live on both hosts before coding). This phase is therefore a
+**host filter, not a migration**: middleware is the only layer that sees the `Host` header, so the boundary is enforced
+there and nowhere else. **Three files, all routing/presentation** — `apps/web/src/middleware.ts` (+147/−24, the whole
+correction), `apps/web/src/components/site/Footer.tsx` (Staff login link removed), `apps/web/src/lib/nav.ts` (the
+now-dead `LOGIN_HREF` and its stale comment removed).
+**ON THE MAGAZINE HOST, THESE NOW RETURN A PLAIN 404** (`exploringtoknow.com` **and** `www.exploringtoknow.com`, both
+verified): `/app/*`, `/dashboard/*`, `/platform/*`, `/admin/*`, `/login`, `/signup`, `/invite/*`, `/lp/*`, and **all of
+`/api/*` except a reader allowlist**. Confirmed live 404: `/app`, `/app/product-requests/new`, `/app/products/new`,
+`/app/bubbaaffiliate`, `/dashboard`, `/dashboard/content`, `/platform`, `/admin`, `/admin/collections/articles`,
+`/login`, `/signup`, `/api/auth/login`, `/api/app/product-requests`, `/api/app/upload`, `/api/product-requests`,
+`/api/product-request-upload`, `/api/runs`, `/api/users`, `/api/articles`, `/api/bubbaaffiliate/intake`.
+📌 **404 — deliberately NOT a redirect to BubbaAffiliate.** A 308 would still make the magazine *advertise* the
+operational system and would put a BubbaAffiliate URL in ETK's response body. These paths must simply **not exist**
+here. The 404 body is neutral and names no other system.
+**THE READER `/api` ALLOWLIST — and the one entry that matters:** `/api/health`, **`/api/media`**, `/api/newsletter`,
+`/api/contact`, `/api/track`. ⚠️ **`/api/media` is READER surface, not operational:** published article images are
+served from **`https://exploringtoknow.com/api/media/file/<name>`** (absolute URLs built from
+`PAYLOAD_PUBLIC_SERVER_URL`), so blocking it would have broken **every hero and inline image on the live magazine**.
+It is therefore allowed **for GET/HEAD only** — verified live: `GET /api/media/file/71DKUvGnAxL._AC_SL1080_.jpg` →
+**200**, `POST /api/media` → **404**. It is a read path and can never become a write path.
+**REVERSE LEAK CLOSED:** `bubbaaffiliate.com/sitemap.xml` was serving the magazine's sitemap — **43
+exploringtoknow.com URLs advertised from the gateway domain**. It now returns **404** on the gateway host, while
+`exploringtoknow.com/sitemap.xml` still returns **200** with all 43 URLs.
+**STAFF LOGIN REMOVED FROM THE PUBLIC FOOTER** — the last reader-visible entry point to auth on the magazine. Verified
+live on the ETK homepage: `Staff login` **0**, `footer-staff` **0**, `href="/login"` **0**.
+⚠️ **`PAYLOAD_PUBLIC_SERVER_URL` was NOT changed — it stays `https://exploringtoknow.com`, and this is deliberate.**
+Repointing it at bubbaaffiliate.com was considered and **rejected on evidence**: that variable generates the **absolute
+image URLs on published articles**, so changing it would rewrite every reader-facing image on the magazine to the
+BubbaAffiliate domain — making the public magazine **depend on BubbaAffiliate to render**, which *inverts* the boundary
+rather than enforcing it. It also proved **unnecessary**: the ETK-host block has no effect on the BA host, confirmed
+in isolated runtime and again live (`bubbaaffiliate.com/admin` and `/login` both **200**). **Consequence to expect:**
+`payload-token` is a **host-scoped cookie with no domain override**, so any prior session on exploringtoknow.com grants
+nothing anywhere — **operators sign in at `https://bubbaaffiliate.com/login`.**
+**BUBBAAFFILIATE VERIFIED UNCHANGED AND FULLY OPERATIONAL:** `/`, `/sellers`, `/creators`, `/pricing`,
+`/how-it-works` all **200**; **`/admin` 200**, **`/login` 200**, `/signup` **200**; `/app`,
+**`/app/product-requests/new`**, `/app/products/new`, `/dashboard`, `/dashboard/content`, `/platform` all **307 →
+`/login` on the BA host** (auth gate intact, redirect stays on the BA domain); operational APIs pass through
+(`/api/auth/login`, `/api/app/product-requests`, `/api/app/upload`, `/api/bubbaaffiliate/intake` all **405** to a bare
+GET — reachable, wrong method — and `POST /api/bubbaaffiliate/intake` still **400** on an empty body).
+**MAGAZINE VERIFIED INTACT:** homepage, all **8** section pages, `/categories`, `/category/tech-electronics`,
+`/search`, `/author/exploringtoknow-editorial-team`, `/about`, `/contact`, `/privacy`, `/terms`, `/editorial-policy`,
+`/affiliate-disclosure` and `/sitemap.xml` all **200**; **both published product reviews 200**; the RØDE PodMic hero
+still renders from `/api/media/file/…`.
+**VALIDATION — the authoritative gate plus a runtime proof.** Isolated VPS/Linux build of `0053d7f` (throwaway image
+`etk-web:p2z-validate`, isolated bare repo + `git archive` to `/tmp`): **`✓ Compiled successfully in 46s`**,
+type-checking + linting clean, **44/44 static pages**. Then — **new for this phase, because middleware cannot be
+proven by a build alone** — a **throwaway runtime container** was run on `127.0.0.1:3999` with a **fake DB URI and
+no database reachability**, and driven with **~40 `Host:`-header assertions across both domains** before production
+saw anything: on the magazine host every operational path returned **404** (including Payload REST `/api/users`,
+`/api/articles`) while the reader allowlist passed through (200/405/500 — i.e. reached the app), and on the gateway
+host **nothing was blocked** (307s for auth-gated routes, 500s for `/admin`/`/login`/`/signup` from the deliberately
+absent DB — **not** 404s). Both throwaway artifacts were removed; **production was untouched throughout validation**.
+⚠️ **Local typecheck remains unusable on the Windows checkout**, so the isolated VPS/Linux build stays the
+authoritative gate — it was green.
+**Delivery — FAST-FORWARD, not a PR merge** (as with 2H–2Y): validated branch `phase-2z-domain-ownership-boundary`
+fast-forwarded onto `main`, so **`0053d7f` is an ordinary single-parent commit**. Delivered by git bundle over SSH
+(SHA256 matched both ends, `4df0443f…`; `git bundle verify` passed), working tree fast-forwarded `a7eb8835 → 0053d7f3`
+(verified ancestor, clean fast-forward), deployed with `SKIP_MIGRATE=1 ROOT=/opt/exploringtoknow bash
+infra/server/deploy-app.sh` (**app-only**). Stale-image guard passed (running image byte-equal to the freshly built
+`etk-web:latest`, `d0786cee → d9325418`); **only `etk-app` was recreated** (`--no-deps --force-recreate`) → **healthy**;
+**worker, Postgres and Caddy were NOT restarted.**
+**NO unrelated change — verified by diff, not by assertion.** `git diff a7eb883..0053d7f` over `tools/`, `packages/`,
+`apps/worker`, `apps/web/src/collections`, `apps/web/src/app/app`, `apps/web/src/app/api`, `infra/`, `compose/`,
+`caddy/`, `next.config.ts`, `payload.config.ts`, `package.json` and `pnpm-lock.yaml` is **EMPTY**. **No schema, no
+migration, no DB write, no env, no provider, no Caddy, no engine, no publish gate, no publisher, no ProductRequest
+approval hook, no article generation, no AI/worker/persistence package, no package or lockfile change.** Live DB
+re-inspected after deploy and **identical to before**: `payload_migrations` **26**, `articles` **39 columns**,
+`product_requests` **2**, `products` **4**, `media` **59**, published articles **5** — ids **`3,7,12,18,23`**.
+**No product was submitted, no article generated, and no product/article/media record created.**
+📝 **KNOWN REMAINING GAP (flagged, not a blocker):** magazine *pages* still render on the gateway host (e.g.
+`bubbaaffiliate.com/tech` → 200). The **sitemap** was closed because it was the only surface *advertising* ETK URLs to
+search engines, and those pages already emit **`canonical` → exploringtoknow.com** (verified). Fully 404-ing the
+magazine on the BA host needs an allowlist covering `/_next`, media and assets — a larger blast radius than this
+phase's remit, and worth its own small phase if an airtight split is wanted.
+📝 **NOT VERIFIABLE FROM THIS SESSION (no operator credentials):** a **signed-in** render of
+`bubbaaffiliate.com/app/product-requests/new`, and that **login succeeds** at `bubbaaffiliate.com/login`. Everything up
+to the auth boundary is confirmed. **An operator browser check on those two URLs is the gate before the next product
+submission.**
+
+**Prior — `a7eb883` (`a7eb88350a26428a0bbdf2e9b8e87f3a61e9e7b4`) (Phase 2Y — Retire the Public ETK Product-Request
+Intake — DEPLOYED & VERIFIED LIVE). App image `etk-web` (id `sha256:d0786cee…`) healthy; worker, Postgres and Caddy
+untouched; payload_migrations **26 → 26**, **no migration run** (`SKIP_MIGRATE=1`). Rollback point `563197a`.**
+Phase 2Y is the **first half of the route/ownership correction**, closing the seller/product intake that still lived on
+the reader-facing magazine. **Phase 2F had only unlinked and noindexed `/request-product`** — and that was verified
+live to be insufficient before any code was written: the page returned **200 and rendered a fully working submission
+form** (4 `<form>` elements, `requesterEmail` field present), and **`POST /api/product-requests` reached field
+validation with no authentication at all** (**422**, not 401), i.e. an anonymous caller could create `product-requests`
+rows. **Neither probe created data.**
+**Two anonymous write paths were closed, not one.** Alongside the request endpoint, **`POST /api/product-request-upload`
+created a `media` row AND wrote a file to the persistent volume from an anonymous POST** — the larger of the two holes,
+and the reason closing only its sibling would have been an incomplete fix. It was verified first that the operator form
+uses a **different** endpoint (`/api/app/upload`), so nothing operator-side depended on it.
+**Changes — 7 files, +64/−406:** `/request-product` now **308-redirects to `https://bubbaaffiliate.com/sellers`**
+(matching the existing 308 pattern used for `/reviews` and `/explore`) and its **page and `RequestProductForm`
+component were DELETED, not merely hidden**; `POST /api/product-requests` and `POST /api/product-request-upload` both
+return **410 Gone** — kept as explicit 410s rather than deleted so an old client or bookmarked form gets a truthful
+"permanently gone" answer instead of a 404 that reads like a routing mistake; plus comment-only honesty fixes in
+`lib/nav.ts` and `sitemap.ts` that had asserted the old behaviour.
+**The proven operator chain was untouched** — a completely separate page, form, upload and API path:
+`/app/product-requests/new` → `components/app/CreateProductForm.tsx` → `POST /api/app/upload` → `POST
+/api/app/product-requests`, plus approval, generation, the publish gate and the gated publisher. **Zero overlap with
+the retired public chain**, confirmed before coding.
+**Verified live after deploy:** `/request-product` → **308 → `https://bubbaaffiliate.com/sellers` → 200**, with **0**
+ETK form fields on the landing page; `POST /api/product-requests` → **410** *including on a full, previously-valid
+payload*; `POST /api/product-request-upload` → **410**; `/reviews` and `/explore` 308s unchanged; anonymous
+`POST /api/app/product-requests` → **401** (route alive, auth enforced); sitemap **43 URLs with `request-product`
+absent**; **0 forbidden-CTA hits** across six public pages, no public header `Log in`, Staff Login still footer-only
+*(removed entirely in 2Z)*; BubbaAffiliate pages all **200**. Isolated VPS/Linux build passed (**`✓ Compiled
+successfully in 46s`**, typecheck + lint clean, **44/44 static pages**), artifact inspected before deploy. **DB
+identical before and after** — `payload_migrations` **26**, `product_requests` **2**, `products` **4**, `media` **59**,
+published **5**; **the probes created nothing** (both endpoints reject before any write). Delivered by git bundle over
+SSH (SHA256 `188b9aab…`), fast-forwarded `563197a → a7eb8835`, app-only deploy (`342ce297 → d0786cee`); **worker,
+Postgres and Caddy not restarted.**
+
+**Prior — `563197a` (`563197a8e2e5e9d1f29e03fa26807f58024ff2c3`) (Phase 2W/2X — Automated Product-Content
 Engine PROVEN END-TO-END on a real seller submission — DEPLOYED & VERIFIED LIVE).
 App image `etk-web` (id `sha256:342ce297…`, `StartedAt 2026-07-30T03:42:05Z`) healthy; worker image `etk-worker`
 (id `sha256:cad52027…`, `StartedAt 2026-07-30T04:10:34Z`); Postgres and Caddy untouched (both `StartedAt
