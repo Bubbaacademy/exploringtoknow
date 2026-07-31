@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { AFFILIATE_DISCLOSURE, SITE_NAME } from '@/lib/public';
 import { Brand } from './Brand';
 import { NewsletterSignup } from './NewsletterSignup';
-import { PRIMARY_NAV, ABOUT_NAV, LEGAL_NAV, TOPICS_HREF, SEARCH_HREF, LOGIN_HREF } from '@/lib/nav';
+import { PRIMARY_NAV, ABOUT_NAV, LEGAL_NAV, TOPICS_HREF, SEARCH_HREF } from '@/lib/nav';
 
 export function Footer() {
   const year = 2026;
@@ -39,7 +39,8 @@ export function Footer() {
 
         <div className="footer-bottom">
           <span>© {year} {SITE_NAME}. All rights reserved.</span>
-          <span className="meta">Independently reviewed · Reader-supported · <Link href="/affiliate-disclosure">Affiliate disclosure</Link> · <Link href={LOGIN_HREF} className="footer-staff">Staff login</Link></span>
+          {/* No staff/admin entry point: the magazine host does not serve /login (Phase 2Z). */}
+          <span className="meta">Independently reviewed · Reader-supported · <Link href="/affiliate-disclosure">Affiliate disclosure</Link></span>
         </div>
       </div>
     </footer>

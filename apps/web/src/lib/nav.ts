@@ -40,12 +40,11 @@ export const SECTION_LINKS: NavLink[] = VERTICAL_SECTIONS.map((s) => ({ label: s
 /**
  * Internal/staff login entry point. The public magazine chrome intentionally does
  * NOT surface any SaaS signup / free-trial / workspace CTA — ExploringToKnow reads
- * as an independent buying-guide & review publication. `/login` stays available for
- * operator/editorial/admin users via a low-visibility footer link; all access
- * control remains server-side. (Signup/workspace routes still exist but are unlinked
- * from public chrome.)
+ * as an independent buying-guide & review publication. Phase 2Z removed the last
+ * staff-login footer link too: the magazine host no longer serves `/login`,
+ * `/signup` or any operator route at all (see `middleware.ts`). Operators sign in
+ * on bubbaaffiliate.com, which owns every operational surface.
  */
-export const LOGIN_HREF = '/login';
 
 /** Trust / editorial pages (footer). */
 export const ABOUT_NAV: NavLink[] = [
